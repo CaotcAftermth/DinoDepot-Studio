@@ -1,0 +1,90 @@
+{
+  "formatVersion": 1,
+  "meta": {
+    "id": "additions-ascended-anomalocaris",
+    "name": "Additions Ascended: Anomalocaris",
+    "version": "1.0.0",
+    "updatedAt": "2026-08-08",
+    "author": "Garuda",
+    "description": "Adds the Adaptive Anomalocaris to your ARK! (Freemium)",
+    "curseforgeId": "987274",
+    "url": "https://www.curseforge.com/ark-survival-ascended/mods/additions-ascended-anomalocaris",
+    "docsUrl": "",
+    "discordUrl": "https://discord.gg/9X6TETNr5e",
+    "variantTag": ""
+  },
+  "iniNotes": "",
+  "iniSettings": [],
+  "creatures": [
+    {
+      "id": "6b14012c-2982-4797-a1e2-f8efecb66a70",
+      "name": "Anomalocaris AA",
+      "bpPath": "/AA_Anomalo/Dinos/AnomalocarisAA_Character_BP.AnomalocarisAA_Character_BP"
+    },
+    {
+      "id": "64ae7b30-5524-40bc-9526-623e8fa16043",
+      "name": "Mega Anomalocaris AA",
+      "bpPath": "/AA_Anomalo/Dinos/MegaAnomalocarisAA_Character_BP.MegaAnomalocarisAA_Character_BP"
+    }
+  ],
+  "items": [
+    {
+      "id": "979fbd24-5404-46e0-8c26-259aa8a5ae11",
+      "name": "Anomalo Cocktail",
+      "bpPath": "/AA_Anomalo/Dinos/Consumables/PrimalItemConsumable_AnomaloCocktail.PrimalItemConsumable_AnomaloCocktail"
+    },
+    {
+      "id": "12efdcf7-5d6f-4ff7-bc3e-baf15c9e3af9",
+      "name": "Anomalo Meat",
+      "bpPath": "/AA_Anomalo/Dinos/Consumables/PrimalItemConsumable_AnomaloMeat.PrimalItemConsumable_AnomaloMeat"
+    },
+    {
+      "id": "7cf39023-7d8a-4d90-9adf-6002f33ee951",
+      "name": "Anomalo Pheromone",
+      "bpPath": "/AA_Anomalo/Dinos/Consumables/PrimalItemConsumableEatable_AnomaloPheromone.PrimalItemConsumableEatable_AnomaloPheromone"
+    },
+    {
+      "id": "9f4c0d82-d194-42b6-912d-06696804a74e",
+      "name": "Anomalocaris Saddle",
+      "bpPath": "/AA_Anomalo/Dinos/Saddle/PrimalItemArmor_AnomalocarisSaddle.PrimalItemArmor_AnomalocarisSaddle"
+    },
+    {
+      "id": "bbb2c28c-8853-4360-9331-5f2394b2d51e",
+      "name": "Chibi Alpha Anomalocaris",
+      "bpPath": "/AA_Anomalo/Dinos/Chibi/PrimalItemSkin_Chibi_AlphaAnomalocaris.PrimalItemSkin_Chibi_AlphaAnomalocaris"
+    },
+    {
+      "id": "2c3e0b20-f8b3-4461-a829-655575d283f2",
+      "name": "Chibi Anomalocaris",
+      "bpPath": "/AA_Anomalo/Dinos/Chibi/PrimalItemSkin_Chibi_Anomalocaris.PrimalItemSkin_Chibi_Anomalocaris"
+    },
+    {
+      "id": "a8782bad-35a4-461c-a2ef-9d10f400da94",
+      "name": "Chibi Anomalocaris Chef Shrimp",
+      "bpPath": "/AA_Anomalo/Dinos/Chibi/PrimalItemSkin_Chibi_AnomalocarisChefShrimp.PrimalItemSkin_Chibi_AnomalocarisChefShrimp"
+    },
+    {
+      "id": "7af8f5af-7b34-4269-905a-322321e03cc0",
+      "name": "Dino Shrimp Chef Hat",
+      "bpPath": "/AA_Anomalo/Dinos/ChefHat/PrimalItemSkin_Dino_ShrimpChefHat.PrimalItemSkin_Dino_ShrimpChefHat"
+    },
+    {
+      "id": "8cfc90c0-bdb1-42cb-9e22-c1e3bdad0726",
+      "name": "Shrimp Chef Hat",
+      "bpPath": "/AA_Anomalo/Dinos/ChefHat/PrimalItemSkin_ShrimpChefHat.PrimalItemSkin_ShrimpChefHat"
+    },
+    {
+      "id": "f33dba95-4237-4a91-bd3d-816a15a512f3",
+      "name": "Underwater Egg Anomalocaris",
+      "bpPath": "/AA_Anomalo/Dinos/Egg/PrimalItemConsumable_UnderwaterEgg_Anomalocaris.PrimalItemConsumable_UnderwaterEgg_Anomalocaris"
+    }
+  ],
+  "icons": {
+    "/aa_anomalo/dinos/anomalocarisaa_character_bp.anomalocarisaa_character_bp": "file:Anomalocaris.png"
+  },
+  "notes": {},
+  "maps": {},
+  "variantParents": {},
+  "itemInfo": {},
+  "creatureInfo": {}
+}
