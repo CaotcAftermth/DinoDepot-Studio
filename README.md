@@ -1,2 +1,3 @@
-## DinoDepot_Production_Studio
-Desktop project management and publishing studio for DinoDepot
+# DinoDepot Studio
+
+Desktop project management, collaboration, backup, and publishing studio for DinoDepot.
