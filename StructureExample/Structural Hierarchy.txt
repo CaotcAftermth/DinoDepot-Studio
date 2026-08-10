@@ -1,0 +1,49 @@
+Structural Hierarchy
+
+root
+├── version
+└── production[]
+    └── creature rule
+        ├── dinoType
+        ├── chanceToProduce
+        └── produces[]
+            └── production cycle
+                ├── name
+                ├── intervalSeconds
+                ├── itemSelectMode
+                └── items[]
+                    └── primary item
+                        ├── bpPath
+                        ├── quantityPerDino
+                        ├── maxQuantityPerCycle
+                        ├── maxQuantityInTerminal
+                        ├── alternateSelectMode
+                        ├── alternateItemsChance
+                        ├── alternateItems[]
+                        │   └── alternate item
+                        │       ├── bpPath
+                        │       ├── quantityPerItem
+                        │       ├── maxQuantityPerCycle
+                        │       └── maxQuantityInTerminal
+                        ├── consumesSelectMode
+                        ├── consumesItemsChance
+                        └── consumesItems[]
+                            └── consumed item
+                                ├── bpPath
+                                ├── quantityPerItem
+                                ├── maxQuantityPerCycle
+                                └── maxQuantityInTerminal
+
+
+Production-cycle structure
+
+produces[]
+└── production cycle
+    ├── name
+    │   └── Optional organizational label with no known gameplay effect
+    ├── intervalSeconds
+    │   └── Time between production attempts
+    ├── itemSelectMode
+    │   └── Selection behavior for primary items
+    └── items[]
+        └── Primary outputs belonging to this cycle

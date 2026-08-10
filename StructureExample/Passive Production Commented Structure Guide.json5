@@ -1,0 +1,245 @@
+## Improved Commented Structure Guide
+
+// Dino Depot Passive Production — Version 2
+//
+// IMPORTANT:
+// This is a commented JSONC reference intended for documentation only.
+// Published files must contain strict JSON with all comments removed.
+
+{
+  // Required Dino Depot passive-production schema version.
+  "version": 2,
+
+  // Every creature production rule is stored as an entry in this array.
+  "production": [
+    {
+      // Creature blueprint path associated with this production rule.
+      "dinoType": "/Game/Mods/Example/Creatures/ExampleProducer_Character_BP.ExampleProducer_Character_BP",
+
+      // Creature-level production chance.
+      //
+      // Uses a decimal probability:
+      //   0.00 = 0%
+      //   0.25 = 25%
+      //   0.50 = 50%
+      //   1.00 = 100%
+      "chanceToProduce": 1.0,
+
+      // A creature may have one or more independent production cycles.
+      //
+      // Each cycle may have its own:
+      // - organizational name
+      // - production interval
+      // - primary item selection mode
+      // - primary item list
+      "produces": [
+        {
+          // Optional human-readable name for this production cycle.
+          //
+          // This appears to be intended for organization and code
+          // readability only. It has no known effect on production behavior.
+          "name": "Standard Resource Production",
+
+          // Time between production attempts for this cycle.
+          // Always stored in seconds in the published JSON.
+          "intervalSeconds": 300,
+
+          // Determines how entries in this cycle's items[] array are selected.
+          //
+          //   0 = All
+          //   1 = Random
+          //   2 = Cycle
+          "itemSelectMode": 0,
+
+          // Primary output definitions for this production cycle.
+          "items": [
+            {
+              // Blueprint path of the primary produced item.
+              "bpPath": "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Hide.PrimalItemResource_Hide",
+
+              // Quantity produced by each eligible creature.
+              "quantityPerDino": 5,
+
+              // Maximum amount of this primary item that this definition
+              // may contribute during one production cycle.
+              //
+              // Existing configurations frequently use 0 where no
+              // explicit positive limit has been configured.
+              "maxQuantityPerCycle": 50,
+
+              // Terminal-level quantity limit for this item.
+              "maxQuantityInTerminal": 1000,
+
+              // Determines how entries in alternateItems[] are selected.
+              //
+              //   0 = All
+              //   1 = Random
+              //   2 = Cycle
+              "alternateSelectMode": 1,
+
+              // Chance that alternate-item logic is activated for this
+              // primary item.
+              //
+              // This example represents a 25% chance.
+              "alternateItemsChance": 0.25,
+
+              // Alternate output pool associated with this primary item.
+              //
+              // Alternate entries use quantityPerItem rather than
+              // quantityPerDino.
+              "alternateItems": [
+                {
+                  "bpPath": "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Keratin.PrimalItemResource_Keratin",
+
+                  // Quantity associated with this selected alternate item.
+                  "quantityPerItem": 2,
+
+                  // Alternate items support the same cycle and terminal caps.
+                  "maxQuantityPerCycle": 20,
+                  "maxQuantityInTerminal": 200
+                },
+                {
+                  "bpPath": "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Chitin.PrimalItemResource_Chitin",
+                  "quantityPerItem": 3,
+                  "maxQuantityPerCycle": 30,
+                  "maxQuantityInTerminal": 300
+                }
+              ],
+
+              // Determines how entries in consumesItems[] are selected.
+              //
+              //   0 = All
+              //   1 = Random
+              //   2 = Cycle
+              "consumesSelectMode": 0,
+
+              // Chance that the consumption logic associated with this
+              // primary item is activated.
+              //
+              // This example represents a 100% chance.
+              "consumesItemsChance": 1.0,
+
+              // Input items associated with this primary output.
+              //
+              // Consume entries also use quantityPerItem.
+              "consumesItems": [
+                {
+                  "bpPath": "/Game/PrimalEarth/CoreBlueprints/Items/Consumables/PrimalItemConsumable_Berry_Mejoberry.PrimalItemConsumable_Berry_Mejoberry",
+
+                  // Quantity consumed for this entry.
+                  "quantityPerItem": 2,
+
+                  "maxQuantityPerCycle": 0,
+                  "maxQuantityInTerminal": 0
+                },
+                {
+                  "bpPath": "/Game/PrimalEarth/CoreBlueprints/Items/Consumables/PrimalItemConsumable_Berry_Stimberry.PrimalItemConsumable_Berry_Stimberry",
+                  "quantityPerItem": 1,
+                  "maxQuantityPerCycle": 0,
+                  "maxQuantityInTerminal": 0
+                }
+              ]
+            },
+
+            {
+              // A second primary item in the same production cycle.
+              //
+              // Because itemSelectMode is 0, both primary items are
+              // processed when this cycle successfully runs.
+              "bpPath": "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Fibers.PrimalItemResource_Fibers",
+              "quantityPerDino": 10,
+              "maxQuantityPerCycle": 100,
+              "maxQuantityInTerminal": 1000,
+
+              // Empty arrays are retained to keep every primary item
+              // structurally predictable.
+              "alternateSelectMode": 0,
+              "alternateItemsChance": 0,
+              "alternateItems": [],
+
+              "consumesSelectMode": 0,
+              "consumesItemsChance": 0,
+              "consumesItems": []
+            }
+          ]
+        },
+
+        {
+          // A second independent production cycle for the same creature.
+          //
+          // The name allows administrators to distinguish this cycle
+          // from the creature's other production cycles.
+          "name": "Rare Resource Production",
+
+          // This cycle runs once per hour.
+          "intervalSeconds": 3600,
+
+          // Randomly selects one primary item from this cycle.
+          "itemSelectMode": 1,
+
+          "items": [
+            {
+              "bpPath": "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Crystal.PrimalItemResource_Crystal",
+              "quantityPerDino": 2,
+              "maxQuantityPerCycle": 20,
+              "maxQuantityInTerminal": 200,
+
+              "alternateSelectMode": 0,
+              "alternateItemsChance": 0,
+              "alternateItems": [],
+
+              "consumesSelectMode": 0,
+              "consumesItemsChance": 0,
+              "consumesItems": []
+            },
+            {
+              "bpPath": "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Obsidian.PrimalItemResource_Obsidian",
+              "quantityPerDino": 1,
+              "maxQuantityPerCycle": 10,
+              "maxQuantityInTerminal": 100,
+
+              "alternateSelectMode": 0,
+              "alternateItemsChance": 0,
+              "alternateItems": [],
+
+              "consumesSelectMode": 0,
+              "consumesItemsChance": 0,
+              "consumesItems": []
+            }
+          ]
+        }
+      ]
+    },
+
+    {
+      // Additional creatures are added as additional production[] entries.
+      "dinoType": "/Game/PrimalEarth/Dinos/Achatina/Achatina_Character_BP.Achatina_Character_BP",
+      "chanceToProduce": 1.0,
+
+      "produces": [
+        {
+          "name": "Achatina Paste Production",
+          "intervalSeconds": 120,
+          "itemSelectMode": 0,
+
+          "items": [
+            {
+              "bpPath": "/Game/PrimalEarth/Dinos/Achatina/PrimalItemResource_SnailPaste.PrimalItemResource_SnailPaste",
+              "quantityPerDino": 1,
+              "maxQuantityPerCycle": 0,
+              "maxQuantityInTerminal": 0,
+
+              "alternateSelectMode": 0,
+              "alternateItemsChance": 0,
+              "alternateItems": [],
+
+              "consumesSelectMode": 0,
+              "consumesItemsChance": 0,
+              "consumesItems": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
