@@ -1,0 +1,5 @@
+root
+└── dinoMappings[]
+    └── creature remap
+        ├── fromClass
+        └── toClass

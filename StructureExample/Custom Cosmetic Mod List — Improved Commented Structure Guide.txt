@@ -1,0 +1,294 @@
+## Custom Cosmetic Mod List — Improved Commented Structure Guide
+
+
+1380750|1|1|,975527|1|1|,1039530|1|1|
+
+
+### Purpose
+
+This is a separate plain-text, delimiter-based output containing Custom Cosmetic Mod entries.
+
+Each entry identifies one Custom Cosmetic Mod and defines two binary permission settings that control dynamic downloading and blueprint execution permissions.
+
+This format is not JSON.
+
+---
+
+## Entry Format
+
+
+<modId>|<enableDynamicDownload>|<allowNonDataOnlyBlueprints>|
+
+
+Default entry:
+
+
+<modId>|1|1|
+
+
+Example:
+
+
+1380750|1|1|
+
+
+---
+
+## Entry Structure
+
+
+1380750 | 1 | 1 |
+│         │   │
+│         │   └── Allow Non-Data-Only Blueprints
+│         └────── Enable Dynamic Download
+└──────────────── Custom Cosmetic Mod ID
+
+
+### `modId`
+
+The numeric ID of the Custom Cosmetic Mod.
+
+Example:
+
+
+1380750
+
+
+### `enableDynamicDownload`
+
+Controls whether players may dynamically download the cosmetic mod files when they approach someone using the cosmetic.
+
+
+1 = Enabled
+0 = Disabled
+
+
+When enabled, the server allows the cosmetic files to be transmitted to the player's local client so the cosmetic can render correctly.
+
+When disabled, the server blocks that dynamic download.
+
+### `allowNonDataOnlyBlueprints`
+
+Controls whether the cosmetic mod may use non-data-only blueprint content.
+
+
+1 = Enabled
+0 = Disabled
+
+
+When enabled, the mod may use advanced custom blueprints, scripting logic, custom visual logic, and other functionality beyond basic static meshes and data-only content.
+
+When disabled, the mod is restricted to data-only content.
+
+---
+
+## Default Values
+
+Both permission settings should default to enabled:
+
+
+|1|1|
+
+
+Therefore, a newly added Custom Cosmetic Mod should serialize as:
+
+
+1380750|1|1|
+
+
+Unless an administrator intentionally changes one of the permissions, the Studio should preserve both values as `1`.
+
+---
+
+## Toggle Combinations
+
+
+<modId>|1|1|
+
+
+* Dynamic download enabled
+* Non-data-only blueprints allowed
+
+
+<modId>|1|0|
+
+
+* Dynamic download enabled
+* Non-data-only blueprints blocked
+
+
+<modId>|0|1|
+
+
+* Dynamic download blocked
+* Non-data-only blueprints allowed
+
+
+<modId>|0|0|
+
+
+* Dynamic download blocked
+* Non-data-only blueprints blocked
+
+---
+
+## Multiple Entries
+
+Individual mod entries are separated by commas:
+
+
+<modId>|1|1|,<modId>|1|1|,<modId>|1|1|
+
+
+Example:
+
+
+1380750|1|1|,975527|1|1|,1039530|1|1|
+
+
+This represents three Custom Cosmetic Mods, each using the default permissions.
+
+---
+
+## Structural Hierarchy
+
+
+custom cosmetic mod list
+├── cosmetic mod entry
+│   ├── modId
+│   ├── enableDynamicDownload
+│   └── allowNonDataOnlyBlueprints
+├── comma separator
+├── cosmetic mod entry
+│   ├── modId
+│   ├── enableDynamicDownload
+│   └── allowNonDataOnlyBlueprints
+└── additional entries as needed
+
+
+---
+
+## Delimiter Structure
+
+
+modId | enableDynamicDownload | allowNonDataOnlyBlueprints |
+
+
+Each entry contains:
+
+1. Numeric Custom Cosmetic Mod ID
+2. Pipe delimiter
+3. Dynamic-download toggle
+4. Pipe delimiter
+5. Non-data-only blueprint toggle
+6. Final pipe delimiter
+
+The final pipe is part of the required entry format.
+
+---
+
+## Generalized Format
+
+
+<modId>|<0-or-1>|<0-or-1>|[,<modId>|<0-or-1>|<0-or-1>|...]
+
+
+Default serialized format:
+
+
+<modId>|1|1|[,<modId>|1|1|...]
+
+
+---
+
+## Valid Examples
+
+
+1380750|1|1|
+
+
+
+1380750|1|1|,975527|1|1|
+
+
+
+1380750|1|0|,975527|0|1|
+
+
+---
+
+## Invalid Examples
+
+Missing permission fields:
+
+
+1380750
+
+
+Missing final pipe:
+
+
+1380750|1|1
+
+
+Missing comma separator:
+
+
+1380750|1|1|975527|1|1|
+
+
+Invalid binary value:
+
+
+1380750|2|1|
+
+
+Unexpected spaces:
+
+
+1380750|1|1|, 975527|1|1|
+
+
+---
+
+## Recommended Validation Rules
+
+The Studio should verify that:
+
+* Every entry contains a numeric mod ID.
+* Every entry contains exactly two permission values.
+* Each permission value is either `0` or `1`.
+* Each entry ends with a pipe delimiter.
+* Entries are separated by commas.
+* No duplicate mod IDs exist.
+* No comma is added after the final entry.
+* No spaces or line breaks are inserted unless parser support is confirmed.
+* New entries default to `|1|1|`.
+
+---
+
+## Recommended Studio Representation
+
+The Studio should expose each permission as a clearly labeled toggle:
+
+
+Custom Cosmetic Mod
+├── Mod ID: 1380750
+├── Enable Dynamic Download: On
+└── Allow Non-Data-Only Blueprints: On
+
+
+Default state:
+
+
+Enable Dynamic Download: On
+Allow Non-Data-Only Blueprints: On
+
+
+Serialized output:
+
+
+1380750|1|1|
+
+
+The application should generate the pipe-delimited format automatically rather than requiring administrators to enter it manually.

@@ -1,3 +1,102 @@
 # DinoDepot Studio
 
-Desktop project management, collaboration, backup, and publishing studio for DinoDepot.
+Desktop admin studio for managing Dino Depot server configuration for ASA
+clusters (first project: GG Fizz). Structured editors, validation, simulation,
+and independent GitHub RAW publishing for three output families:
+
+| Output | Format | Section |
+| --- | --- | --- |
+| Passive production | strict JSON `{version: 2, production: []}` | Production Rules |
+| Creature type remaps | JSON `{dinoMappings: []}` | Creature Remaps |
+| Custom Cosmetic Mod list | pipe-delimited `modId\|1\|1\|,…` | CurseForge |
+
+Built with **Tauri 2 + React + TypeScript** (Vite, Tailwind 4, Zustand, zod).
+
+## Running
+
+```sh
+npm install
+npm run tauri dev      # desktop app (full functionality)
+npm run dev            # browser-only UI preview (mock backend, no publishing/scraping)
+npm run tauri build    # production installer
+npx vitest run         # unit tests (serializers, validation, simulator)
+```
+
+Requires: Node 18+, Rust toolchain, Google Chrome (for the CurseForge scraper).
+
+## First-time setup
+
+1. Create a project (Home screen) — pick an empty folder, e.g.
+   `Documents\DinoDepot Studio\GG Fizz`.
+2. **Settings** → set the GitHub repository owner/repo/branch and the three
+   output paths, and store a fine-grained personal access token
+   (Contents: Read and write). The token lives in Windows Credential Manager,
+   never in project files.
+3. Import your live files:
+   - Production Rules → *Import live file…* (passive production JSON)
+   - Creature Remaps → *Import live file…* (remap JSON)
+   - CurseForge → Collector tab → *Import CCM file…* (pipe-delimited list)
+   Unknown blueprint paths are auto-added to an "Imported / unsorted" content
+   source so pickers and validation can see them.
+
+## Sections
+
+- **Overview** — project health: validation status, unpublished changes,
+  watcher alerts, quick navigation.
+- **Production Rules** — visual editor for creature production (cycles, items,
+  alternates, consumed items, caps) with live strict-JSON preview and
+  validation. Never hand-write the published JSON.
+- **Simulator** — expected-value output estimates per item/creature/cycle over
+  a chosen time window, with cap behavior and balance warnings. Thresholds are
+  configurable in Settings.
+- **Content Sources** — the catalog of creatures/items the pickers use.
+  Bundled official ASA data (538 creatures / 1,628 items from ark.wiki.gg;
+  refresh with `node scripts/build-official-catalog.mjs`) plus your own mod
+  sources with bulk paste import. Mark a source *disabled* or *being removed*
+  to get warnings wherever its content is referenced.
+- **Creature Remaps** — remap creature types before removing creatures/mods;
+  validates destinations exist, flags chained remaps and removed-mod sources.
+- **CurseForge** — two automations (both need the desktop app + Chrome):
+  - *Custom Cosmetics Collector*: sweeps the ASA custom-cosmetics category,
+    then shows an added/updated/missing diff you review before applying.
+    New entries default to `|1|1|`.
+  - *Mod Update Watcher*: checks watched mod pages for new update dates and
+    flags mods as *needs review* until you mark them reviewed.
+- **Publish** — each output publishes independently: validation gate (errors
+  block, warnings need acknowledgement), remote comparison, commit message,
+  publish history, and copyable RAW URLs for the server INI. Also publishes
+  the **Cluster Viewer**: a public, Ark-themed lookup page for members
+  (creature → produces, item → produced-by, plus admin-written taming/utility
+  info from Content Sources → Info…). Publish the page once to `docs/index.html`
+  and enable GitHub Pages (deploy from branch, `/docs`); republish only the
+  viewer *data* when rules change.
+
+## Icons
+
+Icon resolution order: manual assignment (click any entry icon in Content
+Sources — emoji, image URL, or a file from the project's `images/` folder) →
+automatic `images/` match by name (e.g. `Achatina.png`) → category emoji.
+Drop your icon PNGs into `<project folder>/images`.
+
+## Project data
+
+Everything lives as JSON in the project folder you chose: `project.json`
+(settings), `*.draft.json` (editor drafts), `catalog.mods.json`,
+`watchlist.json`, `history.json`, and `backups/` (last 20 versions of each
+file, rotated automatically on every change). Drafts autosave ~1s after edits.
+
+## Repo layout
+
+```
+src/model/         TypeScript types + zod schemas for all data
+src/serializers/   internal model ⇄ published formats (round-trip tested)
+src/validation/    semantic validation rules (production, remaps)
+src/simulator/     pure expected-value math engine
+src/pages/         one folder/file per app section
+src/services/      IPC layer (mockable in browser), importers, publishing
+src-tauri/         Rust backend: project IO+backups, keyring secrets,
+                   GitHub Contents API, scraper process runner
+sidecar/           Node/Puppeteer CurseForge scraper (NDJSON events)
+scripts/           official-catalog builder (ark.wiki.gg)
+StructureExample/  original format reference documents
+```
