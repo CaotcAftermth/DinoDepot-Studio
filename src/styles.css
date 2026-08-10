@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink-950: #0b0e14;
+  --color-ink-900: #10141d;
+  --color-ink-850: #151a26;
+  --color-ink-800: #1a2130;
+  --color-ink-700: #242d40;
+  --color-ink-600: #33405a;
+  --color-ink-400: #64748b;
+  --color-ink-300: #94a3b8;
+  --color-ink-200: #cbd5e1;
+  --color-ink-100: #e2e8f0;
+  --color-accent-500: #22c55e;
+  --color-accent-400: #4ade80;
+  --color-accent-600: #16a34a;
+  --color-amber-flag: #f59e0b;
+  --color-danger: #ef4444;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-950 text-ink-100 antialiased;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-ink-700);
+  border-radius: 5px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-600);
+}
+
+/* Monospace areas (JSON previews, paths) */
+.mono {
+  font-family: "Cascadia Code", "Consolas", monospace;
+  /* Cascadia Code ligates by default, which rewrites literal config text:
+     `PreventRemapping<x>=False` would render its `>=` as `≥`. */
+  font-variant-ligatures: none;
+  font-feature-settings: "liga" 0, "clig" 0, "calt" 0;
+  font-size: 12.5px;
+}
