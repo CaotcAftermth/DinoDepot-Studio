@@ -11,8 +11,6 @@ node_modules
 dist
 dist-ssr
 *.local
-/exports/
-/.claude/
 
 # Editor directories and files
 .vscode/*
@@ -24,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Tauri updater signing keys. The private key is never committed — it lives in
+# a GitHub Actions secret and, offline, in whatever the maintainer keeps
+# passwords in. A leaked one lets somebody sign an update this app will install.
+*.key
+*.key.pub
+.tauri/
+src-tauri/target/

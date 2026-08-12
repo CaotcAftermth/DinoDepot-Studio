@@ -10,6 +10,7 @@ import { ipc, isTauri } from "../services/ipc";
 import { pickFolder } from "../services/dialogs";
 import { toast } from "./toast";
 import { Button, cx, Field, Input, Modal } from "./ui";
+import { useRemoteIcon } from "./useRemoteIcon";
 
 // convertFileSrc is a pure string transform (asset: URL); safe to import in
 // browser mock mode too — we just never render file icons there.
@@ -30,7 +31,7 @@ export { fallbackIcon };
 /** Absolute folder currently scanned for icon images. */
 export function useImagesDir(): string | null {
   const dir = useProjectStore((s) => s.dir);
-  const imagesDir = useProjectStore((s) => s.settings?.imagesDir);
+  const imagesDir = useProjectStore((s) => s.local?.imagesDir);
   if (!dir) return null;
   return resolveImagesDir(dir, imagesDir);
 }
@@ -76,6 +77,10 @@ export function useResolvedIcon(
   entityName?: string,
 ): { src: string | null; emoji: string } {
   const icons = useDraftsStore((s) => s.catalog.icons);
+  // A remote icon cannot be rendered from its URL — see `useRemoteIcon`. This
+  // resolves the assignment for *this* entry through the on-disk cache.
+  const assignedUrl = remoteUrlOf(icons[normalizeBpPath(bpPath)]);
+  const cachedRemote = useRemoteIcon(assignedUrl);
   const variantParents = useDraftsStore((s) => s.catalog.variantParents);
   const imagesDir = useImagesDir();
   const imageIndex = useImageIndex();
@@ -90,7 +95,11 @@ export function useResolvedIcon(
       const src = fileUrl(imagesDir, assigned.slice(5));
       return src ? { src, emoji } : null;
     }
-    if (/^https?:\/\//.test(assigned)) return { src: assigned, emoji };
+    if (/^https?:\/\//.test(assigned)) {
+      // Null until the cache has it; the emoji shows in the meantime rather
+      // than a broken image, and appears for good if it never arrives.
+      return { src: path === bpPath ? cachedRemote : null, emoji };
+    }
     return { src: null, emoji: assigned };
   }
 
@@ -233,9 +242,16 @@ export function useIconSrc(): (icon: string) => string | null {
   return (icon: string) => {
     if (!icon) return null;
     if (icon.startsWith("file:")) return fileUrl(imagesDir, icon.slice(5));
-    if (/^https?:\/\//.test(icon)) return icon;
+    // A remote URL is deliberately not returned: the page cannot load one, so
+    // handing it back would render a broken image. `IconValue` resolves these
+    // through the cache instead.
     return null;
   };
+}
+
+/** The https URL in an icon value, if it is one. */
+export function remoteUrlOf(icon: string | undefined): string | null {
+  return icon && /^https?:\/\//.test(icon) ? icon : null;
 }
 
 /** Renders an icon value, falling back to a plain glyph when it isn't an image. */

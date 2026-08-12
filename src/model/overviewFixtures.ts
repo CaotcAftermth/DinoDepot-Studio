@@ -3,7 +3,12 @@ import { emptyCosmeticsDraft, type CosmeticEntry, type CosmeticsDraft } from "./
 import { emptyHistory, type HistoryFile, type OutputFamily } from "./history";
 import { emptyPlayers, newPlayer, type PlayersFile } from "./players";
 import { emptyProductionDraft, type CreatureRule, type ProductionDraft } from "./production";
-import { defaultProjectSettings, type ProjectSettings } from "./project";
+import {
+  defaultProjectSettings,
+  defaultOutputPaths,
+  type GithubConfig,
+  type ProjectSettings,
+} from "./project";
 import { emptyRemapsDraft, type RemapEntry, type RemapsDraft } from "./remaps";
 import { emptyWatchlist, type WatchedMod, type Watchlist } from "./watchlist";
 import { buildOutputStates, type OutputBuildInput } from "./outputs";
@@ -24,10 +29,22 @@ export const HIDE =
   "/Game/PrimalEarth/CoreBlueprints/Resources/PrimalItemResource_Hide.PrimalItemResource_Hide";
 
 export function settings(over: Partial<ProjectSettings> = {}): ProjectSettings {
-  const base = defaultProjectSettings("Test Project", "Test Cluster");
   return {
-    ...base,
-    github: { ...base.github, owner: "ggfizz", repo: "cluster", branch: "main" },
+    ...defaultProjectSettings("Test Project", "Test Cluster", "fixture-project-id"),
+    ...over,
+  };
+}
+
+/**
+ * The repository a fixture publishes to. Separate from `settings` because the
+ * binding is machine-local now — the split these fixtures exist to exercise.
+ */
+export function githubConfig(over: Partial<GithubConfig> = {}): GithubConfig {
+  return {
+    owner: "ggfizz",
+    repo: "cluster",
+    branch: "main",
+    paths: defaultOutputPaths(),
     ...over,
   };
 }
@@ -202,6 +219,7 @@ function buildInput(fixture: ProjectFixture): OutputBuildInput {
     history: fixture.history ?? emptyHistory(),
     imageFiles: fixture.imageFiles ?? [],
     settings: fixture.settings === undefined ? settings() : fixture.settings,
+    github: fixture.github ?? githubConfig(),
     index: fixture.index ?? null,
   };
 }
@@ -215,7 +233,7 @@ export function overviewFor(fixture: ProjectFixture = {}): OverviewModel {
   const input = buildInput(fixture);
   const outputs = buildOutputStates(input);
   const github = githubReadiness({
-    github: input.settings?.github ?? null,
+    github: input.github,
     outputs,
     tokenPresent: fixture.tokenPresent === undefined ? true : fixture.tokenPresent,
     desktop: fixture.desktop ?? true,

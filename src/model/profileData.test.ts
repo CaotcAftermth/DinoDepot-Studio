@@ -12,6 +12,7 @@ import {
   mapFromPackage,
   packageForMap,
   profileFileNameFor,
+  readNetworkAddress,
   readProfileSummary,
 } from "./profileData";
 
@@ -35,6 +36,7 @@ const rewrite = (profile: ArkProfile) => parseArkProfile(serializeArkProfile(pro
 
 describe("readProfileSummary", () => {
   const summary = readProfileSummary(sample());
+  const profile = sample();
 
   it("reads the identity fields", () => {
     expect(summary.eosId).toBe("000211223344556677889900aabbccdd");
@@ -43,7 +45,7 @@ describe("readProfileSummary", () => {
     expect(summary.characterName).toBe("Test Dino");
     expect(summary.playerDataId).toBe("1234567890");
     expect(summary.tribeId).toBe("1122334455");
-    expect(summary.lastKnownIp).toBe("203.0.113.42");
+    expect(readNetworkAddress(profile)).toBe("203.0.113.42");
   });
 
   it("reads the map the save belongs to", () => {
@@ -235,7 +237,7 @@ describe("applyProfileEdits", () => {
 
   it("clears the recorded IP on request", () => {
     const { profile } = applyProfileEdits(sample(), { clearNetworkAddress: true });
-    expect(readProfileSummary(rewrite(profile)).lastKnownIp).toBe("");
+    expect(readNetworkAddress(rewrite(profile))).toBe("");
   });
 
   it("leaves everything it was not asked to change alone", () => {

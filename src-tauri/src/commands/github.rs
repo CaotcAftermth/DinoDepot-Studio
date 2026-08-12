@@ -2,22 +2,30 @@ use base64::Engine;
 use serde::{Deserialize, Serialize};
 
 const API: &str = "https://api.github.com";
-const TOKEN_KEY: &str = "github-token";
 
+/// The REST API version this code was written against.
+///
+/// GitHub changes behaviour behind this header, so pinning it means an API
+/// revision cannot quietly alter what a publish does. Sent on every request.
+const API_VERSION: &str = "2022-11-28";
+
+/// Nothing here should ever sit waiting on a socket forever — a Sync that
+/// hangs looks identical to a Sync that is working.
+const REQUEST_TIMEOUT_SECS: u64 = 30;
+
+/// The credential for the signed-in account.
+///
+/// Goes through `secrets` rather than reading the keyring directly so the
+/// per-account key layout, and the fallback for installs that predate it, live
+/// in exactly one place.
 fn token() -> Result<String, String> {
-    let entry = keyring::Entry::new("DinoDepotStudio", TOKEN_KEY).map_err(|e| e.to_string())?;
-    match entry.get_password() {
-        Ok(t) => Ok(t),
-        Err(keyring::Error::NoEntry) => {
-            Err("No GitHub token stored — add one in Settings".to_string())
-        }
-        Err(e) => Err(e.to_string()),
-    }
+    super::secrets::github_token("")
 }
 
 fn client() -> Result<reqwest::Client, String> {
     reqwest::Client::builder()
-        .user_agent("DinoDepotStudio/0.1")
+        .user_agent(concat!("DinoDepotStudio/", env!("CARGO_PKG_VERSION")))
+        .timeout(std::time::Duration::from_secs(REQUEST_TIMEOUT_SECS))
         .build()
         .map_err(|e| e.to_string())
 }
@@ -37,6 +45,7 @@ pub async fn github_test(owner: String, repo: String, branch: String) -> Result<
         .get(&url)
         .bearer_auth(&token)
         .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", API_VERSION)
         .send()
         .await
         .map_err(|e| e.to_string())?;
@@ -84,6 +93,7 @@ pub async fn github_get_file(
         .get(&url)
         .bearer_auth(&token)
         .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", API_VERSION)
         .send()
         .await
         .map_err(|e| e.to_string())?;
@@ -185,6 +195,7 @@ pub async fn github_get_file_b64(
         .get(&url)
         .bearer_auth(&token)
         .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", API_VERSION)
         .send()
         .await
         .map_err(|e| e.to_string())?;
@@ -231,6 +242,7 @@ async fn put_encoded(
         .put(&url)
         .bearer_auth(&token)
         .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", API_VERSION)
         .json(&body)
         .send()
         .await
@@ -274,6 +286,7 @@ async fn api_get(url: &str) -> Result<serde_json::Value, String> {
         .get(url)
         .bearer_auth(&token)
         .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", API_VERSION)
         .send()
         .await
         .map_err(|e| e.to_string())?;
@@ -293,6 +306,7 @@ async fn api_post(url: &str, body: serde_json::Value) -> Result<serde_json::Valu
         .post(url)
         .bearer_auth(&token)
         .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", API_VERSION)
         .json(&body)
         .send()
         .await
@@ -449,6 +463,7 @@ pub async fn github_sync_branch(
         .patch(&format!("{API}/repos/{owner}/{repo}/git/refs/heads/{branch}"))
         .bearer_auth(&token)
         .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", API_VERSION)
         .json(&serde_json::json!({ "sha": sha, "force": true }))
         .send()
         .await
