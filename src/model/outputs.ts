@@ -21,7 +21,7 @@ import type { ProductionDraft } from "./production";
 import type { RemapsDraft } from "./remaps";
 import type { CosmeticsDraft } from "./cosmetics";
 import type { PlayersFile } from "./players";
-import type { ProjectSettings } from "./project";
+import type { GithubConfig, ProjectSettings } from "./project";
 
 /**
  * The one place that decides what is publishable and what state it is in.
@@ -103,6 +103,13 @@ export interface OutputBuildInput {
   history: HistoryFile;
   imageFiles: string[];
   settings: ProjectSettings | null;
+  /**
+   * The repository the outputs are published to, assembled from the portable
+   * layout and this machine's binding. Passed in rather than read off
+   * `settings`: which repository a project publishes to is a fact about the
+   * machine, not about the project.
+   */
+  github: GithubConfig;
   index: CatalogIndex | null;
 }
 
@@ -158,7 +165,7 @@ function state(
     lastRecord: record,
     dirty: publishedHash ? publishedHash !== hash : hasContent,
     status: statusOf(applicable, errors, hasContent, publishedHash, hash),
-    path: input.settings?.github.paths[family] ?? "",
+    path: input.settings?.outputPaths[family] ?? "",
   };
 }
 
@@ -229,8 +236,8 @@ export function buildOutputStates(input: OutputBuildInput): OutputState[] {
       settings
         ? buildViewerHtml({
             clusterName,
-            dataUrl: rawUrl(settings.github, "viewerData"),
-            imagesUrl: rawImagesUrl(settings.github),
+            dataUrl: rawUrl(input.github, "viewerData"),
+            imagesUrl: rawImagesUrl(input.github),
           })
         : "",
       // The page is a shell that fetches the data file, so it is only worth

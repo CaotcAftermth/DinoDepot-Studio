@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { PublishSiteCard } from "./publish/PublishSiteCard";
 import { Link } from "react-router-dom";
 import {
   useDraftsStore,
   flushPendingSaves,
   recordActivity,
 } from "../stores/draftsStore";
-import { useProjectStore } from "../stores/projectStore";
+import { useGithubConfig, useProjectStore } from "../stores/projectStore";
 import type { GithubConfig } from "../model/project";
 import { useCatalogIndex } from "../stores/useCatalogIndex";
 import {
@@ -27,7 +28,6 @@ import {
   Badge,
   Button,
   Card,
-  cx,
   Field,
   Input,
   Modal,
@@ -73,12 +73,12 @@ async function publishFamily(
 export function PublishPage() {
   const drafts = useDraftsStore();
   const { settings } = useProjectStore();
+  const github = useGithubConfig();
   const index = useCatalogIndex();
   useEffect(drafts.hydrate, [drafts.hydrate]);
 
   const [ghStatus, setGhStatus] = useState<string | null>(null);
   const [preview, setPreview] = useState<OutputState | null>(null);
-  const [publishAllOpen, setPublishAllOpen] = useState(false);
 
   // The shared registry — Overview reads exactly the same states, so the two
   // pages cannot disagree about what is published.
@@ -93,9 +93,10 @@ export function PublishPage() {
         history: drafts.history,
         imageFiles: drafts.imageFiles,
         settings,
+        github,
         index,
       }),
-    [drafts.production, drafts.remaps, drafts.cosmetics, drafts.catalog, drafts.players, drafts.history, drafts.imageFiles, index, settings],
+    [drafts.production, drafts.remaps, drafts.cosmetics, drafts.catalog, drafts.players, drafts.history, drafts.imageFiles, index, settings, github],
   );
   /** Only what this project actually publishes gets a card. */
   const families = useMemo(
@@ -104,7 +105,6 @@ export function PublishPage() {
   );
 
   if (!settings) return null;
-  const github = settings.github;
   const configured = githubConfigComplete(github);
 
   async function handleTest() {
@@ -119,22 +119,15 @@ export function PublishPage() {
     <div>
       <PageHeader
         title="Publish"
-        subtitle="Each output publishes independently to its own GitHub RAW file"
+        subtitle="The public site, published as one change from a shared version"
         actions={
-          <>
-            <Button onClick={handleTest} disabled={!configured || !isTauri}>
-              Test GitHub connection
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => setPublishAllOpen(true)}
-              disabled={!configured || !isTauri}
-            >
-              Publish All…
-            </Button>
-          </>
+          <Button onClick={handleTest} disabled={!configured || !isTauri}>
+            Test GitHub connection
+          </Button>
         }
       />
+
+      <PublishSiteCard />
 
       {!configured && (
         <Card className="mb-4">
@@ -161,14 +154,6 @@ export function PublishPage() {
         ))}
       </div>
 
-      {publishAllOpen && (
-        <PublishAllModal
-          families={families}
-          github={github}
-          onClose={() => setPublishAllOpen(false)}
-        />
-      )}
-
       {preview && (
         <Modal
           title={`${OUTPUT_FAMILY_LABELS[preview.family]} — output preview`}
@@ -186,217 +171,15 @@ export function PublishPage() {
 
 // ---------------------------------------------------------------------------
 
-/**
- * Confirmation for publishing several outputs in one go.
+/*
+ * The "Publish All" modal is gone.
  *
- * Every category is listed with its state so the choice is made on the facts,
- * and each one is a checkbox — republishing the whole set when only the
- * production rules changed is noise in the repo history. Categories with
- * validation errors cannot be selected at all, matching the per-card rule.
+ * It published each output as its own commit, so a failure halfway through left
+ * a site that was half last week's — and there was no single moment at which
+ * the published site was known to correspond to one version of the project.
+ * `PublishSiteCard` replaces it with one atomic commit carrying the whole
+ * generated tree. The per-output cards below remain as status and preview.
  */
-function PublishAllModal({
-  families,
-  github,
-  onClose,
-}: {
-  families: OutputState[];
-  github: GithubConfig;
-  onClose: () => void;
-}) {
-  const { history, setHistory } = useDraftsStore();
-
-  const rows = useMemo(
-    () =>
-      families.map((state) => {
-        return {
-          state,
-          record: state.lastPublishedAt,
-          dirty: state.dirty,
-          errors: state.errors,
-          warnings: state.warnings,
-        };
-      }),
-    [families, history],
-  );
-
-  // Default to what actually needs publishing: everything valid and changed.
-  const [selected, setSelected] = useState<Set<OutputFamily>>(
-    () =>
-      new Set(
-        rows.filter((r) => r.errors === 0 && r.dirty).map((r) => r.state.family),
-      ),
-  );
-  const [publishing, setPublishing] = useState(false);
-  const [done, setDone] = useState<string[]>([]);
-
-  function toggle(family: OutputFamily) {
-    const next = new Set(selected);
-    if (next.has(family)) next.delete(family);
-    else next.add(family);
-    setSelected(next);
-  }
-
-  async function publishSelected() {
-    const chosen = rows.filter(
-      (r) => selected.has(r.state.family) && r.errors === 0,
-    );
-    if (chosen.length === 0) return;
-    setPublishing(true);
-    setDone([]);
-
-    await flushPendingSaves();
-    const records: PublishRecord[] = [];
-    const failures: string[] = [];
-    // Sequential, not parallel: each publish is a commit on the same branch,
-    // and concurrent commits race on the branch head.
-    for (const row of chosen) {
-      const label = OUTPUT_FAMILY_LABELS[row.state.family];
-      try {
-        records.push(
-          await publishFamily(
-            github,
-            row.state,
-            defaultCommitMessage(row.state.family),
-          ),
-        );
-        setDone((d) => [...d, `✓ ${label}`]);
-      } catch (e) {
-        failures.push(`${label}: ${e instanceof Error ? e.message : e}`);
-        setDone((d) => [...d, `✕ ${label}`]);
-      }
-    }
-
-    // One history write for the batch — the records are appended together.
-    if (records.length > 0) {
-      setHistory({ ...history, records: [...history.records, ...records] });
-      recordActivity({
-        kind: "publish",
-        title:
-          records.length === 1
-            ? `Published ${OUTPUT_FAMILY_LABELS[records[0].family]}`
-            : `Published ${records.length} outputs`,
-        detail: records.map((r) => OUTPUT_FAMILY_LABELS[r.family]).join(", "),
-      });
-    }
-    setPublishing(false);
-    if (failures.length === 0) {
-      toast.success(
-        `Published ${records.length} output${records.length === 1 ? "" : "s"}`,
-      );
-      onClose();
-    } else {
-      toast.error(
-        `${records.length} published, ${failures.length} failed — ${failures.join("; ")}`,
-      );
-    }
-  }
-
-  const selectable = rows.filter((r) => r.errors === 0);
-  const chosenCount = rows.filter(
-    (r) => selected.has(r.state.family) && r.errors === 0,
-  ).length;
-
-  return (
-    <Modal
-      title="Publish All"
-      onClose={onClose}
-      wide
-      footer={
-        <div className="flex items-center justify-between">
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              disabled={publishing}
-              onClick={() =>
-                setSelected(
-                  chosenCount === selectable.length
-                    ? new Set()
-                    : new Set(selectable.map((r) => r.state.family)),
-                )
-              }
-            >
-              {chosenCount === selectable.length ? "Select none" : "Select all"}
-            </Button>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={onClose} disabled={publishing}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              disabled={publishing || chosenCount === 0}
-              onClick={publishSelected}
-            >
-              {publishing
-                ? `Publishing… (${done.length}/${chosenCount})`
-                : `Publish ${chosenCount} output${chosenCount === 1 ? "" : "s"}`}
-            </Button>
-          </div>
-        </div>
-      }
-    >
-      <p className="text-xs text-ink-400 mb-3">
-        Each selected output is published to its own file with its default
-        commit message, one commit at a time. Anything with validation errors is
-        left out.
-      </p>
-      <div className="flex flex-col gap-1.5">
-        {rows.map((row) => {
-          const family = row.state.family;
-          const blocked = row.errors > 0;
-          return (
-            <label
-              key={family}
-              className={cx(
-                "flex items-center gap-3 px-3 py-2 rounded-lg border",
-                blocked
-                  ? "border-danger/30 bg-danger/5 cursor-not-allowed"
-                  : "border-ink-700 bg-ink-850 cursor-pointer hover:border-ink-600",
-              )}
-            >
-              <input
-                type="checkbox"
-                disabled={blocked || publishing}
-                checked={!blocked && selected.has(family)}
-                onChange={() => toggle(family)}
-                className="shrink-0 accent-(--color-accent-500) w-4 h-4"
-              />
-              <span className="min-w-0 flex-1">
-                <span className="text-sm text-ink-100">
-                  {OUTPUT_FAMILY_LABELS[family]}
-                </span>
-                <span className="block mono text-xs text-ink-500 truncate">
-                  {github.paths[family]}
-                </span>
-              </span>
-              <span className="flex items-center gap-1.5 shrink-0">
-                {row.errors > 0 ? (
-                  <Badge tone="error">{row.errors} errors</Badge>
-                ) : row.warnings > 0 ? (
-                  <Badge tone="warn">{row.warnings} warnings</Badge>
-                ) : (
-                  <Badge tone="ok">Valid</Badge>
-                )}
-                {row.dirty ? (
-                  <Badge tone="warn">Unpublished changes</Badge>
-                ) : row.record ? (
-                  <Badge tone="ok">Up to date</Badge>
-                ) : null}
-              </span>
-            </label>
-          );
-        })}
-      </div>
-      {done.length > 0 && (
-        <div className="mt-3 flex flex-col gap-0.5 text-xs text-ink-300">
-          {done.map((line, i) => (
-            <div key={i}>{line}</div>
-          ))}
-        </div>
-      )}
-    </Modal>
-  );
-}
 
 // ---------------------------------------------------------------------------
 
@@ -410,8 +193,7 @@ function FamilyCard({
   onPreview: () => void;
 }) {
   const { history, setHistory } = useDraftsStore();
-  const settings = useProjectStore((s) => s.settings)!;
-  const github = settings.github;
+  const github = useGithubConfig();
 
   const { dirty, errors, warnings, lastRecord: record } = state;
 

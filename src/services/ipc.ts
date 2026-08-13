@@ -29,6 +29,20 @@ const MOCK_KEY = "ddstudio.mockfs";
  */
 const MOCK_PROFILE_PREFIX = "profiles/";
 
+/** Mirrors the real backend's snapshot folder, and is excluded the same way. */
+const MOCK_SNAPSHOT_PREFIX = "backups/snapshots/";
+
+/**
+ * Machine-local project records. In the desktop app these live in the OS
+ * application-data folder; here `localStorage` stands in for it, which keeps
+ * them out of the mock project filesystem exactly as the real split does.
+ */
+const LOCAL_STATE_PREFIX = "ddstudio.localState.";
+
+function localStateKey(projectId: string): string {
+  return `${LOCAL_STATE_PREFIX}${projectId}`;
+}
+
 /** Mirrors `profile_file_name` in project_io.rs. */
 function mockProfileName(playerId: string): string {
   const safe = (playerId ?? "")
@@ -110,6 +124,76 @@ async function mockInvoke<T>(cmd: string, args: Args): Promise<T> {
       saveMockFs(fs);
       return undefined as T;
     }
+    case "quarantine_project_file": {
+      const name = args.fileName as string;
+      const damaged = fs[dir]?.[name];
+      if (damaged === undefined) throw new Error(`${name} is not there to set aside`);
+      fs[dir][`recovery/${name}`] = damaged;
+      delete fs[dir][name];
+      saveMockFs(fs);
+      return `recovery/${name}` as T;
+    }
+    case "snapshot_project": {
+      const label = (args.label as string) || "snapshot";
+      const path = `${MOCK_SNAPSHOT_PREFIX}${label}-${Date.now()}`;
+      fs[dir] = fs[dir] ?? {};
+      const entries = Object.entries(fs[dir]).filter(
+        ([name]) => !name.startsWith(MOCK_SNAPSHOT_PREFIX),
+      );
+      for (const [name, content] of entries) fs[dir][`${path}/${name}`] = content;
+      saveMockFs(fs);
+      return { path, fileCount: entries.length } as T;
+    }
+    case "commit_migrated_project": {
+      const incoming = args.files as Record<string, string>;
+      fs[dir] = fs[dir] ?? {};
+      const path = `${MOCK_SNAPSHOT_PREFIX}pre-migration-${Date.now()}`;
+      for (const [name, content] of Object.entries(fs[dir])) {
+        if (!name.startsWith(MOCK_SNAPSHOT_PREFIX)) fs[dir][`${path}/${name}`] = content;
+      }
+      Object.assign(fs[dir], incoming);
+      saveMockFs(fs);
+      return { path, fileCount: Object.keys(incoming).length } as T;
+    }
+    // The lock is advisory and single-machine; a browser tab has nothing to
+    // contend with, so it always reports the project as free.
+    case "project_lock_status":
+    case "project_lock_acquire":
+    case "project_lock_refresh":
+      return {
+        held: false,
+        owned: true,
+        stale: false,
+        machine: "",
+        instanceId: "mock",
+        heartbeatAt: Date.now(),
+      } as T;
+    case "project_lock_release":
+      return undefined as T;
+    case "local_state_get":
+      return (localStorage.getItem(localStateKey(args.projectId as string)) ??
+        null) as T;
+    case "local_state_set": {
+      localStorage.setItem(
+        localStateKey(args.projectId as string),
+        args.content as string,
+      );
+      return undefined as T;
+    }
+    case "local_state_delete": {
+      localStorage.removeItem(localStateKey(args.projectId as string));
+      return undefined as T;
+    }
+    case "local_state_list": {
+      const out: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key?.startsWith(LOCAL_STATE_PREFIX)) continue;
+        const value = localStorage.getItem(key);
+        if (value) out.push(value);
+      }
+      return out as T;
+    }
     case "read_text_file":
       throw new Error("read_text_file is not available in browser mock mode");
     case "save_text_file":
@@ -161,6 +245,61 @@ async function mockInvoke<T>(cmd: string, args: Args): Promise<T> {
     case "read_installed_mods":
       throw new Error(
         "Reading installed mods is only available in the desktop app",
+      );
+    // Connecting an account reaches GitHub with a real credential, and the
+    // credential lives in Windows Credential Manager — neither exists here.
+    // Refused with the code the real one would use, so the UI shows the same
+    // message rather than a mock-backend string.
+    case "github_connect_account":
+    case "github_account_status":
+    case "github_repo_by_slug":
+    case "github_repo_by_id":
+    case "github_branch_exists":
+      throw new Error(
+        JSON.stringify({
+          code: "auth.missing",
+          message: "Connecting to GitHub is only available in the desktop app.",
+          detail: `${cmd} is not available in browser mock mode`,
+        }),
+      );
+    case "github_disconnect_account":
+      return undefined as T;
+    // A browser has no repository, so a project here has no history. Empty is
+    // the truthful answer, and it reads as "nothing shared yet" rather than as
+    // a failure.
+    case "git_log":
+      return [] as T;
+    case "git_state":
+      return { head: "", remote: "", dirty: false, branch: "main" } as T;
+    case "git_capabilities":
+      return { version: "0.0.0", https: false, ssh: false, threads: false } as T;
+    case "delivery_dir":
+      return `mock-delivery/${args.projectId}` as T;
+    case "icon_cache_get":
+      return { path: "", cached: false, etag: "" } as T;
+    case "icon_cache_stats":
+      return { files: 0, bytes: 0, limit: 0 } as T;
+    case "icon_cache_clear":
+      return 0 as T;
+    // Everything that needs a real repository or a credential.
+    case "git_fetch":
+    case "git_push":
+    case "git_commit":
+    case "git_fast_forward":
+    case "git_replace_dir":
+    case "git_restore_files":
+    case "git_read_tree":
+    case "git_set_remote":
+    case "git_mark_recovery":
+    case "git_clear_recovery":
+    case "icon_fetch":
+    case "icon_cache_put":
+      throw new Error(
+        JSON.stringify({
+          code: "unknown",
+          message: "This is only available in the desktop app.",
+          detail: `${cmd} is not available in browser mock mode`,
+        }),
       );
     case "secret_set":
       secrets().set(args.key as string, args.value as string);

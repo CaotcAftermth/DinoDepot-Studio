@@ -180,8 +180,6 @@ export const ProfileSummarySchema = z.object({
   statPoints: z.array(ProfileStatPointsSchema).default([]),
   /** Total allocated points — should equal `extraLevel` at the default rate. */
   spentPoints: z.number().default(0),
-  /** Last IP the account connected from. Personal data; shown, never published. */
-  lastKnownIp: z.string().default(""),
   /** Persistent buffs still applied at logout, by blueprint name. */
   activeBuffs: z.array(z.string()).default([]),
   /** Save format version — 5, or 7 for the Unreal 5.5 maps. */
@@ -292,6 +290,22 @@ function activeBuffsOf(profile: ArkProfile): string[] {
   return [...new Set(names)];
 }
 
+/**
+ * The IP the account last connected from.
+ *
+ * Read on demand and never stored. It used to sit in `ProfileSummary`, which is
+ * kept alongside the roster — so it travelled into `players.json` and, once the
+ * roster started synchronizing, into a repository's permanent history. It is
+ * personal data with no operational use beyond the moment an administrator is
+ * looking at an imported file, so that is the only place it now exists.
+ */
+export function readNetworkAddress(profile: ArkProfile): string {
+  return (
+    readString(findPath(playerObject(profile).properties, [...DATA, "SavedNetworkAddress"])) ??
+    ""
+  );
+}
+
 export function readProfileSummary(profile: ArkProfile): ProfileSummary {
   const object = playerObject(profile);
   const props = object.properties;
@@ -333,7 +347,6 @@ export function readProfileSummary(profile: ArkProfile): ProfileSummary {
     deaths: readFloat(findPath(props, [...DATA, "NumOfDeaths"])) ?? 0,
     statPoints,
     spentPoints: statPoints.reduce((sum, s) => sum + s.points, 0),
-    lastKnownIp: readString(findPath(props, [...DATA, "SavedNetworkAddress"])) ?? "",
     activeBuffs: activeBuffsOf(profile),
     saveVersion: profile.saveVersion,
     skillTrees: skillTreesOf(profile),

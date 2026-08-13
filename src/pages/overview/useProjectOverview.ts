@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
 import { useDraftsStore } from "../../stores/draftsStore";
-import { useProjectStore } from "../../stores/projectStore";
+import { useGithubConfig, useProjectStore } from "../../stores/projectStore";
 import { useCatalogIndex } from "../../stores/useCatalogIndex";
 import { useGithubStatus } from "../../services/githubStatus";
 import { isTauri } from "../../services/ipc";
@@ -38,6 +38,7 @@ export function useProjectOverview(): ProjectOverview {
   const imageFiles = useDraftsStore((s) => s.imageFiles);
   const activityFile = useDraftsStore((s) => s.activity);
   const settings = useProjectStore((s) => s.settings);
+  const githubConfig = useGithubConfig();
   const index = useCatalogIndex();
 
   const tokenPresent = useGithubStatus((s) => s.tokenPresent);
@@ -61,18 +62,27 @@ export function useProjectOverview(): ProjectOverview {
         history,
         imageFiles,
         settings,
+        github: githubConfig,
         index,
       }),
-    [production, remaps, cosmetics, catalog, players, history, imageFiles, settings, index],
+    [
+      production,
+      remaps,
+      cosmetics,
+      catalog,
+      players,
+      history,
+      imageFiles,
+      settings,
+      githubConfig,
+      index,
+    ],
   );
 
   const github = useMemo(() => {
-    const config = settings?.github ?? null;
-    const target = config
-      ? `${config.owner}/${config.repo}@${config.branch}`
-      : "";
+    const target = `${githubConfig.owner}/${githubConfig.repo}@${githubConfig.branch}`;
     return githubReadiness({
-      github: config,
+      github: githubConfig,
       outputs,
       tokenPresent,
       desktop: isTauri,
@@ -80,7 +90,7 @@ export function useProjectOverview(): ProjectOverview {
       // this one.
       connection: connectionTarget === target ? connectionState : "unknown",
     });
-  }, [settings, outputs, tokenPresent, connectionState, connectionTarget]);
+  }, [githubConfig, outputs, tokenPresent, connectionState, connectionTarget]);
 
   const model = useMemo(
     () =>

@@ -21,6 +21,7 @@ import {
   watched,
   watchlist,
   players,
+  githubConfig,
 } from "./overviewFixtures";
 
 /** A project with a rule and a remap, everything published and in sync. */
@@ -99,7 +100,7 @@ describe("project health", () => {
 describe("publishing readiness gates health", () => {
   it("does not block an empty project for having no GitHub destination", () => {
     // Nothing to publish means nowhere to publish it to — not a red banner.
-    const model = overviewFor({ settings: settings({ github: { owner: "", repo: "", branch: "", paths: settings().github.paths } }) });
+    const model = overviewFor({ github: githubConfig({ owner: "", repo: "", branch: "" }) });
     expect(model.health).toBe("healthy");
     expect(item(model, "github-not-ready")).toBeUndefined();
   });
@@ -107,7 +108,7 @@ describe("publishing readiness gates health", () => {
   it("blocks a project that has content but no destination", () => {
     const model = overviewFor({
       production: production(rule()),
-      settings: settings({ github: { owner: "", repo: "", branch: "", paths: settings().github.paths } }),
+      github: githubConfig({ owner: "", repo: "", branch: "" }),
     });
     expect(model.health).toBe("blocked");
     expect(item(model, "github-not-ready")?.label).toBe(
@@ -136,7 +137,7 @@ describe("publishing readiness gates health", () => {
 
   it("does not claim a blocker while the token check is still running", () => {
     const readiness = githubReadiness({
-      github: settings().github,
+      github: githubConfig(),
       outputs: outputsFor(),
       tokenPresent: null,
       desktop: true,
@@ -148,7 +149,7 @@ describe("publishing readiness gates health", () => {
 
   it("separates configured, ready and verified", () => {
     const outputs = outputsFor();
-    const base = { github: settings().github, outputs, desktop: true };
+    const base = { github: githubConfig(), outputs, desktop: true };
     const configuredOnly = githubReadiness({
       ...base,
       tokenPresent: false,
@@ -364,7 +365,7 @@ describe("next actions", () => {
     // Offering a chore beside a "Project healthy" banner reads as a
     // contradiction, and there is nothing to send to a repository yet.
     const model = overviewFor({
-      settings: settings({ github: { owner: "", repo: "", branch: "", paths: settings().github.paths } }),
+      github: githubConfig({ owner: "", repo: "", branch: "" }),
     });
     expect(model.health).toBe("healthy");
     expect(model.actions.map((a) => a.id)).not.toContain("configure-github");
@@ -374,7 +375,7 @@ describe("next actions", () => {
   it("offers GitHub configuration once there is something to publish", () => {
     const model = overviewFor({
       production: production(rule()),
-      settings: settings({ github: { owner: "", repo: "", branch: "", paths: settings().github.paths } }),
+      github: githubConfig({ owner: "", repo: "", branch: "" }),
     });
     expect(model.actions.map((a) => a.id)).toContain("configure-github");
   });

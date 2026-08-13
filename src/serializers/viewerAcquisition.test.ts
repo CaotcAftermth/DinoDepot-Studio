@@ -238,7 +238,7 @@ describe("viewer acquisition", () => {
 
 describe("drops and maps", () => {
   const settingsWith = (disabled: string[]): ProjectSettings => ({
-    ...defaultProjectSettings("p", "c"),
+    ...defaultProjectSettings("p", "c", "test-project"),
     maps: defaultMaps().map((m) => ({
       ...m,
       enabled: !disabled.includes(m.name),

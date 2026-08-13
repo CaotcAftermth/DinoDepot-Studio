@@ -1,11 +1,25 @@
 import { z } from "zod";
 import { PlayerDataSettingsSchema } from "./playerData";
 import { ModpackRegistrySchema, defaultModpackRegistry } from "./modpack";
+import {
+  CURRENT_PROJECT_SCHEMA,
+  MINIMUM_STUDIO_VERSION,
+  PROJECT_FORMAT,
+  ProjectCapabilitiesSchema,
+} from "./manifest";
+import type { LocalProjectState } from "./localState";
 
-export const GithubOutputPathsSchema = z.object({
-  production: z.string(),
-  remaps: z.string(),
-  cosmetics: z.string(),
+/**
+ * Repository-relative locations of the files a project produces.
+ *
+ * Portable: this is the shape of the repository, which every administrator
+ * shares. The repository it is a shape *of* is machine-local — see
+ * {@link LocalProjectState}.
+ */
+export const OutputPathsSchema = z.object({
+  production: z.string().default("dinodepot/passive-production.json"),
+  remaps: z.string().default("dinodepot/creature-remaps.json"),
+  cosmetics: z.string().default("dinodepot/custom-cosmetics.txt"),
   /** Data file consumed by the public cluster viewer page. */
   viewerData: z.string().default("dinodepot/viewer-data.json"),
   /** The viewer page itself — serve via GitHub Pages (e.g. /docs folder). */
@@ -19,12 +33,46 @@ export const GithubOutputPathsSchema = z.object({
   profiles: z.string().default("dinodepot/profiles"),
 });
 
-export const GithubConfigSchema = z.object({
-  owner: z.string(),
-  repo: z.string(),
-  branch: z.string(),
-  paths: GithubOutputPathsSchema,
-});
+export type OutputPaths = z.infer<typeof OutputPathsSchema>;
+
+/**
+ * A repository plus the layout inside it — what the publishing code actually
+ * needs to build a URL or a path.
+ *
+ * Assembled at runtime by {@link effectiveGithubConfig} from the portable
+ * layout and this machine's binding, rather than stored anywhere. Storing it
+ * whole is what mixed one administrator's repository into everybody's project
+ * file in schema 1.
+ */
+export interface GithubConfig {
+  owner: string;
+  repo: string;
+  branch: string;
+  paths: OutputPaths;
+}
+
+/**
+ * The repository configuration for the open project on this machine.
+ *
+ * Falls back to blank owner/repo when nothing is bound yet, which every caller
+ * already handles — `githubConfigComplete` has always been the gate.
+ */
+export function effectiveGithubConfig(
+  settings: Pick<ProjectSettings, "outputPaths"> | null,
+  local: Pick<LocalProjectState, "source"> | null,
+): GithubConfig {
+  const source = local?.source ?? null;
+  return {
+    owner: source?.owner ?? "",
+    repo: source?.name ?? "",
+    branch: source?.branch || "main",
+    paths: settings?.outputPaths ?? defaultOutputPaths(),
+  };
+}
+
+export function defaultOutputPaths(): OutputPaths {
+  return OutputPathsSchema.parse({});
+}
 
 export const ProjectDefaultsSchema = z.object({
   intervalSeconds: z.number().positive(),
@@ -77,26 +125,26 @@ export const DiscordFormatSchema = z.object({
 });
 export type DiscordFormat = z.infer<typeof DiscordFormatSchema>;
 
+/**
+ * The root project manifest — `project.json`, and the only manifest there is.
+ *
+ * Everything in here is *portable*: it is the same on every administrator's
+ * machine, and it is what synchronizes. Local paths and repository bindings
+ * used to live here too, which meant two administrators overwrote each other's
+ * machine setup on every save; those now live in {@link LocalProjectState}.
+ */
 export const ProjectSettingsSchema = z.object({
-  schemaVersion: z.literal(1),
+  format: z.literal(PROJECT_FORMAT).default(PROJECT_FORMAT),
+  /** Immutable identity. Never derived from a name, a path or a repository. */
+  projectId: z.string().min(1),
+  schemaVersion: z.literal(CURRENT_PROJECT_SCHEMA),
+  minimumStudioVersion: z.string().default(MINIMUM_STUDIO_VERSION),
+  createdAt: z.string().default(""),
+  capabilities: ProjectCapabilitiesSchema,
   name: z.string().min(1),
   cluster: z.string(),
-  /**
-   * Folder scanned (recursively) for creature/item icon images.
-   * Empty = `<project folder>/images`. Subfolders `creatures/` and `items/`
-   * scope matching by kind; flat files match either.
-   */
-  imagesDir: z.string().default(""),
-  /**
-   * The folder ASA installs mods into, used by Mod Discovery.
-   *
-   * Stored resolved (the `Mods/<gameId>` folder itself) rather than as the game
-   * root, so discovery never has to re-derive it. Empty = not set up yet. Can
-   * point at a dedicated server install as readily as a client one — mods are
-   * downloaded server-side too, and the files discovery reads are identical.
-   */
-  modsDir: z.string().default(""),
-  github: GithubConfigSchema,
+  /** Repository-relative locations of the generated files. */
+  outputPaths: OutputPathsSchema.default(() => OutputPathsSchema.parse({})),
   defaults: ProjectDefaultsSchema,
   simulator: SimulatorDefaultsSchema,
   /** Maps offered when assigning an entry's map of origin. */
@@ -122,7 +170,6 @@ export const ProjectSettingsSchema = z.object({
   modpackRegistry: ModpackRegistrySchema.default(() => defaultModpackRegistry()),
 });
 
-export type GithubConfig = z.infer<typeof GithubConfigSchema>;
 export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;
 
 /**
@@ -151,27 +198,22 @@ export function defaultMaps(): MapEntry[] {
   ];
 }
 
-export function defaultProjectSettings(name: string, cluster: string): ProjectSettings {
+export function defaultProjectSettings(
+  name: string,
+  cluster: string,
+  projectId: string,
+  now = new Date(),
+): ProjectSettings {
   return {
-    schemaVersion: 1,
+    format: PROJECT_FORMAT,
+    projectId,
+    schemaVersion: CURRENT_PROJECT_SCHEMA,
+    minimumStudioVersion: MINIMUM_STUDIO_VERSION,
+    createdAt: now.toISOString(),
+    capabilities: {},
     name,
     cluster,
-    imagesDir: "",
-    modsDir: "",
-    github: {
-      owner: "",
-      repo: "",
-      branch: "main",
-      paths: {
-        production: "dinodepot/passive-production.json",
-        remaps: "dinodepot/creature-remaps.json",
-        cosmetics: "dinodepot/custom-cosmetics.txt",
-        viewerData: "dinodepot/viewer-data.json",
-        viewerPage: "docs/index.html",
-        players: "dinodepot/players.json",
-        profiles: "dinodepot/profiles",
-      },
-    },
+    outputPaths: defaultOutputPaths(),
     defaults: {
       intervalSeconds: 300,
       chanceToProduce: 1,

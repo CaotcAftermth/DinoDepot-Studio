@@ -2,9 +2,11 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { useBlocker } from "react-router-dom";
 import { useProjectStore } from "../stores/projectStore";
 import { useDraftsStore } from "../stores/draftsStore";
+import { SecretInput } from "../components/SecretInput";
+import { GitHubSetup } from "./settings/GitHubSetup";
+import type { LocalProjectState } from "../model/localState";
 import { ipc } from "../services/ipc";
 import { pickFolder } from "../services/dialogs";
-import { openExternal } from "../services/openExternal";
 import {
   Badge,
   Button,
@@ -35,32 +37,34 @@ import {
   MAP_EMOJI_PALETTE,
 } from "../components/EntityIcon";
 
-const TOKEN_KEY = "github-token";
-
-/** Where the app itself lives — releases, modpacks, issues. */
-const STUDIO_REPO_URL =
-  "https://github.com/CaotcAftermth/DinoDepot_Production_Studio";
-
 export function SettingsPage() {
-  const { settings, saveSettings } = useProjectStore();
+  const { settings, saveSettings, local, updateLocal } = useProjectStore();
   const [draft, setDraft] = useState<ProjectSettings | null>(settings);
-  const [tokenInput, setTokenInput] = useState("");
-  const [hasToken, setHasToken] = useState<boolean | null>(null);
+  /**
+   * The machine-local half of Settings, edited alongside the shared half.
+   *
+   * Two drafts rather than one, because they go to two different places: the
+   * project file synchronizes to every administrator, and this record never
+   * leaves this computer. Editing both through one object is exactly how the
+   * repository name and somebody's drive letters ended up in schema 1.
+   */
+  const [localDraft, setLocalDraft] = useState<LocalProjectState | null>(local);
 
   useEffect(() => {
     setDraft(settings);
   }, [settings]);
 
   useEffect(() => {
-    ipc<boolean>("secret_has", { key: TOKEN_KEY })
-      .then(setHasToken)
-      .catch(() => setHasToken(null));
-  }, []);
+    setLocalDraft(local);
+  }, [local]);
 
   const dirty =
-    draft !== null &&
-    settings !== null &&
-    JSON.stringify(draft) !== JSON.stringify(settings);
+    (draft !== null &&
+      settings !== null &&
+      JSON.stringify(draft) !== JSON.stringify(settings)) ||
+    (localDraft !== null &&
+      local !== null &&
+      JSON.stringify(localDraft) !== JSON.stringify(local));
 
   useUnsavedChangesPrompt(dirty, handleSave);
 
@@ -69,10 +73,14 @@ export function SettingsPage() {
   const update = (patch: Partial<ProjectSettings>) =>
     setDraft({ ...draft, ...patch });
 
+  const updateLocalDraft = (patch: Partial<LocalProjectState>) =>
+    setLocalDraft((current) => (current ? { ...current, ...patch } : current));
+
   async function handleSave() {
     if (!draft) return false;
     try {
       await saveSettings(draft);
+      if (localDraft) await updateLocal(localDraft);
       // Rescan icons in case the images folder changed.
       void useDraftsStore.getState().refreshImages();
       toast.success("Settings saved");
@@ -85,43 +93,14 @@ export function SettingsPage() {
     }
   }
 
-  async function handleSaveToken() {
-    if (!tokenInput.trim()) return;
-    try {
-      await ipc("secret_set", { key: TOKEN_KEY, value: tokenInput.trim() });
-      setTokenInput("");
-      setHasToken(true);
-      toast.success("GitHub token stored in Windows Credential Manager");
-    } catch (e) {
-      toast.error(
-        `Could not store token: ${e instanceof Error ? e.message : e}`,
-      );
-    }
-  }
-
-  async function handleDeleteToken() {
-    try {
-      await ipc("secret_delete", { key: TOKEN_KEY });
-      setHasToken(false);
-      toast.info("GitHub token removed");
-    } catch (e) {
-      toast.error(
-        `Could not remove token: ${e instanceof Error ? e.message : e}`,
-      );
-    }
-  }
-
   return (
     <SettingsContent
       draft={draft}
       update={update}
+      imagesDir={localDraft?.imagesDir ?? ""}
+      setImagesDir={(imagesDir) => updateLocalDraft({ imagesDir })}
       handleSave={handleSave}
       dirty={dirty}
-      tokenInput={tokenInput}
-      setTokenInput={setTokenInput}
-      hasToken={hasToken}
-      handleSaveToken={handleSaveToken}
-      handleDeleteToken={handleDeleteToken}
     />
   );
 }
@@ -172,64 +151,6 @@ function useUnsavedChangesPrompt(dirty: boolean, save: () => Promise<boolean>) {
  * never read back into the app, so the field stands in a row of asterisks to
  * show at a glance that something *is* saved — "Replace" clears it for typing.
  */
-function SecretInput({
-  stored,
-  value,
-  onChange,
-  placeholder,
-}: {
-  stored: boolean;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder: string;
-}) {
-  const [replacing, setReplacing] = useState(false);
-
-  if (stored && !replacing) {
-    return (
-      <div className="flex gap-2 flex-1">
-        <Input
-          readOnly
-          value={"*".repeat(28)}
-          className="mono tracking-widest text-ink-400"
-          title="A value is stored in Windows Credential Manager"
-        />
-        <Button
-          className="shrink-0"
-          onClick={() => {
-            onChange("");
-            setReplacing(true);
-          }}
-        >
-          Replace
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex gap-2 flex-1">
-      <Input
-        type="password"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        autoFocus={replacing}
-      />
-      {stored && (
-        <Button
-          className="shrink-0"
-          onClick={() => {
-            onChange("");
-            setReplacing(false);
-          }}
-        >
-          Cancel
-        </Button>
-      )}
-    </div>
-  );
-}
 
 function DiscordWebhookCard() {
   const [input, setInput] = useState("");
@@ -308,39 +229,18 @@ function DiscordWebhookCard() {
 function SettingsContent({
   draft,
   update,
+  imagesDir,
+  setImagesDir,
   handleSave,
   dirty,
-  tokenInput,
-  setTokenInput,
-  hasToken,
-  handleSaveToken,
-  handleDeleteToken,
 }: {
   draft: ProjectSettings;
   update: (patch: Partial<ProjectSettings>) => void;
+  imagesDir: string;
+  setImagesDir: (value: string) => void;
   handleSave: () => void;
   dirty: boolean;
-  tokenInput: string;
-  setTokenInput: (v: string) => void;
-  hasToken: boolean | null;
-  handleSaveToken: () => void;
-  handleDeleteToken: () => void;
 }) {
-  /**
-   * The project's repository, derived from the owner and name already set
-   * below rather than stored again.
-   *
-   * Those two fields are what publishing actually pushes to, so a separately
-   * assigned link could quietly disagree with them and send someone to the
-   * wrong repo — and it would mean naming the same repository twice.
-   */
-  const { owner, repo } = draft.github;
-  const projectRepoUrl =
-    owner.trim() && repo.trim()
-      ? `https://github.com/${owner.trim()}/${repo.trim()}`
-      : "";
-  const ownerInput = useRef<HTMLInputElement>(null);
-
   return (
     <div>
       <PageHeader
@@ -380,14 +280,14 @@ function SettingsContent({
               <div className="flex gap-2">
                 <Input
                   className="mono"
-                  value={draft.imagesDir}
-                  onChange={(e) => update({ imagesDir: e.target.value })}
+                  value={imagesDir}
+                  onChange={(e) => setImagesDir(e.target.value)}
                   placeholder="e.g. C:\...\DinoDepotClaude\images"
                 />
                 <Button
                   onClick={async () => {
                     const dir = await pickFolder("Choose the images folder");
-                    if (dir) update({ imagesDir: dir });
+                    if (dir) setImagesDir(dir);
                   }}
                 >
                   Browse…
@@ -397,118 +297,14 @@ function SettingsContent({
           </div>
         </Card>
 
-        {/* self-stretch opts these three out of the grid's items-start, so
-            each matches the height of the card beside it. */}
-        <Card
-          className="self-stretch"
-          title="GitHub token"
-          actions={
-            hasToken === null ? null : hasToken ? (
-              <Badge tone="ok">Token stored</Badge>
-            ) : (
-              <Badge tone="warn">No token</Badge>
-            )
-          }
-        >
-          <p className="text-xs text-ink-400 mb-3">
-            A fine-grained personal access token with{" "}
-            <b>Contents: Read and write</b> on the publish repository. Stored in
-            Windows Credential Manager — never in project files.
-          </p>
-          <div className="flex gap-2">
-            <SecretInput
-              stored={hasToken === true}
-              value={tokenInput}
-              onChange={setTokenInput}
-              placeholder="github_pat_…"
-            />
-            <Button
-              variant="primary"
-              onClick={handleSaveToken}
-              disabled={!tokenInput.trim()}
-            >
-              Store
-            </Button>
-            {hasToken && (
-              <Button variant="danger" onClick={handleDeleteToken}>
-                Remove
-              </Button>
-            )}
-          </div>
-
-          {/* The two repositories this app talks to, one click away from the
-              credential that reaches them. */}
-          <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-ink-700">
-            <Button
-              onClick={() => {
-                if (projectRepoUrl) {
-                  void openExternal(projectRepoUrl);
-                  return;
-                }
-                // Nothing to open yet: send them to the fields that define it
-                // rather than asking for the same repo a second time.
-                ownerInput.current?.scrollIntoView({
-                  block: "center",
-                  behavior: "smooth",
-                });
-                ownerInput.current?.focus();
-                toast.info(
-                  "Set the repository owner and name below — the project repo link follows them",
-                );
-              }}
-              title={
-                projectRepoUrl
-                  ? `Open ${projectRepoUrl}`
-                  : "Not set yet — click to fill in the repository owner and name"
-              }
-            >
-              Project Repo {projectRepoUrl ? "↗" : "…"}
-            </Button>
-            <Button
-              onClick={() => void openExternal(STUDIO_REPO_URL)}
-              title="Dino Depot Production Studio — releases, modpacks and issues"
-            >
-              DinoDepot Production Studio Repo ↗
-            </Button>
-          </div>
-        </Card>
+        <GitHubSetup />
 
         <ProductionDefaultsCard draft={draft} update={update} />
 
-        <Card title="GitHub repository">
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <Field label="Owner">
-              <Input
-                ref={ownerInput}
-                value={draft.github.owner}
-                onChange={(e) =>
-                  update({ github: { ...draft.github, owner: e.target.value } })
-                }
-                placeholder="your-github-user"
-              />
-            </Field>
-            <Field label="Repository">
-              <Input
-                value={draft.github.repo}
-                onChange={(e) =>
-                  update({ github: { ...draft.github, repo: e.target.value } })
-                }
-                placeholder="server-config"
-              />
-            </Field>
-            <Field label="Branch">
-              <Input
-                value={draft.github.branch}
-                onChange={(e) =>
-                  update({
-                    github: { ...draft.github, branch: e.target.value },
-                  })
-                }
-              />
-            </Field>
-          </div>
-          {/* Five stacked full-width path fields made this the tallest card on
-              the page for no reason — they are short values. */}
+        <Card title="Where published files go">
+          {/* Repository-relative, and genuinely shared: every administrator
+              publishes to the same layout. Which repository that layout lives
+              in is machine-local — see the GitHub cards above. */}
           <div className="grid grid-cols-2 gap-3">
             {(
               [
@@ -524,12 +320,12 @@ function SettingsContent({
               <Field key={key} label={label}>
                 <Input
                   className="mono"
-                  value={draft.github.paths[key]}
+                  value={draft.outputPaths[key]}
                   onChange={(e) =>
                     update({
-                      github: {
-                        ...draft.github,
-                        paths: { ...draft.github.paths, [key]: e.target.value },
+                      outputPaths: {
+                        ...draft.outputPaths,
+                        [key]: e.target.value,
                       },
                     })
                   }

@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Dino Depot Studio",
-  "version": "0.1.0",
+  "productName": "DinoDepot Studio",
+  "version": "0.2.0",
   "identifier": "com.ggfizz.dinodepotstudio",
   "build": {
     "beforeDevCommand": "npm run dev",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Dino Depot Passive Production Studio",
+        "title": "DinoDepot Studio",
         "width": 1440,
         "height": 900,
         "minWidth": 1100,
@@ -20,16 +20,40 @@
       }
     ],
     "security": {
-      "csp": null,
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "'self' asset: http://asset.localhost data: blob:",
+        "font-src": "'self' data:",
+        "connect-src": "'self' ipc: http://ipc.localhost asset: http://asset.localhost",
+        "object-src": "'none'",
+        "base-uri": "'self'",
+        "frame-ancestors": "'none'",
+        "form-action": "'none'"
+      },
       "assetProtocol": {
         "enable": true,
-        "scope": ["**"]
+        "scope": {
+          "allow": [
+            "$APPDATA/icon-cache/**",
+            "$HOME/**/images/**",
+            "$HOME/**/icons/**"
+          ],
+          "deny": [
+            "$APPDATA/icon-cache/**/*.arkprofile",
+            "$HOME/**/*.arkprofile",
+            "$HOME/**/players.json"
+          ]
+        }
       }
     }
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": [
+      "nsis"
+    ],
     "resources": {
       "../sidecar/scraper.mjs": "sidecar/scraper.mjs"
     },
@@ -39,6 +63,18 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/CaotcAftermth/DinoDepot-Studio/releases/latest/download/latest.json"
+      ],
+      "pubkey": "REPLACE_WITH_UPDATER_PUBLIC_KEY",
+      "windows": {
+        "installMode": "passive"
+      }
+    }
   }
 }
