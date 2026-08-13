@@ -27,28 +27,76 @@ update. Authenticode is optional and costs money.
 
 ## One-time setup
 
+**This section is done.** The key pair exists, the public half is in the app,
+and both Actions secrets are set. It is kept as a record of the established
+setup — not as a procedure to re-run. If the key is ever lost or leaked,
+generating another pair is only the first step of a much larger problem; read
+the warning in step 1 first.
+
 ### 1. Generate the updater key pair
 
-On the maintainer's machine, once, ever:
+On the maintainer's machine, once, ever. In PowerShell, from the repository
+root:
 
-```bash
-npm run tauri signer generate -- -w dinodepot-updater.key
+```powershell
+$keyPath = Join-Path $env:USERPROFILE ".tauri\dinodepot-updater.key"
+& ".\node_modules\.bin\tauri.cmd" signer generate --write-keys "$keyPath"
 ```
 
-It writes two things and prints the public half:
+The binary is invoked directly because the npm-script form,
+`npm run tauri signer generate -- -w …`, failed on the maintainer's Windows and
+npm setup: it exited before the generator ran. The underlying npm behaviour was
+not diagnosed — the direct invocation works, so it is the documented one.
 
-- `dinodepot-updater.key` — the **private** key
-- `dinodepot-updater.key.pub` — the public key
+It writes two files and prints the public half:
+
+- `%USERPROFILE%\.tauri\dinodepot-updater.key` — the **private** key
+- `%USERPROFILE%\.tauri\dinodepot-updater.key.pub` — the public key
+
+Note the path: `~\.tauri\`, outside the repository entirely, so no `.gitignore`
+rule has to be right for the private key to stay out of Git.
 
 You are asked for a password. Use one, and keep it — the workflow needs it.
+
+> **Do not run this again on its own.** A new key pair is a *different* key
+> pair. An install verifies each update against the public key compiled into
+> the binary it is already running, so an update signed only by a replacement
+> key fails that check and is refused with a verification error. The refusal is
+> reported, not silent, and retrying the same new-key-signed update cannot make
+> it pass. Recovery requires either an update that the old key can verify or a
+> manually installed build.
+>
+> **Never just swap the public key in `tauri.conf.json` and start signing with
+> the new private key.** That strands every install in the field. What to do
+> instead depends on whether the old private key still exists:
+>
+> - **Old private key still available — controlled rotation.** Plan a
+>   transition release: build it with the *new* public key embedded in
+>   `tauri.conf.json`, but sign it with the *old* private key. Existing installs
+>   verify it against the old key, accept it, and install a binary that now
+>   trusts the new key. This only migrates installations that actually receive
+>   that transition. With the current static `latest.json` endpoint, an
+>   installation that misses the transition and later sees a release signed
+>   only by the new key will reject it. Reliable rotation therefore needs a
+>   deliberately designed and tested migration strategy, potentially including
+>   a version-aware endpoint that keeps serving the bridge to old clients.
+> - **Old private key lost or destroyed — no transition possible.** Nothing can
+>   produce an update that existing installs will accept, so there is no signed
+>   route forward. Every user has to download and run a fresh installer by hand.
+>   That is the cost of losing the key, and it is why step 4 exists.
+>
+> Do not replace the established key unless necessary. If it is lost, existing
+> installs require manual recovery. If compromise is suspected while the old
+> key remains available, design and test the complete transition plan before
+> changing either key.
 
 > **The private key is the whole security model.** Anybody holding it can sign
 > an update that every DinoDepot Studio install in the world will accept and
 > run. Treat it exactly as you would a signing certificate: it never goes in the
 > repository, never in a chat message, never in a screenshot.
 >
-> `.gitignore` already excludes `*.key`, but do not rely on that — keep it
-> outside the repository folder entirely.
+> `.gitignore` excludes `*.key`, but do not rely on that — keeping the key
+> outside the repository folder is what actually protects it.
 
 ### 2. Put the public key in the app
 
@@ -66,9 +114,11 @@ Copy the contents of `dinodepot-updater.key.pub` into
 It ships in the binary, which is the point — the running app uses it to check
 that an update was signed by the matching private key.
 
-The placeholder is currently `REPLACE_WITH_UPDATER_PUBLIC_KEY`. Until it is
-replaced, the app builds and runs, but **update checks will fail** — which is
-the safe way round.
+**Done.** The real public key was merged in
+[#3](https://github.com/CaotcAftermth/DinoDepot-Studio/pull/3); `pubkey` no
+longer holds a placeholder. Changing that value is the same decision as
+regenerating the key pair — see the warning above — because an install checks
+updates against whatever public key its own binary was built with.
 
 ### 3. Add the GitHub Actions secrets
 
@@ -81,11 +131,37 @@ In the repository, under *Settings → Secrets and variables → Actions*:
 
 `GITHUB_TOKEN` is provided by Actions; nothing to add.
 
+**Done.** Both secrets are configured. Neither has been exercised yet — the
+Release workflow has not run (see *What has and has not been proven* below).
+
 ### 4. Keep a backup of the private key
 
 Losing it means no existing install can ever be updated again — you would have
 to ship a new public key, which every user would have to install by hand.
 Keep an offline copy somewhere you would keep a password.
+
+**Done.** The key is backed up.
+
+---
+
+## What has and has not been proven
+
+Two workflows, and only one of them has ever run. Worth being precise about,
+because the setup above being finished does not mean the release path works.
+
+| | Trigger | Status |
+|---|---|---|
+| `ci.yml` | pull request, push | **Run, and passing.** Version check, `tsc`, frontend tests, Rust tests, production build all green on merged PRs. |
+| `release.yml` | `v*.*.*` tag | **Never run.** No tag has been pushed. |
+
+So what is currently unverified is everything CI does not touch: `tauri-action`
+itself, signing in the runner with the secrets, whether the draft release is
+created with the assets step 6 expects, and whether `latest.json` is generated
+and uploaded. A local `npm run tauri build` has produced a signed installer on
+the maintainer's machine, which is evidence about the bundler and the key — not
+about the workflow.
+
+Expect to have to look hard at the first tagged run.
 
 ---
 
@@ -121,12 +197,29 @@ Keep an offline copy somewhere you would keep a password.
    matches, runs the whole suite, builds on Windows, signs, and opens a **draft**
    release.
 
-6. Look at the draft. It should carry:
+6. Look at the draft. It should carry exactly three assets:
 
-   - `DinoDepot Studio_0.3.0_x64-setup.exe` — the installer
-   - `DinoDepot Studio_0.3.0_x64-setup.nsis.zip` — the updater artifact
-   - `DinoDepot Studio_0.3.0_x64-setup.nsis.zip.sig` — the signature
+   - `DinoDepot Studio_0.3.0_x64-setup.exe` — the installer, which is also the
+     updater artifact; they are the same file
+   - `DinoDepot Studio_0.3.0_x64-setup.exe.sig` — its detached signature
    - `latest.json` — the manifest the updater reads
+
+   **There is no `.nsis.zip`.** With `createUpdaterArtifacts: true`, Tauri v2
+   signs the installer itself, and what the updater downloads *is* the
+   installer. The zipped artifact and its `.nsis.zip.sig` belong to
+   `createUpdaterArtifacts: "v1Compatible"`, which exists so that installs made
+   by Tauri v1 can still be updated. This project has never shipped a v1 build,
+   so that mode is not set and should not be — turning it on would change the
+   asset names for no one's benefit.
+
+   **`latest.json` is generated by `tauri-action`, not by the bundler.** After
+   the build, the action reads the version, the release's asset URL and the
+   `.sig` file the bundler just produced, and writes the manifest from them —
+   which is why `uploadUpdaterJson: true` is set in the workflow, and why the
+   manifest and the file it describes cannot disagree. Nothing writes
+   `latest.json` locally, so a local `npm run tauri build` produces the
+   installer and the `.sig` and nothing more. That is the expected local
+   result, not a missing step.
 
 7. Publish the draft. Existing installs are offered the update from that moment.
 
