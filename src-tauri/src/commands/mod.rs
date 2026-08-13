@@ -1,6 +1,12 @@
+pub mod app_state;
+pub mod failure;
+pub mod git;
 pub mod github;
+pub mod github_setup;
+pub mod icon_cache;
 pub mod misc;
 pub mod mod_discovery;
 pub mod project_io;
+pub mod project_lock;
 pub mod scraper;
 pub mod secrets;

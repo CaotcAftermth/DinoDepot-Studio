@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useDraftsStore } from "../stores/draftsStore";
-import { useProjectStore } from "../stores/projectStore";
+import { useGithubConfig, useProjectStore } from "../stores/projectStore";
 import { newId } from "../model/ids";
 import {
   comparePlayers,
@@ -30,11 +30,8 @@ import type { ProfileSummary } from "../model/profileData";
 import { IconValue } from "../components/EntityIcon";
 import { ipc, isTauri } from "../services/ipc";
 import { pickFile, pickFiles, pickSavePath } from "../services/dialogs";
-import {
-  backupProfile,
-  githubConfigComplete,
-  restoreProfile,
-} from "../services/publish";
+import { githubConfigComplete } from "../services/publish";
+import { backupProfile, restoreProfile } from "../services/profileBackup";
 import {
   applySummaryToPlayer,
   bytesToBase64,
@@ -111,6 +108,7 @@ export function PlayerDataPage() {
   useEffect(hydrate, [hydrate]);
 
   const settings = useProjectStore((s) => s.settings);
+  const github = useGithubConfig();
   const saveSettings = useProjectStore((s) => s.saveSettings);
   const policy = settings?.playerData ?? defaultPlayerDataSettings();
   const [search, setSearch] = useState("");
@@ -418,7 +416,7 @@ export function PlayerDataPage() {
     setBusy(player.id);
     try {
       await backupProfile(
-        settings.github,
+        github,
         dir,
         player.profile.fileName,
         `Back up ${playerLabel(player)}'s .arkprofile via Dino Depot Studio`,
@@ -448,7 +446,7 @@ export function PlayerDataPage() {
     setBusy(player.id);
     try {
       const found = await restoreProfile(
-        settings.github,
+        github,
         dir,
         player.profile.fileName,
       );
@@ -474,7 +472,7 @@ export function PlayerDataPage() {
     for (const player of pending) {
       try {
         await backupProfile(
-          settings.github,
+          github,
           dir,
           player.profile!.fileName,
           `Back up ${playerLabel(player)}'s .arkprofile via Dino Depot Studio`,
@@ -645,7 +643,7 @@ export function PlayerDataPage() {
 
   const withProfiles = players.players.filter((p) => p.profile).length;
   const editing = draft?.id === selected?.id ? draft : null;
-  const githubReady = Boolean(settings && githubConfigComplete(settings.github));
+  const githubReady = githubConfigComplete(github);
 
   return (
     <div>
@@ -1382,11 +1380,6 @@ function ProfileDetails({ summary }: { summary: ProfileSummary }) {
           <span>Logged out with: {summary.activeBuffs.join(", ")}</span>
         )}
         {summary.platform && <span>{summary.platform}</span>}
-        {summary.lastKnownIp && (
-          <span title="Last address the account connected from">
-            last seen from {summary.lastKnownIp}
-          </span>
-        )}
       </div>
     </div>
   );

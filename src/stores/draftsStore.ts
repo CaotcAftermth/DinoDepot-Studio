@@ -28,6 +28,18 @@ import {
   emptyActivity,
 } from "../model/activity";
 import { newId } from "../model/ids";
+import { asStudioError, type StudioError } from "../model/errors";
+import {
+  COSMETIC_SPEC,
+  diffCatalog,
+  diffList,
+  IMPORT_SPEC,
+  PLAYER_SPEC,
+  PRODUCTION_SPEC,
+  REMAP_SPEC,
+  WATCHLIST_SPEC,
+} from "../model/changeDetection";
+import type { StructuredAction } from "../model/commitActions";
 import { useProjectStore } from "./projectStore";
 
 /**
@@ -46,41 +58,96 @@ export function resolveImagesDir(
 
 const SAVE_DEBOUNCE_MS = 1200;
 const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
+/** The newest content scheduled per file, so a flush writes what a timer would. */
+const pendingContent = new Map<ProjectFileName, string>();
+
+export interface SaveFailure {
+  fileName: string;
+  error: StudioError;
+}
+
+/**
+ * What a flush actually achieved.
+ *
+ * Returned rather than thrown so a caller can report every failure at once,
+ * and typed rather than boolean so Sync and Publish can refuse for a reason
+ * they can show. `flushPendingSaves` resolving used to mean nothing at all —
+ * it swallowed rejections into a toast — which is how an admin could Publish
+ * work that had never reached the disk.
+ */
+export interface FlushResult {
+  ok: boolean;
+  failures: SaveFailure[];
+}
 
 /**
  * Surfaces a failed write. Losing an admin's work silently is the worst
  * outcome this app has, so a persist error is never swallowed — it was
  * `console.error` once, and a rejected file name went unnoticed because of it.
  */
-async function reportSaveFailure(fileName: string, e: unknown) {
-  const detail = e instanceof Error ? e.message : String(e);
-  console.error(`Failed to save ${fileName}:`, e);
+async function reportSaveFailure(fileName: string, error: StudioError) {
+  console.error(`Failed to save ${fileName}:`, error.detail);
   const { toast } = await import("../components/toast");
-  toast.error(`Could not save ${fileName} — your changes are not on disk. ${detail}`);
+  toast.error(`${error.message} (${fileName})`);
+}
+
+/**
+ * Adds what an edit did to the unsynchronized journal.
+ *
+ * Called from the setters rather than from the call sites, because a promise
+ * that every place editing a creature describes its own change is one nobody
+ * keeps — the twentieth one forgets, and the commit degrades to "files
+ * changed". Every edit already goes through here.
+ *
+ * Failing to describe a change must never stop the change itself, so this is
+ * deliberately best-effort.
+ */
+function recordChanges(actions: StructuredAction[]) {
+  if (actions.length === 0) return;
+  try {
+    const { recordChange } = useProjectStore.getState();
+    for (const action of actions) recordChange(action);
+  } catch (e) {
+    console.error("Could not describe a change:", e);
+  }
 }
 
 function schedulePersist(fileName: ProjectFileName, content: string) {
   const existing = saveTimers.get(fileName);
   if (existing) clearTimeout(existing);
+  pendingContent.set(fileName, content);
   saveTimers.set(
     fileName,
     setTimeout(() => {
       saveTimers.delete(fileName);
+      pendingContent.delete(fileName);
       useProjectStore
         .getState()
         .saveFile(fileName, content)
-        .catch((e) => void reportSaveFailure(fileName, e));
+        .catch((e) => {
+          const error = asStudioError(e, "save.failed", `Could not save ${fileName}.`);
+          void reportSaveFailure(fileName, error);
+        });
     }, SAVE_DEBOUNCE_MS),
   );
 }
 
-/** Immediately flushes all pending debounced saves (used before publish/close). */
-export async function flushPendingSaves(): Promise<void> {
+/**
+ * Writes every pending change immediately.
+ *
+ * Writes the whole draft set rather than only what a timer had queued: the
+ * cost is a no-op compare in Rust for the unchanged files, and the benefit is
+ * that "flushed" means the same thing every time.
+ */
+export async function flushPendingSaves(): Promise<FlushResult> {
   const state = useDraftsStore.getState();
   for (const timer of saveTimers.values()) clearTimeout(timer);
   saveTimers.clear();
+  pendingContent.clear();
   const project = useProjectStore.getState();
-  if (!project.dir) return;
+  if (!project.dir) return { ok: true, failures: [] };
+  // A read-only project has nothing to flush and must not be written to.
+  if (project.mode === "read-only") return { ok: true, failures: [] };
 
   const writes: [ProjectFileName, unknown][] = [
     [PROJECT_FILE.production, state.production],
@@ -96,57 +163,99 @@ export async function flushPendingSaves(): Promise<void> {
 
   // One bad file must not stop the others from reaching disk.
   const results = await Promise.allSettled(
-    writes.map(([name, value]) =>
-      project.saveFile(name, JSON.stringify(value, null, 2)),
-    ),
+    writes
+      // A file that failed to load was quarantined, and its store slot holds
+      // an empty default. Writing that back is precisely the overwrite the
+      // quarantine exists to prevent.
+      .filter(([name]) => !state.unloadable.some((u) => u.fileName === name))
+      .map(([name, value]) => project.saveFile(name, JSON.stringify(value, null, 2))),
   );
-  await Promise.all(
-    results.flatMap((r, i) =>
-      r.status === "rejected" ? [reportSaveFailure(writes[i][0], r.reason)] : [],
-    ),
-  );
+
+  const failures: SaveFailure[] = [];
+  results.forEach((result, i) => {
+    if (result.status !== "rejected") return;
+    const fileName = writes[i][0];
+    const error = asStudioError(result.reason, "save.failed", `Could not save ${fileName}.`);
+    failures.push({ fileName, error });
+    void reportSaveFailure(fileName, error);
+  });
+
+  return { ok: failures.length === 0, failures };
 }
 
-// Last-ditch flush when the window goes away — closing the app mid-debounce
-// would otherwise drop the edit. pagehide fires on close and on reload.
+/**
+ * Last-ditch flush when the window goes away.
+ *
+ * Best-effort only, and nothing depends on it: `pagehide` cannot await an
+ * asynchronous write, so a browser that tears the page down first simply wins.
+ * Correctness comes from the debounce being short and from Sync, Publish and
+ * close all flushing explicitly and checking the result.
+ */
 if (typeof window !== "undefined") {
   window.addEventListener("pagehide", () => {
     void flushPendingSaves();
   });
 }
 
+/** A file that could not be loaded, and where its contents were put. */
+export interface UnloadableFile {
+  fileName: string;
+  why: string;
+  /** Where the original was set aside, when it could be. */
+  movedTo: string;
+}
+
 function parseFile<T>(
   files: Record<string, string>,
-  name: string,
+  name: ProjectFileName,
   schema: { safeParse(v: unknown): { success: boolean; data?: T } },
   fallback: T,
+  damaged: UnloadableFile[],
 ): T {
   const raw = files[name];
   if (!raw) return fallback;
   try {
     const result = schema.safeParse(JSON.parse(raw));
     if (result.success && result.data !== undefined) return result.data;
-    // Falling back to empty here means the file's contents are about to be
-    // overwritten by nothing on the next edit — the admin has to know.
-    reportLoadFailure(name, "did not match the expected format");
+    damaged.push({ fileName: name, why: "did not match the expected format", movedTo: "" });
     return fallback;
   } catch {
-    reportLoadFailure(name, "is not valid JSON");
+    damaged.push({ fileName: name, why: "is not valid JSON", movedTo: "" });
     return fallback;
   }
 }
 
 /**
- * Announces a file that failed to load. Silence here is dangerous: the store
- * carries on with empty data, and the first subsequent edit writes that
- * emptiness over whatever was on disk.
+ * Sets damaged files aside and tells the admin.
+ *
+ * The old behaviour was to carry on with empty data and show a toast. That is
+ * a trap: the store now holds nothing where the roster was, and the first
+ * keystroke autosaves that nothing straight over the file. Moving the original
+ * out of the folder first means the worst case is a file to go and look at.
  */
-async function reportLoadFailure(name: string, why: string) {
-  console.warn(`${name} ${why}; starting from empty`);
+async function quarantineDamaged(dir: string, damaged: UnloadableFile[]) {
+  const { quarantineFile } = await import("../services/projectSession");
+  const resolved: UnloadableFile[] = [];
+  for (const entry of damaged) {
+    try {
+      const { movedTo } = await quarantineFile(dir, entry.fileName);
+      resolved.push({ ...entry, movedTo });
+    } catch {
+      // Could not be moved — it stays where it is, and stays on the blocked
+      // list, so nothing writes over it either way.
+      resolved.push(entry);
+    }
+  }
+  useDraftsStore.setState({ unloadable: resolved });
+
   const { toast } = await import("../components/toast");
-  toast.error(
-    `${name} ${why} and was not loaded. Its previous contents are in the project's backups folder — do not save over it until you've checked.`,
-  );
+  for (const entry of resolved) {
+    toast.error(
+      entry.movedTo
+        ? `${entry.fileName} ${entry.why}. The original has been set aside in the project's recovery folder — nothing will be written over it.`
+        : `${entry.fileName} ${entry.why} and could not be set aside. Do not save until you have checked it.`,
+    );
+  }
 }
 
 interface DraftsState {
@@ -162,6 +271,11 @@ interface DraftsState {
   activity: ActivityFile;
   /** File names found in the project's images/ folder (used for icons). */
   imageFiles: string[];
+  /**
+   * Files that could not be read. Their store slots hold empty defaults, so
+   * nothing may write them back — see the filter in `flushPendingSaves`.
+   */
+  unloadable: UnloadableFile[];
 
   hydrate(): void;
   refreshImages(): Promise<void>;
@@ -192,32 +306,41 @@ export const useDraftsStore = create<DraftsState>((set, get) => ({
   creatureImports: emptyCreatureImports(),
   activity: emptyActivity(),
   imageFiles: [],
+  unloadable: [],
 
   hydrate() {
-    const { dir, files } = useProjectStore.getState();
+    const { dir, files, mode } = useProjectStore.getState();
     if (!dir || get().hydratedFor === dir) return;
+    const damaged: UnloadableFile[] = [];
     set({
       hydratedFor: dir,
-      production: parseFile(files, PROJECT_FILE.production, ProductionDraftSchema, emptyProductionDraft()),
-      remaps: parseFile(files, PROJECT_FILE.remaps, RemapsDraftSchema, emptyRemapsDraft()),
-      cosmetics: parseFile(files, PROJECT_FILE.cosmetics, CosmeticsDraftSchema, emptyCosmeticsDraft()),
-      catalog: parseFile(files, PROJECT_FILE.catalog, CatalogFileSchema, emptyCatalog()),
-      watchlist: parseFile(files, PROJECT_FILE.watchlist, WatchlistSchema, emptyWatchlist()),
-      history: parseFile(files, PROJECT_FILE.history, HistoryFileSchema, emptyHistory()),
-      players: parseFile(files, PROJECT_FILE.players, PlayersFileSchema, emptyPlayers()),
-      creatureImports: parseFile(files, PROJECT_FILE.creatureImports, CreatureImportsFileSchema, emptyCreatureImports()),
-      activity: parseFile(files, PROJECT_FILE.activity, ActivityFileSchema, emptyActivity()),
+      unloadable: [],
+      production: parseFile(files, PROJECT_FILE.production, ProductionDraftSchema, emptyProductionDraft(), damaged),
+      remaps: parseFile(files, PROJECT_FILE.remaps, RemapsDraftSchema, emptyRemapsDraft(), damaged),
+      cosmetics: parseFile(files, PROJECT_FILE.cosmetics, CosmeticsDraftSchema, emptyCosmeticsDraft(), damaged),
+      catalog: parseFile(files, PROJECT_FILE.catalog, CatalogFileSchema, emptyCatalog(), damaged),
+      watchlist: parseFile(files, PROJECT_FILE.watchlist, WatchlistSchema, emptyWatchlist(), damaged),
+      history: parseFile(files, PROJECT_FILE.history, HistoryFileSchema, emptyHistory(), damaged),
+      players: parseFile(files, PROJECT_FILE.players, PlayersFileSchema, emptyPlayers(), damaged),
+      creatureImports: parseFile(files, PROJECT_FILE.creatureImports, CreatureImportsFileSchema, emptyCreatureImports(), damaged),
+      activity: parseFile(files, PROJECT_FILE.activity, ActivityFileSchema, emptyActivity(), damaged),
     });
+    if (damaged.length > 0) {
+      // Listed immediately so a save cannot slip through before the
+      // quarantine round-trip finishes.
+      set({ unloadable: damaged });
+      if (mode === "editable") void quarantineDamaged(dir, damaged);
+    }
     void get().refreshImages();
   },
 
   async refreshImages() {
-    const { dir, settings } = useProjectStore.getState();
+    const { dir, local } = useProjectStore.getState();
     if (!dir) return;
     try {
       const { ipc } = await import("../services/ipc");
       const names = await ipc<string[]>("list_images", {
-        dir: resolveImagesDir(dir, settings?.imagesDir),
+        dir: resolveImagesDir(dir, local?.imagesDir),
       });
       set({ imageFiles: names });
     } catch {
@@ -226,22 +349,27 @@ export const useDraftsStore = create<DraftsState>((set, get) => ({
   },
 
   setProduction(production) {
+    recordChanges(diffList(get().production.rules, production.rules, PRODUCTION_SPEC));
     set({ production });
     schedulePersist(PROJECT_FILE.production, JSON.stringify(production, null, 2));
   },
   setRemaps(remaps) {
+    recordChanges(diffList(get().remaps.entries, remaps.entries, REMAP_SPEC));
     set({ remaps });
     schedulePersist(PROJECT_FILE.remaps, JSON.stringify(remaps, null, 2));
   },
   setCosmetics(cosmetics) {
+    recordChanges(diffList(get().cosmetics.entries, cosmetics.entries, COSMETIC_SPEC));
     set({ cosmetics });
     schedulePersist(PROJECT_FILE.cosmetics, JSON.stringify(cosmetics, null, 2));
   },
   setCatalog(catalog) {
+    recordChanges(diffCatalog(get().catalog, catalog));
     set({ catalog });
     schedulePersist(PROJECT_FILE.catalog, JSON.stringify(catalog, null, 2));
   },
   setWatchlist(watchlist) {
+    recordChanges(diffList(get().watchlist.mods, watchlist.mods, WATCHLIST_SPEC));
     set({ watchlist });
     schedulePersist(PROJECT_FILE.watchlist, JSON.stringify(watchlist, null, 2));
   },
@@ -250,10 +378,14 @@ export const useDraftsStore = create<DraftsState>((set, get) => ({
     schedulePersist(PROJECT_FILE.history, JSON.stringify(history, null, 2));
   },
   setPlayers(players) {
+    recordChanges(diffList(get().players.players, players.players, PLAYER_SPEC));
     set({ players });
     schedulePersist(PROJECT_FILE.players, JSON.stringify(players, null, 2));
   },
   setCreatureImports(creatureImports) {
+    recordChanges(
+      diffList(get().creatureImports.records, creatureImports.records, IMPORT_SPEC),
+    );
     set({ creatureImports });
     schedulePersist(
       PROJECT_FILE.creatureImports,
@@ -302,6 +434,7 @@ useProjectStore.subscribe((state, prev) => {
         players: emptyPlayers(),
         creatureImports: emptyCreatureImports(),
         activity: emptyActivity(),
+        unloadable: [],
       });
     } else {
       useDraftsStore.setState({ hydratedFor: null });

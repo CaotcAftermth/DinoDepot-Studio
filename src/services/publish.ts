@@ -83,49 +83,14 @@ export function profileBackupPath(
   return `${config.paths.profiles.replace(/\/+$/, "")}/${fileName}`;
 }
 
-/**
- * Uploads a stored .arkprofile to the repo. The file never passes through the
- * frontend as text — Rust reads it as base64 and GitHub takes it that way.
+/*
+ * Profile upload and restore deliberately do NOT live here.
+ *
+ * They are in `profileBackup.ts`, behind the sanitizer. This module is the
+ * generic "put a file in the repository" layer, and a profile-shaped function
+ * next to it would eventually be the one somebody called — uploading the
+ * original bytes, IP address and all.
  */
-export async function backupProfile(
-  config: GithubConfig,
-  dir: string,
-  fileName: string,
-  message: string,
-): Promise<PublishResult> {
-  const contentB64 = await ipc<string>("read_player_profile_b64", {
-    dir,
-    fileName,
-  });
-  return ipc<PublishResult>("github_put_file_b64", {
-    owner: config.owner,
-    repo: config.repo,
-    branch: config.branch,
-    path: profileBackupPath(config, fileName),
-    contentB64,
-    message,
-  });
-}
-
-/**
- * Pulls a backed-up profile into the project's profiles/ folder.
- * Resolves false when the repo has no backup for that player.
- */
-export async function restoreProfile(
-  config: GithubConfig,
-  dir: string,
-  fileName: string,
-): Promise<boolean> {
-  const contentB64 = await ipc<string | null>("github_get_file_b64", {
-    owner: config.owner,
-    repo: config.repo,
-    branch: config.branch,
-    path: profileBackupPath(config, fileName),
-  });
-  if (!contentB64) return false;
-  await ipc<number>("write_player_profile_b64", { dir, fileName, contentB64 });
-  return true;
-}
 
 /** Stable content hash (FNV-1a) used to detect unpublished draft changes. */
 export function contentHash(text: string): string {

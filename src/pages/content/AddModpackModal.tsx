@@ -148,10 +148,10 @@ function RegistryTab({
   onTemplate: () => void;
 }) {
   const { catalog, setCatalog, refreshImages } = useDraftsStore();
-  const settings = useProjectStore((s) => s.settings);
   const projectDir = useProjectStore((s) => s.dir);
+  const imagesDirSetting = useProjectStore((s) => s.local?.imagesDir);
   const imagesDir =
-    settings?.imagesDir?.trim() || (projectDir ? `${projectDir}/images` : "");
+    imagesDirSetting?.trim() || (projectDir ? `${projectDir}/images` : "");
   const [listing, setListing] = useState<RegistryListing | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -480,9 +480,8 @@ function DiscoverTab({
   onManual: () => void;
 }) {
   const { catalog, setCatalog, cosmetics, production, remaps } = useDraftsStore();
-  const settings = useProjectStore((s) => s.settings);
-  const saveSettings = useProjectStore((s) => s.saveSettings);
-  const root = settings?.modsDir?.trim() ?? "";
+  const updateLocal = useProjectStore((s) => s.updateLocal);
+  const root = useProjectStore((s) => s.local?.modsDir)?.trim() ?? "";
 
   const [listing, setListing] = useState<InstalledModSummary[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -552,12 +551,13 @@ function DiscoverTab({
     const picked = await pickFolder(
       "Select the Ark: Survival Ascended install folder",
     );
-    if (!picked || !settings) return;
+    if (!picked) return;
     setBusy(true);
     setError("");
     try {
       const resolved = await resolveModsRoot(picked);
-      await saveSettings({ ...settings, modsDir: resolved });
+      // Machine-local: where the game is installed is true of this computer.
+      await updateLocal({ modsDir: resolved });
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -652,7 +652,7 @@ function DiscoverTab({
           </p>
           <Button
             variant="primary"
-            disabled={!isTauri || busy || !settings}
+            disabled={!isTauri || busy}
             title={
               isTauri
                 ? "Choose the install folder"

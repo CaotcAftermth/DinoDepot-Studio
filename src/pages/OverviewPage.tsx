@@ -1,10 +1,17 @@
+import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useProjectOverview } from "./overview/useProjectOverview";
+import { ACTIVITY_KIND_ROUTES } from "../model/activity";
 import {
-  activityRoute,
-  formatActivityTime,
-  type ActivityEvent,
-} from "../model/activity";
+  isRestorable,
+  restoreSubject,
+  summarizeEntry,
+  type HistoryEntry,
+} from "../model/history.git";
+import { useHistoryStore } from "../stores/historyStore";
+import { useProjectStore } from "../stores/projectStore";
+import { confirmDialog } from "../components/confirm";
+import { toast } from "../components/toast";
 import {
   HEALTH_LABELS,
   type AttentionItem,
@@ -35,7 +42,6 @@ export function OverviewPage() {
     github,
     synchronized,
     hasPublishableContent,
-    activity,
   } = overview;
 
   return (
@@ -109,7 +115,7 @@ export function OverviewPage() {
       )}
 
       <Card title="Recent activity">
-        <RecentActivity events={activity} />
+        <RecentActivity />
       </Card>
     </div>
   );
@@ -345,35 +351,95 @@ function ActionLink({ action }: { action: NextAction }) {
   );
 }
 
-function RecentActivity({ events }: { events: ActivityEvent[] }) {
-  if (events.length === 0) {
+/**
+ * Recent Activity, read from the project's history.
+ *
+ * Every row is a commit. The subject was written for a person when the commit
+ * was made, and the structured trailers underneath it are what turn the rest
+ * into "Changed interval on Rex" rather than a sha.
+ *
+ * A commit DinoDepot did not write still gets a row — somebody editing through
+ * the GitHub web UI is a real event, and hiding it would make this list
+ * disagree with the repository.
+ */
+function RecentActivity() {
+  const entries = useHistoryStore((s) => s.entries);
+  const loading = useHistoryStore((s) => s.loading);
+  const problem = useHistoryStore((s) => s.problem);
+  const restoring = useHistoryStore((s) => s.restoring);
+  const load = useHistoryStore((s) => s.load);
+  const restore = useHistoryStore((s) => s.restore);
+  const readOnly = useProjectStore((s) => s.mode) === "read-only";
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  if (loading && entries.length === 0) {
+    return <p className="text-sm text-ink-400">Reading the project history…</p>;
+  }
+
+  if (entries.length === 0) {
     return (
       <p className="text-sm text-ink-400">
-        Nothing recorded yet. Publishing, adding rules and running the cosmetics
-        collector all show up here.
+        {problem ||
+          "Nothing shared yet. Once you sync, everything the team changes shows up here."}
       </p>
     );
   }
+
+  async function handleRestore(entry: HistoryEntry) {
+    const ok = await confirmDialog({
+      title: "Go back to this version?",
+      message: `${restoreSubject(entry)}. Your current version stays in the history — this adds a new change on top rather than undoing anything.`,
+      confirmLabel: "Go back to it",
+    });
+    if (!ok) return;
+    if (await restore(entry)) {
+      toast.success("The project has been put back. Sync to share it.");
+    } else {
+      toast.error("That version could not be restored.");
+    }
+  }
+
   return (
     <div className="flex flex-col divide-y divide-ink-800">
-      {events.map((event) => (
-        <Link
-          key={event.id}
-          to={activityRoute(event)}
-          className="flex items-baseline gap-3 py-1.5 group"
-        >
+      {entries.map((entry) => (
+        <div key={entry.sha} className="flex items-baseline gap-3 py-1.5 group">
           <span className="mono text-xs text-ink-400 w-24 shrink-0 tabular-nums">
-            {formatActivityTime(event.at)}
+            {entry.when}
           </span>
-          <span className="text-sm text-ink-200 group-hover:text-white min-w-0 truncate">
-            {event.title}
-          </span>
-          {event.detail && (
+          <Link
+            to={ACTIVITY_KIND_ROUTES[entry.kind]}
+            className="text-sm text-ink-200 group-hover:text-white min-w-0 truncate"
+            title={entry.details.join("\n")}
+          >
+            {entry.title}
+          </Link>
+          {summarizeEntry(entry) && (
             <span className="text-xs text-ink-400 min-w-0 truncate ml-auto">
-              {event.detail}
+              {summarizeEntry(entry)}
             </span>
           )}
-        </Link>
+          {!entry.fromStudio && (
+            <span
+              className="text-xs text-ink-500 shrink-0"
+              title="Changed outside DinoDepot Studio"
+            >
+              outside Studio
+            </span>
+          )}
+          {isRestorable(entry) && !readOnly && (
+            <button
+              type="button"
+              className="text-xs text-ink-500 hover:text-ink-200 shrink-0"
+              disabled={restoring === entry.sha}
+              onClick={() => void handleRestore(entry)}
+            >
+              {restoring === entry.sha ? "Restoring…" : "Go back to this"}
+            </button>
+          )}
+        </div>
       ))}
     </div>
   );

@@ -2,6 +2,8 @@ import { NavLink, Navigate, Outlet } from "react-router-dom";
 import { useProjectStore } from "../stores/projectStore";
 import { ToastContainer } from "../components/toast";
 import { ConfirmHost } from "../components/confirm";
+import { SyncStatus } from "../components/SyncStatus";
+import { UpdateBanner } from "../components/UpdateBanner";
 import { cx } from "../components/ui";
 import { isTauri } from "../services/ipc";
 import { enabledModules } from "./modules";
@@ -92,6 +94,14 @@ export function AppShell() {
             </p>
           )}
         </nav>
+
+        {/* Above Close project, because sharing your work is the thing you do
+            before you walk away from it. */}
+        <div className="px-4 py-3 border-t border-ink-700">
+          <SyncStatus />
+        </div>
+
+        <UpdateBanner />
 
         <div className="px-4 py-3 border-t border-ink-700 flex items-center justify-between">
           <button

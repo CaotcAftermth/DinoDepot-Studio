@@ -9,6 +9,7 @@ import {
   type ContentSource,
 } from "./catalog";
 import { CreatureInfoSchema, type CreatureInfo } from "./creatureInfo";
+import { STUDIO_REPO } from "./studio";
 
 /**
  * Modpacks: one mod's catalogued content as a single shareable file.
@@ -32,9 +33,9 @@ export const MODPACK_FORMAT = 1;
  * a team can point at a fork or a staging branch while reviewing submissions.
  */
 export const DEFAULT_REGISTRY = {
-  owner: "CaotcAftermth",
-  repo: "DinoDepot_Production_Studio",
-  branch: "main",
+  owner: STUDIO_REPO.owner,
+  repo: STUDIO_REPO.repo,
+  branch: STUDIO_REPO.branch,
   path: "Public_Content/ModPacks",
 } as const;
 

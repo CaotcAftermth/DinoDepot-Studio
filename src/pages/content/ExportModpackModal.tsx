@@ -42,7 +42,7 @@ export function ExportModpackModal({
   onClose: () => void;
 }) {
   const { catalog } = useDraftsStore();
-  const settings = useProjectStore((s) => s.settings);
+  const imagesDirSetting = useProjectStore((s) => s.local?.imagesDir);
   const dir = useProjectStore((s) => s.dir);
 
   const [version, setVersion] = useState(source.modpackVersion || "1.0.0");
@@ -54,8 +54,7 @@ export function ExportModpackModal({
   const [prUrl, setPrUrl] = useState("");
 
   /** The images folder icons are read from — the setting, else the project's. */
-  const imagesDir =
-    settings?.imagesDir?.trim() || (dir ? `${dir}/images` : "");
+  const imagesDir = imagesDirSetting?.trim() || (dir ? `${dir}/images` : "");
 
   const pack: Modpack = sourceToModpack(source, catalog, {
     id: source.modpackId || undefined,

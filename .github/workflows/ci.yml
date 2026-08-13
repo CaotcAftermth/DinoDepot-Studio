@@ -1,0 +1,53 @@
+name: CI
+
+# Windows only, because Windows is the only officially supported platform for
+# release one — running the suite anywhere else would prove something about a
+# build nobody ships.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      # libgit2 is vendored, so nothing has to be installed for it — but the
+      # build is the slow part, and caching it keeps a pull request under a
+      # couple of minutes.
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      # Before anything else: the four places this app states its version have
+      # to agree, or the updater will compare against a number the installer
+      # does not carry.
+      - name: Check versions agree
+        run: node scripts/check-versions.mjs
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Frontend tests
+        run: npx vitest run
+
+      - name: Rust tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      - name: Production build
+        run: npm run build

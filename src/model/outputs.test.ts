@@ -16,6 +16,7 @@ import {
   source,
   players,
   REX,
+  githubConfig,
 } from "./overviewFixtures";
 import { emptyProductionDraft } from "./production";
 import { emptyRemapsDraft } from "./remaps";
@@ -254,6 +255,7 @@ describe("buildOutputStates — inputs", () => {
       history: emptyHistory(),
       imageFiles: [],
       settings: null,
+      github: githubConfig(),
       index: null,
     });
     expect(states).toHaveLength(6);
@@ -263,7 +265,7 @@ describe("buildOutputStates — inputs", () => {
   it("exposes each output's repository path", () => {
     const states = outputsFor({ catalog: catalog(source()) });
     expect(find(states, "production").path).toBe(
-      settings().github.paths.production,
+      settings().outputPaths.production,
     );
   });
 

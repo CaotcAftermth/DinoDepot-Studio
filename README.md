@@ -1,4 +1,4 @@
-# DinoDepot Studio
+# Dino Depot Passive Production Studio
 
 Desktop admin studio for managing Dino Depot server configuration for ASA
 clusters (first project: GG Fizz). Structured editors, validation, simulation,
