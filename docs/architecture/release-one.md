@@ -938,8 +938,11 @@ because it signs anything every install will run.
 
 What that public key now fixes is the identity of every future update: an
 install checks signatures against the key compiled into its own binary, so
-changing it strands every install already in the field. Treat rotation as a
-break, not a maintenance task.
+swapping it and signing with a new private key strands every install already in
+the field — their update checks fail verification and stay failed. Rotation is
+possible, but only as a planned transition release signed with the *old* key
+that carries the new public key across; `docs/release.md` has the procedure.
+Treat it as a break, not a maintenance task.
 
 ### Phase 8 test results
 

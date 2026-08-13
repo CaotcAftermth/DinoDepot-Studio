@@ -28,9 +28,10 @@ update. Authenticode is optional and costs money.
 ## One-time setup
 
 **This section is done.** The key pair exists, the public half is in the app,
-and both Actions secrets are set. It is kept as the record of how, and as the
-instructions for the one situation that would need it again — a lost or
-compromised private key. Read the warning in step 1 before acting on any of it.
+and both Actions secrets are set. It is kept as a record of the established
+setup — not as a procedure to re-run. If the key is ever lost or leaked,
+generating another pair is only the first step of a much larger problem; read
+the warning in step 1 first.
 
 ### 1. Generate the updater key pair
 
@@ -42,9 +43,10 @@ $keyPath = Join-Path $env:USERPROFILE ".tauri\dinodepot-updater.key"
 & ".\node_modules\.bin\tauri.cmd" signer generate --write-keys "$keyPath"
 ```
 
-The binary is invoked directly because `npm run tauri signer generate -- -w …`
-does not work on this setup — npm mangles the argument handoff and the command
-fails before the generator runs.
+The binary is invoked directly because the npm-script form,
+`npm run tauri signer generate -- -w …`, failed on the maintainer's Windows and
+npm setup: it exited before the generator ran. The underlying npm behaviour was
+not diagnosed — the direct invocation works, so it is the documented one.
 
 It writes two files and prints the public half:
 
@@ -56,11 +58,31 @@ rule has to be right for the private key to stay out of Git.
 
 You are asked for a password. Use one, and keep it — the workflow needs it.
 
-> **Do not run this again.** A new key pair is a *different* key pair. Every
-> install already carrying the current public key would refuse every update
-> signed by the new one, permanently and silently, and the only fix is for each
-> user to download and run a fresh installer by hand. Rotate only if the private
-> key is lost or believed to have leaked, and expect that cost.
+> **Do not run this again on its own.** A new key pair is a *different* key
+> pair. An install verifies each update against the public key compiled into
+> the binary it is already running, so an update signed only by a replacement
+> key fails that check and is refused with a verification error. The refusal is
+> reported, not silent — but it is also permanent for that install, because
+> nothing signed by the new key will ever satisfy the old one.
+>
+> **Never just swap the public key in `tauri.conf.json` and start signing with
+> the new private key.** That strands every install in the field. What to do
+> instead depends on whether the old private key still exists:
+>
+> - **Old private key still available — controlled rotation.** Plan a
+>   transition release: build it with the *new* public key embedded in
+>   `tauri.conf.json`, but sign it with the *old* private key. Existing installs
+>   verify it against the old key, accept it, and install a binary that now
+>   trusts the new key. Only once installs have taken that release do later
+>   releases get signed with the new private key. Signing the transition release
+>   with the old key is the whole mechanism — skip it and there is no path
+>   across.
+> - **Old private key lost or destroyed — no transition possible.** Nothing can
+>   produce an update that existing installs will accept, so there is no signed
+>   route forward. Every user has to download and run a fresh installer by hand.
+>   That is the cost of losing the key, and it is why step 4 exists.
+>
+> Rotate only if the private key is lost or believed to have leaked.
 
 > **The private key is the whole security model.** Anybody holding it can sign
 > an update that every DinoDepot Studio install in the world will accept and
