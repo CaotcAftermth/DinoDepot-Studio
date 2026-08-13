@@ -880,9 +880,11 @@ frontend tests, Rust tests, production build.
 `.github/workflows/release.yml`, triggered by a `v*.*.*` tag. A release is a
 decision, not something that happens because somebody merged.
 
-Publishes a **draft**: an installer, the updater artifact, its detached
-signature, and `latest.json`. `latest.json` is generated from the same signature
-as the artifact, so the manifest and the file it describes cannot disagree.
+Publishes a **draft** carrying three assets: the NSIS installer — which under
+`createUpdaterArtifacts: true` is itself the updater artifact, not a separate
+`.nsis.zip` — its detached `.sig`, and `latest.json`. `latest.json` is written
+by `tauri-action` from that same signature, so the manifest and the file it
+describes cannot disagree.
 Publishing the draft is what makes every install in the world see it, and that
 should take a click from somebody who looked.
 
