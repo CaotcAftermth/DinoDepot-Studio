@@ -75,7 +75,7 @@ jobs:
           # the world is offered it. Publishing the draft is what makes it live.
           releaseDraft: true
           prerelease: false
-          includeUpdaterJson: true
+          uploadUpdaterJson: true
 
   # Fails loudly rather than silently shipping an unsigned build that no
   # existing install would accept.
