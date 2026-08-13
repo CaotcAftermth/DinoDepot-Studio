@@ -62,8 +62,9 @@ You are asked for a password. Use one, and keep it — the workflow needs it.
 > pair. An install verifies each update against the public key compiled into
 > the binary it is already running, so an update signed only by a replacement
 > key fails that check and is refused with a verification error. The refusal is
-> reported, not silent — but it is also permanent for that install, because
-> nothing signed by the new key will ever satisfy the old one.
+> reported, not silent, and retrying the same new-key-signed update cannot make
+> it pass. Recovery requires either an update that the old key can verify or a
+> manually installed build.
 >
 > **Never just swap the public key in `tauri.conf.json` and start signing with
 > the new private key.** That strands every install in the field. What to do
@@ -73,16 +74,21 @@ You are asked for a password. Use one, and keep it — the workflow needs it.
 >   transition release: build it with the *new* public key embedded in
 >   `tauri.conf.json`, but sign it with the *old* private key. Existing installs
 >   verify it against the old key, accept it, and install a binary that now
->   trusts the new key. Only once installs have taken that release do later
->   releases get signed with the new private key. Signing the transition release
->   with the old key is the whole mechanism — skip it and there is no path
->   across.
+>   trusts the new key. This only migrates installations that actually receive
+>   that transition. With the current static `latest.json` endpoint, an
+>   installation that misses the transition and later sees a release signed
+>   only by the new key will reject it. Reliable rotation therefore needs a
+>   deliberately designed and tested migration strategy, potentially including
+>   a version-aware endpoint that keeps serving the bridge to old clients.
 > - **Old private key lost or destroyed — no transition possible.** Nothing can
 >   produce an update that existing installs will accept, so there is no signed
 >   route forward. Every user has to download and run a fresh installer by hand.
 >   That is the cost of losing the key, and it is why step 4 exists.
 >
-> Rotate only if the private key is lost or believed to have leaked.
+> Do not replace the established key unless necessary. If it is lost, existing
+> installs require manual recovery. If compromise is suspected while the old
+> key remains available, design and test the complete transition plan before
+> changing either key.
 
 > **The private key is the whole security model.** Anybody holding it can sign
 > an update that every DinoDepot Studio install in the world will accept and

@@ -940,9 +940,12 @@ What that public key now fixes is the identity of every future update: an
 install checks signatures against the key compiled into its own binary, so
 swapping it and signing with a new private key strands every install already in
 the field — their update checks fail verification and stay failed. Rotation is
-possible, but only as a planned transition release signed with the *old* key
-that carries the new public key across; `docs/release.md` has the procedure.
-Treat it as a break, not a maintenance task.
+possible only through a planned migration. A transition release signed with the
+*old* key can carry the new public key across, but it helps only installations
+that actually receive it; with the current static `latest.json` endpoint,
+clients that miss the bridge can still be stranded by later new-key-only
+releases. `docs/release.md` records the constraints. Treat it as a break, not a
+maintenance task.
 
 ### Phase 8 test results
 
