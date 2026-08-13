@@ -27,28 +27,48 @@ update. Authenticode is optional and costs money.
 
 ## One-time setup
 
+**This section is done.** The key pair exists, the public half is in the app,
+and both Actions secrets are set. It is kept as the record of how, and as the
+instructions for the one situation that would need it again — a lost or
+compromised private key. Read the warning in step 1 before acting on any of it.
+
 ### 1. Generate the updater key pair
 
-On the maintainer's machine, once, ever:
+On the maintainer's machine, once, ever. In PowerShell, from the repository
+root:
 
-```bash
-npm run tauri signer generate -- -w dinodepot-updater.key
+```powershell
+$keyPath = Join-Path $env:USERPROFILE ".tauri\dinodepot-updater.key"
+& ".\node_modules\.bin\tauri.cmd" signer generate --write-keys "$keyPath"
 ```
 
-It writes two things and prints the public half:
+The binary is invoked directly because `npm run tauri signer generate -- -w …`
+does not work on this setup — npm mangles the argument handoff and the command
+fails before the generator runs.
 
-- `dinodepot-updater.key` — the **private** key
-- `dinodepot-updater.key.pub` — the public key
+It writes two files and prints the public half:
+
+- `%USERPROFILE%\.tauri\dinodepot-updater.key` — the **private** key
+- `%USERPROFILE%\.tauri\dinodepot-updater.key.pub` — the public key
+
+Note the path: `~\.tauri\`, outside the repository entirely, so no `.gitignore`
+rule has to be right for the private key to stay out of Git.
 
 You are asked for a password. Use one, and keep it — the workflow needs it.
+
+> **Do not run this again.** A new key pair is a *different* key pair. Every
+> install already carrying the current public key would refuse every update
+> signed by the new one, permanently and silently, and the only fix is for each
+> user to download and run a fresh installer by hand. Rotate only if the private
+> key is lost or believed to have leaked, and expect that cost.
 
 > **The private key is the whole security model.** Anybody holding it can sign
 > an update that every DinoDepot Studio install in the world will accept and
 > run. Treat it exactly as you would a signing certificate: it never goes in the
 > repository, never in a chat message, never in a screenshot.
 >
-> `.gitignore` already excludes `*.key`, but do not rely on that — keep it
-> outside the repository folder entirely.
+> `.gitignore` excludes `*.key`, but do not rely on that — keeping the key
+> outside the repository folder is what actually protects it.
 
 ### 2. Put the public key in the app
 
@@ -66,9 +86,11 @@ Copy the contents of `dinodepot-updater.key.pub` into
 It ships in the binary, which is the point — the running app uses it to check
 that an update was signed by the matching private key.
 
-The placeholder is currently `REPLACE_WITH_UPDATER_PUBLIC_KEY`. Until it is
-replaced, the app builds and runs, but **update checks will fail** — which is
-the safe way round.
+**Done.** The real public key was merged in
+[#3](https://github.com/CaotcAftermth/DinoDepot-Studio/pull/3); `pubkey` no
+longer holds a placeholder. Changing that value is the same decision as
+regenerating the key pair — see the warning above — because an install checks
+updates against whatever public key its own binary was built with.
 
 ### 3. Add the GitHub Actions secrets
 
@@ -81,11 +103,37 @@ In the repository, under *Settings → Secrets and variables → Actions*:
 
 `GITHUB_TOKEN` is provided by Actions; nothing to add.
 
+**Done.** Both secrets are configured. Neither has been exercised yet — the
+Release workflow has not run (see *What has and has not been proven* below).
+
 ### 4. Keep a backup of the private key
 
 Losing it means no existing install can ever be updated again — you would have
 to ship a new public key, which every user would have to install by hand.
 Keep an offline copy somewhere you would keep a password.
+
+**Done.** The key is backed up.
+
+---
+
+## What has and has not been proven
+
+Two workflows, and only one of them has ever run. Worth being precise about,
+because the setup above being finished does not mean the release path works.
+
+| | Trigger | Status |
+|---|---|---|
+| `ci.yml` | pull request, push | **Run, and passing.** Version check, `tsc`, frontend tests, Rust tests, production build all green on merged PRs. |
+| `release.yml` | `v*.*.*` tag | **Never run.** No tag has been pushed. |
+
+So what is currently unverified is everything CI does not touch: `tauri-action`
+itself, signing in the runner with the secrets, whether the draft release is
+created with the assets step 6 expects, and whether `latest.json` is generated
+and uploaded. A local `npm run tauri build` has produced a signed installer on
+the maintainer's machine, which is evidence about the bundler and the key — not
+about the workflow.
+
+Expect to have to look hard at the first tagged run.
 
 ---
 
