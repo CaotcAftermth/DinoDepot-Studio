@@ -1,0 +1,32 @@
+{
+  "formatVersion": 2,
+  "packs": [
+    {
+      "id": "additions-ascended-anomalocaris",
+      "name": "Additions Ascended: Anomalocaris",
+      "version": "1.0.1",
+      "updatedAt": "2026-08-15",
+      "author": "Garuda",
+      "description": "Adds the Adaptive Anomalocaris to your ARK! (Freemium)",
+      "curseforgeId": "987274",
+      "dir": "987274-Additions_Ascended_Anomalocaris",
+      "file": "",
+      "creatureCount": 2,
+      "itemCount": 10,
+      "versions": [
+        {
+          "version": "1.0.0",
+          "manifest": "987274-Additions_Ascended_Anomalocaris/versions/1.0.0/manifest.json",
+          "integrity": "6425e08c49d4edf0a61da61e7d7b83c536948c7efba9b5c443a264ba7880d67d",
+          "publishedAt": "2026-08-08"
+        },
+        {
+          "version": "1.0.1",
+          "manifest": "987274-Additions_Ascended_Anomalocaris/versions/1.0.1/manifest.json",
+          "integrity": "96e7e6f25848ddb26f52868629a1764359b600bc0d2bc6670683b1838f648324",
+          "publishedAt": "2026-08-15"
+        }
+      ]
+    }
+  ]
+}

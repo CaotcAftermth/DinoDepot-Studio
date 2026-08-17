@@ -1,18 +1,6 @@
 {
-  "formatVersion": 1,
-  "meta": {
-    "id": "additions-ascended-anomalocaris",
-    "name": "Additions Ascended: Anomalocaris",
-    "version": "1.0.1",
-    "updatedAt": "2026-08-15",
-    "author": "Garuda",
-    "description": "Adds the Adaptive Anomalocaris to your ARK! (Freemium)",
-    "curseforgeId": "987274",
-    "url": "https://www.curseforge.com/ark-survival-ascended/mods/additions-ascended-anomalocaris",
-    "docsUrl": "",
-    "discordUrl": "https://discord.gg/9X6TETNr5e",
-    "variantTag": ""
-  },
+  "format": "dinodepot.package-content",
+  "schemaVersion": 1,
   "iniNotes": "",
   "iniSettings": [],
   "creatures": [
@@ -80,11 +68,7 @@
     }
   ],
   "icons": {
-    "/aa_anomalo/dinos/anomalocarisaa_character_bp.anomalocarisaa_character_bp": "file:Anomalo_Entry.webp",
-    "/aa_anomalo/dinos/megaanomalocarisaa_character_bp.megaanomalocarisaa_character_bp": "file:Anomalo_Entry.webp",
-    "/aa_anomalo/dinos/consumables/primalitemconsumable_anomalococktail.primalitemconsumable_anomalococktail": "file:UI_Anomalo-ShrimpCocktail.webp",
-    "/aa_anomalo/dinos/consumables/primalitemconsumable_anomalomeat.primalitemconsumable_anomalomeat": "file:UI_Anomalo-ShrimpMeat.webp",
-    "/aa_anomalo/dinos/saddle/primalitemarmor_anomalocarissaddle.primalitemarmor_anomalocarissaddle": "file:Anomalo-SaddleHUD-Icon.webp"
+    "/aa_anomalo/dinos/anomalocarisaa_character_bp.anomalocarisaa_character_bp": "file:assets/Anomalo_Entry.png"
   },
   "notes": {},
   "maps": {},
