@@ -334,11 +334,9 @@ function FamilyCard({
           )}
           {state.family === "viewerData" && (
             <p className="text-xs text-sky-400">
-              For real creature/item images on the public page, upload your
-              images folder (with its <span className="mono">creatures\</span>{" "}
-              and <span className="mono">items\</span> subfolders) to the repo
-              as <span className="mono">/images</span> — the page falls back to
-              emoji for anything missing.
+              Managed official, modpack, and project-owned WebP/PNG icons are
+              included in the published page automatically. Anything missing
+              uses DinoDepot's default icon.
             </p>
           )}
           {record && (

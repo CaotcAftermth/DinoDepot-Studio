@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolvePackUrls } from "./modpackSource";
+import { resolvePackageManifestUrl, resolvePackUrls } from "./modpackSource";
 import { defaultModpackRegistry } from "../model/modpack";
 
 const registry = defaultModpackRegistry();
@@ -7,6 +7,26 @@ const RAW = "https://raw.githubusercontent.com";
 const base = `${RAW}/${registry.owner}/${registry.repo}/${registry.branch}/${registry.path}`;
 
 describe("resolving a link someone pasted", () => {
+  it("recognizes a GitHub immutable-version folder as a v2 manifest", () => {
+    expect(
+      resolvePackageManifestUrl(
+        `https://github.com/${registry.owner}/${registry.repo}/tree/main/${registry.path}/987-Pack/versions/1.2.3`,
+        registry,
+      ),
+    ).toBe(
+      `${base}/987-Pack/versions/1.2.3/manifest.json`,
+    );
+  });
+
+  it("does not mistake a compatibility pack folder for a v2 manifest", () => {
+    expect(
+      resolvePackageManifestUrl(
+        `https://github.com/${registry.owner}/${registry.repo}/tree/main/${registry.path}/987-Pack`,
+        registry,
+      ),
+    ).toBeNull();
+  });
+
   it("takes the folder listing you land on when browsing", () => {
     expect(
       resolvePackUrls(

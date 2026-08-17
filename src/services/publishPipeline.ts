@@ -66,7 +66,9 @@ export interface PublishContext {
   /** Runs the whole project validation. */
   validate(): ValidationReport;
   /** Generates the viewer. Called only after validation passes. */
-  generate(): Omit<ArtifactInput, "projectId" | "sourceRevision" | "publishOperationId">;
+  generate():
+    | Omit<ArtifactInput, "projectId" | "sourceRevision" | "publishOperationId">
+    | Promise<Omit<ArtifactInput, "projectId" | "sourceRevision" | "publishOperationId">>;
   accountId(): Promise<string>;
   saveLocal(patch: Partial<LocalProjectState>): Promise<void>;
   /** Whether the administrator has accepted the outstanding warnings. */
@@ -173,7 +175,7 @@ export async function publishProject(context: PublishContext): Promise<PublishOu
   let files: PublicFiles;
   let manifest: BuildManifest;
   try {
-    const generated = context.generate();
+    const generated = await context.generate();
     const built = buildArtifact({
       ...generated,
       projectId: context.projectId,

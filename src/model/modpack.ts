@@ -5,10 +5,12 @@ import {
   IniSettingSchema,
   ItemInfoSchema,
   normalizeBpPath,
+  type CatalogEntry,
   type CatalogFile,
   type ContentSource,
 } from "./catalog";
 import { CreatureInfoSchema, type CreatureInfo } from "./creatureInfo";
+import { normalizeCurseforgeId } from "./catalogDuplicates";
 import { STUDIO_REPO } from "./studio";
 
 /**
@@ -128,8 +130,22 @@ export const RegistryEntrySchema = z.object({
   file: z.string().default(""),
   creatureCount: z.number().int().min(0).default(0),
   itemCount: z.number().int().min(0).default(0),
+  /** Immutable historical versions. Absent on version-1 registry indexes. */
+  versions: z
+    .array(
+      z.object({
+        version: z.string().min(1),
+        /** Relative path to the immutable v2 manifest in this registry. */
+        manifest: z.string().min(1),
+        /** SHA-256 of the manifest bytes, when the publisher supplied it. */
+        integrity: z.string().regex(/^[a-f0-9]{64}$/i).default(""),
+        publishedAt: z.string().default(""),
+      }),
+    )
+    .optional(),
 });
 export type RegistryEntry = z.infer<typeof RegistryEntrySchema>;
+export type RegistryVersion = NonNullable<RegistryEntry["versions"]>[number];
 
 export const RegistryIndexSchema = z.object({
   formatVersion: z.number().int().min(1).default(MODPACK_FORMAT),
@@ -316,8 +332,8 @@ export function sourceToModpack(
     creatures: source.creatures,
     items: source.items,
     // Local icons are rewritten to bare file names: the exporting project may
-    // keep them in nested folders, but a pack carries them flat in icons/ so
-    // the importing project can drop them straight into its own images folder.
+    // keep them in nested folders, but the v1 compatibility alias carries them
+    // flat in icons/. V2 keeps the same bytes inside its managed package root.
     icons: Object.fromEntries(
       Object.entries(slice(catalog.icons, paths)).map(([key, value]) => [
         key,
@@ -354,6 +370,114 @@ export interface ApplyModpackResult {
   updated: boolean;
   /** Per-path records kept because the project had already written its own. */
   keptLocal: number;
+  /** How this install found the source it updated. */
+  matchedBy: "modpackId" | "curseforgeId" | null;
+}
+
+/**
+ * Combines local structural discovery with curated package membership.
+ *
+ * Blueprint path is identity. A package may improve the display name or add
+ * content the filename heuristic missed, but installing enrichment must not
+ * erase a class that ShooterGame actually exposed or change its stable local
+ * row id.
+ */
+export function mergeStructuralEntries(
+  local: CatalogEntry[],
+  packaged: CatalogEntry[],
+): CatalogEntry[] {
+  const packageByPath = new Map(
+    packaged.map((entry) => [normalizeBpPath(entry.bpPath), entry]),
+  );
+  const seen = new Set<string>();
+  const merged = local.map((entry) => {
+    const key = normalizeBpPath(entry.bpPath);
+    seen.add(key);
+    const enrichment = packageByPath.get(key);
+    return enrichment
+      ? { ...enrichment, id: entry.id, bpPath: entry.bpPath }
+      : entry;
+  });
+  for (const entry of packaged) {
+    const key = normalizeBpPath(entry.bpPath);
+    if (!seen.has(key)) merged.push(entry);
+  }
+  return merged.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Resolves Discovery, package enrichment, then hand-added structural rows. */
+export function enrichSourceStructure(
+  current: ContentSource | undefined,
+  packaged: CatalogEntry[],
+  kind: "creatures" | "items",
+): CatalogEntry[] {
+  if (!current?.discovery) {
+    if (current?.modpackId) return [...packaged];
+    return mergeStructuralEntries(current?.[kind] ?? [], packaged);
+  }
+  const enriched = mergeStructuralEntries(current.discovery[kind], packaged);
+  return mergeStructuralEntries(
+    enriched,
+    current.structuralOverrides?.[kind] ?? [],
+  );
+}
+
+/** Exact immutable version record, never a latest-version substitution. */
+export function registryVersion(
+  entry: RegistryEntry,
+  version: string,
+): RegistryVersion | null {
+  return (
+    entry.versions?.find((candidate) => candidate.version === version) ?? null
+  );
+}
+
+export interface ModpackSourceMatch {
+  source: ContentSource | null;
+  matchedBy: "modpackId" | "curseforgeId" | null;
+  /** More than one source claimed the identity, so adopting either is unsafe. */
+  ambiguous: ContentSource[];
+}
+
+/**
+ * Finds the one source a pack may safely update.
+ *
+ * A pack binding is strongest. A unique CurseForge ID lets a reviewed
+ * Discovery source be adopted without duplication. Names are never identity,
+ * and duplicate claims stop the install for an explicit cleanup decision.
+ */
+export function matchModpackSource(
+  catalog: Pick<CatalogFile, "sources">,
+  pack: Pick<Modpack, "meta">,
+): ModpackSourceMatch {
+  const byPack = catalog.sources.filter(
+    (source) => source.modpackId && source.modpackId === pack.meta.id,
+  );
+  if (byPack.length === 1) {
+    return { source: byPack[0], matchedBy: "modpackId", ambiguous: [] };
+  }
+  if (byPack.length > 1) {
+    return { source: null, matchedBy: null, ambiguous: byPack };
+  }
+
+  const curseforgeId = normalizeCurseforgeId(pack.meta.curseforgeId);
+  if (!curseforgeId) return { source: null, matchedBy: null, ambiguous: [] };
+  const byCurseforge = catalog.sources.filter(
+    (source) =>
+      source.kind === "mod" &&
+      normalizeCurseforgeId(source.curseforgeId) === curseforgeId,
+  );
+  if (byCurseforge.length === 1) {
+    return {
+      source: byCurseforge[0],
+      matchedBy: "curseforgeId",
+      ambiguous: [],
+    };
+  }
+  if (byCurseforge.length > 1) {
+    return { source: null, matchedBy: null, ambiguous: byCurseforge };
+  }
+  return { source: null, matchedBy: null, ambiguous: [] };
 }
 
 /**
@@ -371,9 +495,13 @@ export function applyModpack(
   opts: { keepLocalEdits?: boolean } = {},
 ): ApplyModpackResult {
   const keepLocal = opts.keepLocalEdits ?? true;
-  const existing = catalog.sources.find(
-    (s) => s.modpackId && s.modpackId === pack.meta.id,
-  );
+  const match = matchModpackSource(catalog, pack);
+  if (match.ambiguous.length > 0) {
+    throw new Error(
+      `Cannot install ${pack.meta.name}: ${match.ambiguous.length} content sources claim the same package identity. Resolve the duplicate sources first.`,
+    );
+  }
+  const existing = match.source ?? undefined;
 
   const source: ContentSource = ContentSourceSchema.parse({
     ...(existing ?? {}),
@@ -390,8 +518,8 @@ export function applyModpack(
     // The composer's working state belongs to this cluster; an update to the
     // mod's documentation has no business resetting it.
     iniBuild: existing?.iniBuild ?? {},
-    creatures: pack.creatures,
-    items: pack.items,
+    creatures: enrichSourceStructure(existing, pack.creatures, "creatures"),
+    items: enrichSourceStructure(existing, pack.items, "items"),
     // Whether the mod is running here is a cluster decision, not the pack's.
     enabled: existing?.enabled ?? true,
     removed: existing?.removed ?? false,
@@ -436,6 +564,7 @@ export function applyModpack(
     sourceId: source.id,
     updated: Boolean(existing),
     keptLocal,
+    matchedBy: match.matchedBy,
   };
 }
 
@@ -563,11 +692,21 @@ taming write-ups — as a folder other clusters can install in one click.
 ## Layout
 
     <curseforgeId>-<Mod_Name>/
-      modpack.json     the pack itself
-      icons/           the icon images modpack.json references
+      modpack.json                 latest-version compatibility alias
+      icons/                       compatibility icon images
+      versions/<exact-version>/
+        manifest.json              identity, hashes, sizes, asset list
+        content.json               canonical package content
+        assets/                    immutable package-owned images
 
-An icon in \`modpack.json\` is written \`"file:Rex.png"\` and must have a matching
-\`icons/Rex.png\`. Emoji (\`"🦖"\`) and full URLs need no file.
+An icon in \`modpack.json\` is written \`"file:Rex.webp"\` and normally has a
+matching \`icons/Rex.webp\`. WebP is preferred and PNG is accepted. Emoji
+(\`"🦖"\`) and full URLs need no file. A missing or unsupported optional image
+is omitted during packaging, and that entry uses DinoDepot's default icon.
+
+Studio generates the immutable \`versions/\` files and updates the registry
+index when it exports or submits a pack. Existing clients continue to
+read \`modpack.json\` and \`icons/\`; new clients pin the exact manifest.
 
 ## Building one
 

@@ -1,8 +1,4 @@
-import {
-  CURRENT_PROJECT_SCHEMA,
-  MINIMUM_STUDIO_VERSION,
-  PROJECT_FORMAT,
-} from "../manifest";
+import { PROJECT_FORMAT } from "../manifest";
 import { remoteUrlFor } from "../localState";
 import { PROJECT_FILE } from "../project";
 import type { MigrationOutcome, MigrationStep, ProjectFiles } from "./types";
@@ -55,8 +51,10 @@ export const v1ToV2: MigrationStep = {
     const manifest = {
       format: PROJECT_FORMAT,
       projectId: context.projectId,
-      schemaVersion: CURRENT_PROJECT_SCHEMA,
-      minimumStudioVersion: MINIMUM_STUDIO_VERSION,
+      // Adjacent migrations must never point at the moving current constants:
+      // this step permanently produces schema 2, even after schema 3 ships.
+      schemaVersion: 2,
+      minimumStudioVersion: "0.2.0",
       // Schema 1 never recorded when a project was made. Stamping the
       // migration time is honest — it is the oldest moment we can prove.
       createdAt: context.now.toISOString(),

@@ -1,6 +1,6 @@
 [package]
 name = "dino-depot-studio"
-version = "0.2.1"
+version = "0.3.0"
 description = "DinoDepot Studio"
 authors = ["GG Fizz"]
 edition = "2021"
@@ -30,6 +30,7 @@ chrono = "0.4"
 reqwest = { version = "0.12", features = ["json"] }
 base64 = "0.22"
 url = "2"
+sha2 = "0.10"
 tokio = { version = "1", features = ["process", "io-util"] }
 git2 = { version = "0.20", default-features = false, features = ["https", "vendored-libgit2"] }
 

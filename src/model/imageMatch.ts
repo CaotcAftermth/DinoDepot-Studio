@@ -46,11 +46,13 @@ export function buildImageIndex(files: string[]): ImageIndex {
     }
   }
 
-  // Plain names first so "Anomalocaris.png" beats "Anomalocaris (TSW).png".
+  // Plain names first; for the same name WebP wins over the PNG fallback.
   const sorted = [...files].sort((a, b) => {
     const aParen = /\(/.test(a) ? 1 : 0;
     const bParen = /\(/.test(b) ? 1 : 0;
-    return aParen - bParen || a.localeCompare(b);
+    const aPng = /\.png$/i.test(a) ? 1 : 0;
+    const bPng = /\.png$/i.test(b) ? 1 : 0;
+    return aParen - bParen || aPng - bPng || a.localeCompare(b);
   });
 
   for (const relPath of sorted) {

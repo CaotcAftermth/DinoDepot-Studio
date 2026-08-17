@@ -90,7 +90,7 @@ export function MapOfOriginModal({
                 )}
                 style={{ color: m.color || undefined }}
               >
-                <IconValue icon={m.icon} size={16} />
+                <IconValue icon={m.icon} officialMap={m.name} size={16} />
                 <span className="truncate">{m.name}</span>
                 {!m.enabled && <span className="text-amber-400 shrink-0">⚠</span>}
               </button>
