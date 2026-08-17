@@ -1,0 +1,33 @@
+{
+  "format": "dinodepot.package",
+  "formatVersion": 2,
+  "kind": "modpack",
+  "packageId": "additions-ascended-anomalocaris",
+  "version": "1.0.0",
+  "curseforgeId": "987274",
+  "publishedAt": "2026-08-08",
+  "meta": {
+    "name": "Additions Ascended: Anomalocaris",
+    "updatedAt": "2026-08-08",
+    "author": "Garuda",
+    "description": "Adds the Adaptive Anomalocaris to your ARK! (Freemium)",
+    "url": "https://www.curseforge.com/ark-survival-ascended/mods/additions-ascended-anomalocaris",
+    "docsUrl": "",
+    "discordUrl": "https://discord.gg/9X6TETNr5e",
+    "variantTag": ""
+  },
+  "content": {
+    "path": "content.json",
+    "sha256": "83a1adeff274bb6a9622036b28afa5b232b035ca9b72a36c99583cd7f95ddb31",
+    "size": 2985,
+    "mediaType": "application/json"
+  },
+  "assets": [
+    {
+      "path": "assets/Anomalo_Entry.png",
+      "sha256": "d1b116ad28728a7481af5b204e983a580bc492daffc96618f6e18ba460326dc7",
+      "size": 38486,
+      "mediaType": "image/png"
+    }
+  ]
+}

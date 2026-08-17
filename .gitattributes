@@ -1,0 +1,13 @@
+# Immutable package artifacts are verified byte-for-byte: a manifest pins the
+# SHA-256 and byte length of every file beside it, and the registry index pins
+# the SHA-256 of the manifest itself.
+#
+# Line-ending translation therefore breaks them. With core.autocrlf=true, git
+# rewrites LF to CRLF on checkout, which changes both the length and the hash
+# of every JSON file here — so a fresh clone (a release build's clone included)
+# would produce a package that fails its own integrity check and silently falls
+# back to default icons.
+#
+# -text disables all end-of-line conversion for this tree. Nothing under
+# Public_Content is hand-edited prose; it is generated, hashed output.
+Public_Content/** -text
