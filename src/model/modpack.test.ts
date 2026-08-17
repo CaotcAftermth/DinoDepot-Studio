@@ -4,10 +4,13 @@ import {
   compareVersions,
   ModpackSchema,
   iconBaseName,
+  matchModpackSource,
   packDirName,
   packFileName,
   packIconFiles,
   registryEntryFor,
+  RegistryEntrySchema,
+  registryVersion,
   searchRegistry,
   slugify,
   sourceToModpack,
@@ -145,6 +148,23 @@ describe("updateAvailable", () => {
   });
 });
 
+describe("immutable registry versions", () => {
+  it("finds only the requested exact version", () => {
+    const entry = RegistryEntrySchema.parse({
+      id: "pack",
+      name: "Pack",
+      version: "2.0.0",
+      versions: [
+        { version: "1.0.0", manifest: "pack/versions/1.0.0/manifest.json" },
+        { version: "2.0.0", manifest: "pack/versions/2.0.0/manifest.json" },
+      ],
+    });
+    expect(registryVersion(entry, "1.0.0")?.manifest).toContain("/1.0.0/");
+    expect(registryVersion(entry, "1.0")).toBeNull();
+    expect(registryVersion(entry, "3.0.0")).toBeNull();
+  });
+});
+
 describe("searchRegistry", () => {
   const packs: RegistryEntry[] = [
     registryEntryFor(
@@ -254,6 +274,20 @@ describe("applyModpack", () => {
     expect(second.catalog.sources[0].modpackVersion).toBe("2.0.0");
   });
 
+  it("removes package-only structure when a directly installed pack updates", () => {
+    const firstPack = pack();
+    firstPack.creatures.push({
+      id: "removed",
+      name: "Removed",
+      bpPath: "/Test/Dinos/Removed.Removed",
+    });
+    const first = applyModpack(emptyCatalog(), firstPack, ids);
+    const second = applyModpack(first.catalog, pack(), ids);
+
+    expect(second.catalog.sources[0].creatures).toHaveLength(1);
+    expect(second.catalog.sources[0].creatures[0].bpPath).toBe(CREATURE);
+  });
+
   it("keeps the cluster's own decisions across an update", () => {
     const first = applyModpack(emptyCatalog(), pack(), ids);
     // Local state a pack has no business resetting.
@@ -305,13 +339,99 @@ describe("applyModpack", () => {
   });
 
   it("never matches a hand-added source by name alone", () => {
-    // Only the pack id links an install to a pack — a same-named manual entry
-    // must not be silently taken over.
+    // A same-named manual entry for another CurseForge project must not be
+    // silently taken over. Names are never identity.
     const catalog = emptyCatalog();
-    catalog.sources = [source({ id: "manual", modpackId: "" })];
+    catalog.sources = [
+      source({ id: "manual", modpackId: "", curseforgeId: "99999" }),
+    ];
     const result = applyModpack(catalog, pack(), ids);
     expect(result.updated).toBe(false);
     expect(result.catalog.sources).toHaveLength(2);
+  });
+
+  it("adopts a unique discovered source with the same CurseForge id", () => {
+    const catalog = emptyCatalog();
+    catalog.sources = [source({ id: "discovered", modpackId: "" })];
+
+    const result = applyModpack(catalog, pack(), ids);
+
+    expect(result.updated).toBe(true);
+    expect(result.matchedBy).toBe("curseforgeId");
+    expect(result.sourceId).toBe("discovered");
+    expect(result.catalog.sources).toHaveLength(1);
+    expect(result.catalog.sources[0].modpackId).toBe("test-mod");
+  });
+
+  it("enriches discovered structure without erasing locally discovered paths", () => {
+    const discoveredOnly =
+      "/Test/Dinos/Hidden_Character_BP.Hidden_Character_BP";
+    const catalog = emptyCatalog();
+    catalog.sources = [
+      source({
+        id: "discovered",
+        modpackId: "",
+        creatures: [
+          { id: "stable-local", name: "Raw Foo", bpPath: CREATURE },
+          { id: "local-only", name: "Hidden", bpPath: discoveredOnly },
+        ],
+      }),
+    ];
+    const curated = pack();
+    curated.creatures[0] = { ...curated.creatures[0], name: "Curated Foo" };
+
+    const result = applyModpack(catalog, curated, ids);
+    const creatures = result.catalog.sources[0].creatures;
+
+    expect(creatures).toHaveLength(2);
+    expect(creatures.find((entry) => entry.bpPath === CREATURE)).toMatchObject({
+      id: "stable-local",
+      name: "Curated Foo",
+    });
+    expect(creatures.some((entry) => entry.bpPath === discoveredOnly)).toBe(true);
+  });
+
+  it("does not retain removed package-only rows above a Discovery snapshot", () => {
+    const oldPackagePath =
+      "/Test/Dinos/Removed_Character_BP.Removed_Character_BP";
+    const catalog = emptyCatalog();
+    catalog.sources = [
+      source({
+        id: "discovered",
+        modpackId: "test-mod",
+        discovery: {
+          fileId: "42",
+          shortName: "Test",
+          creatures: [{ id: "local", name: "Foo", bpPath: CREATURE }],
+          items: [],
+        },
+        creatures: [
+          { id: "local", name: "Foo", bpPath: CREATURE },
+          { id: "old-pack", name: "Removed", bpPath: oldPackagePath },
+        ],
+        items: [],
+      }),
+    ];
+
+    const result = applyModpack(catalog, pack(), ids);
+
+    expect(
+      result.catalog.sources[0].creatures.some(
+        (entry) => entry.bpPath === oldPackagePath,
+      ),
+    ).toBe(false);
+  });
+
+  it("refuses an ambiguous CurseForge identity instead of adding another duplicate", () => {
+    const catalog = emptyCatalog();
+    catalog.sources = [
+      source({ id: "one", modpackId: "" }),
+      source({ id: "two", modpackId: "" }),
+    ];
+
+    expect(matchModpackSource(catalog, pack()).ambiguous).toHaveLength(2);
+    expect(() => applyModpack(catalog, pack(), ids)).toThrow(/duplicate sources/i);
+    expect(catalog.sources).toHaveLength(2);
   });
 });
 

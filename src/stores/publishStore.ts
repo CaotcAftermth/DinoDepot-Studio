@@ -5,13 +5,14 @@ import { publishProject, type PublishOutcome, type PublishStage } from "../servi
 import { validateProject, type ValidationReport } from "../validation/project";
 import { serializeViewerData } from "../serializers/viewer";
 import { buildViewerHtml } from "../viewer/template";
-import { rawImagesUrl, rawUrl } from "../services/publish";
+import { rawUrl } from "../services/publish";
 import { effectiveGithubConfig } from "../model/project";
 import { PUBLIC_ROOT } from "../model/publishArtifact";
 import { asStudioError, StudioError } from "../model/errors";
-import { useDraftsStore } from "./draftsStore";
-import { currentGithubConfig, useProjectStore } from "./projectStore";
+import { resolveImagesDir, useDraftsStore } from "./draftsStore";
+import { useProjectStore } from "./projectStore";
 import { useSyncStore } from "./syncStore";
+import { vendorViewerAssets } from "../services/viewerAssets";
 
 /**
  * Publishing, driven from the stores.
@@ -116,6 +117,8 @@ function validationInput() {
     players: drafts.players,
     index: null,
     imageFiles: drafts.imageFiles,
+    dependencyDiagnostics: drafts.dependencyDiagnostics,
+    dependenciesLoading: drafts.dependenciesLoading,
   };
 }
 
@@ -182,20 +185,41 @@ async function prepareDelivery(
 }
 
 /** The viewer, built from the current project. */
-function generateSite() {
+async function generateSite() {
   const project = useProjectStore.getState();
   const drafts = useDraftsStore.getState();
   const settings = project.settings!;
-  const github = currentGithubConfig();
   const clusterName = settings.cluster || settings.name || "ASA Cluster";
 
-  const viewerData = serializeViewerData(
-    drafts.production,
-    drafts.catalog,
-    clusterName,
-    drafts.imageFiles,
-    settings,
+  const skipped: string[] = [];
+  const viewerData = await vendorViewerAssets(
+    serializeViewerData(
+      drafts.production,
+      drafts.catalog,
+      clusterName,
+      drafts.imageFiles,
+      settings,
+    ),
+    {
+      catalog: drafts.catalog,
+      packageAssets: drafts.packageAssets,
+      packageRoots: drafts.packageRoots,
+      projectImagesDir: resolveImagesDir(
+        project.dir ?? "",
+        project.local?.imagesDir,
+      ),
+      onSkipped: (logicalPath, reason) =>
+        skipped.push(`${logicalPath}: ${reason}`),
+    },
   );
+  if (skipped.length > 0) {
+    // Nonfatal by design — those entries fall back to their glyph rather than
+    // holding up the whole cluster's publication.
+    const { toast } = await import("../components/toast");
+    toast.info(
+      `${skipped.length} viewer image${skipped.length === 1 ? "" : "s"} could not be embedded and will show their default icon (${skipped[0]})`,
+    );
+  }
 
   return {
     indexHtml: buildViewerHtml({
@@ -204,7 +228,7 @@ function generateSite() {
       // published tree — the old absolute raw URL pointed at the *source*
       // repository, which under the recommended topology is private.
       dataUrl: "./data/viewer.json",
-      imagesUrl: rawImagesUrl(github),
+      imagesUrl: "",
     }),
     data: { "viewer.json": `${JSON.stringify(viewerData, null, 2)}\n` },
   };

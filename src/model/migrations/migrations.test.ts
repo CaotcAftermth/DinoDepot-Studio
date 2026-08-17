@@ -61,7 +61,7 @@ describe("migration chain", () => {
   });
 });
 
-describe("schema 1 → 2, against the released v1 fixture", () => {
+describe("schema 1 to current, against the released v1 fixture", () => {
   const result = () => migrateProject(SCHEMA_V1_PROJECT, CONTEXT);
 
   it("produces a project the current schema accepts", () => {
@@ -72,7 +72,7 @@ describe("schema 1 → 2, against the released v1 fixture", () => {
   it("stamps the format marker, the id and the schema version", () => {
     const header = readProjectHeader(result().files[PROJECT_FILE.settings]);
     expect(header.kind).toBe("manifest");
-    expect(header.schemaVersion).toBe(2);
+    expect(header.schemaVersion).toBe(CURRENT_PROJECT_SCHEMA);
     expect(header.projectId).toBe(CONTEXT.projectId);
   });
 
@@ -204,6 +204,113 @@ describe("schema 1 → 2, against the released v1 fixture", () => {
     expect(JSON.parse(twice.files[PROJECT_FILE.settings]).projectId).toBe(
       CONTEXT.projectId,
     );
+  });
+});
+
+describe("schema 2 -> 3 package dependency migration", () => {
+  it("preserves a legacy installed pack as an exact materialized dependency", () => {
+    const current = migrateProject(
+      {
+        [PROJECT_FILE.settings]: JSON.stringify({
+          format: "dinodepot.project",
+          projectId: CONTEXT.projectId,
+          schemaVersion: 2,
+          minimumStudioVersion: "0.2.0",
+          createdAt: CONTEXT.now.toISOString(),
+          capabilities: {},
+          name: "Test",
+          cluster: "Test",
+          defaults: {
+            intervalSeconds: 300,
+            chanceToProduce: 1,
+            quantityPerDino: 1,
+            maxQuantityPerCycle: 0,
+            maxQuantityInTerminal: 0,
+          },
+          simulator: {
+            defaultHours: 24,
+            defaultCreatureCount: 10,
+            highOutputPerHour: 500,
+            lowOutputPerHour: 1,
+          },
+        }),
+        [PROJECT_FILE.catalog]: JSON.stringify({
+          schemaVersion: 1,
+          sources: [
+            {
+              id: "source-1",
+              modpackId: "test-pack",
+              modpackVersion: "1.2.3",
+              curseforgeId: "123456",
+            },
+          ],
+        }),
+      },
+      CONTEXT,
+    );
+    const settings = ProjectSettingsSchema.parse(
+      JSON.parse(current.files[PROJECT_FILE.settings]),
+    );
+
+    expect(settings.packageDependencies).toMatchObject([
+      {
+        packageId: "test-pack",
+        version: "1.2.3",
+        sourceId: "source-1",
+        mode: "materialized",
+      },
+    ]);
+  });
+
+  it("preserves v1 package identities that are not safe library slugs", () => {
+    const settings = JSON.parse(
+      migrateProject(
+        {
+          [PROJECT_FILE.settings]: JSON.stringify({
+            format: "dinodepot.project",
+            projectId: CONTEXT.projectId,
+            schemaVersion: 2,
+            minimumStudioVersion: "0.2.0",
+            createdAt: CONTEXT.now.toISOString(),
+            name: "Test",
+            cluster: "Test",
+            defaults: {
+              intervalSeconds: 300,
+              chanceToProduce: 1,
+              quantityPerDino: 1,
+              maxQuantityPerCycle: 0,
+              maxQuantityInTerminal: 0,
+            },
+            simulator: {
+              defaultHours: 24,
+              defaultCreatureCount: 10,
+              highOutputPerHour: 500,
+              lowOutputPerHour: 1,
+            },
+          }),
+          [PROJECT_FILE.catalog]: JSON.stringify({
+            schemaVersion: 1,
+            sources: [
+              {
+                id: "source-1",
+                modpackId: "Old Pack Name",
+                modpackVersion: "release one",
+                curseforgeId: "123456",
+              },
+            ],
+          }),
+        },
+        CONTEXT,
+      ).files[PROJECT_FILE.settings],
+    );
+
+    expect(settings.packageDependencies).toMatchObject([
+      {
+        packageId: "Old Pack Name",
+        version: "release one",
+        mode: "materialized",
+      },
+    ]);
   });
 });
 

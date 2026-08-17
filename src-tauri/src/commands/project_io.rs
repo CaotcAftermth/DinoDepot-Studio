@@ -208,8 +208,14 @@ fn copy_tree(from: &Path, to: &Path) -> Result<usize, String> {
         let entry = entry.map_err(err)?;
         let name = entry.file_name().to_string_lossy().to_string();
         // `backups` holds previous snapshots, `.dinodepot-staging` holds a
-        // migration in flight, and neither belongs inside a new snapshot.
-        if name == "backups" || name == STAGING_DIR || name == "recovery" {
+        // migration in flight, and neither belongs inside a new snapshot. The
+        // lock files describe who is editing right now, which is never true of
+        // a copy — restoring one would hand the restored project a lock.
+        if name == "backups"
+            || name == STAGING_DIR
+            || name == "recovery"
+            || name.starts_with(".dinodepot-lock")
+        {
             continue;
         }
         let target = to.join(&name);

@@ -5,7 +5,6 @@ import { classNameOf } from "../../services/spawnCommands";
 import {
   EntityIcon,
   IconPickerModal,
-  type IconFolder,
 } from "../../components/EntityIcon";
 import { Badge, Button, Field, Input, Modal } from "../../components/ui";
 import { toast } from "../../components/toast";
@@ -34,7 +33,6 @@ function rekey<T>(
 export function EntryDataModal({
   entry,
   kind,
-  iconFolder,
   /** False for bundled official content, whose name and path are read-only. */
   editable,
   /** The entry already using a path, anywhere in the effective catalog. */
@@ -44,7 +42,6 @@ export function EntryDataModal({
 }: {
   entry: CatalogEntry;
   kind: "creatures" | "items";
-  iconFolder?: IconFolder;
   editable: boolean;
   findConflict: (bpPath: string) => { label: string } | null;
   onSave: (next: CatalogEntry) => void;
@@ -203,7 +200,6 @@ export function EntryDataModal({
           bpPath={entry.bpPath}
           name={entry.name}
           kind={kind}
-          folder={iconFolder}
           onClose={() => setPickingIcon(false)}
         />
       )}

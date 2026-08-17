@@ -195,10 +195,15 @@ describe("icons", () => {
     expect(issuesFor(report, "assets")[0].message).toContain("rex.webp");
   });
 
-  it("warns about an icon that is not a WebP", () => {
+  it("accepts PNG as the fallback package image format", () => {
     const report = withIcon("file:rex.png", ["rex.png"]);
+    expect(report.warnings).toBe(0);
+  });
+
+  it("warns about formats outside WebP and PNG", () => {
+    const report = withIcon("file:rex.jpg", ["rex.jpg"]);
     expect(report.warnings).toBe(1);
-    expect(issuesFor(report, "assets")[0].message).toContain("slower");
+    expect(issuesFor(report, "assets")[0].message).toContain("WebP or PNG");
   });
 
   it("is happy with a WebP that is present", () => {

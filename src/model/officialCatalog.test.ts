@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   effectiveOfficialSource,
   isBundledOfficialId,
+  officialMapAssetPath,
   officialCategories,
   officialSource,
   officialStackSizes,
@@ -97,6 +98,14 @@ describe("ASA availability review", () => {
 });
 
 describe("bundled item facts", () => {
+  it("maps supported official maps to their managed package asset", () => {
+    expect(officialMapAssetPath("Genesis: Part 2")).toBe(
+      "assets/maps/genesis_2.png",
+    );
+    expect(officialMapAssetPath("Astraeos")).toBeNull();
+    expect(officialMapAssetPath("The Island", "🌋")).toBeNull();
+  });
+
   it("carries a stack size for every bundled item", () => {
     const missing = officialSource.items.filter(
       (i) => !officialStackSizes.has(normalizeBpPath(i.bpPath)),

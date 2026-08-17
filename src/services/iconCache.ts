@@ -5,8 +5,9 @@ import { asStudioError, StudioError } from "../model/errors";
  * Shared modpack icons, cached on disk.
  *
  * Project icons load from the synchronized checkout and need none of this.
- * These are the icons belonging to *official* modpacks — the same 80×80 WebP
- * for everybody who installs that pack, fetched from the public registry.
+ * Managed package icons now resolve directly from the immutable package
+ * library. This cache remains for remote previews and legacy HTTPS overrides;
+ * accepted bytes are WebP (preferred) or PNG.
  *
  * Content-addressed, so the key changes when the image does and a stale hit is
  * impossible. One request per icon per change, never one per render.

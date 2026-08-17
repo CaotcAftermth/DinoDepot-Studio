@@ -269,7 +269,11 @@ export function CreatureDetailsModal({
             >
               {originMap ? (
                 <>
-                  <IconValue icon={originStyle?.icon ?? "🗺️"} size={14} />
+                  <IconValue
+                    icon={originStyle?.icon ?? "🗺️"}
+                    officialMap={originMap}
+                    size={14}
+                  />
                   <span>{originMap}</span>
                 </>
               ) : (
@@ -639,7 +643,7 @@ function SpawnsTab({
                 !map.enabled && "opacity-60",
               )}
             >
-              <IconValue icon={map.icon} size={13} />
+              <IconValue icon={map.icon} officialMap={map.name} size={13} />
               {map.name}
               {!map.enabled && <span className="text-amber-400">⚠</span>}
             </button>

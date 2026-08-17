@@ -1,12 +1,9 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useBlocker } from "react-router-dom";
 import { useProjectStore } from "../stores/projectStore";
-import { useDraftsStore } from "../stores/draftsStore";
 import { SecretInput } from "../components/SecretInput";
 import { GitHubSetup } from "./settings/GitHubSetup";
-import type { LocalProjectState } from "../model/localState";
 import { ipc } from "../services/ipc";
-import { pickFolder } from "../services/dialogs";
 import {
   Badge,
   Button,
@@ -38,33 +35,17 @@ import {
 } from "../components/EntityIcon";
 
 export function SettingsPage() {
-  const { settings, saveSettings, local, updateLocal } = useProjectStore();
+  const { settings, saveSettings } = useProjectStore();
   const [draft, setDraft] = useState<ProjectSettings | null>(settings);
-  /**
-   * The machine-local half of Settings, edited alongside the shared half.
-   *
-   * Two drafts rather than one, because they go to two different places: the
-   * project file synchronizes to every administrator, and this record never
-   * leaves this computer. Editing both through one object is exactly how the
-   * repository name and somebody's drive letters ended up in schema 1.
-   */
-  const [localDraft, setLocalDraft] = useState<LocalProjectState | null>(local);
 
   useEffect(() => {
     setDraft(settings);
   }, [settings]);
 
-  useEffect(() => {
-    setLocalDraft(local);
-  }, [local]);
-
   const dirty =
     (draft !== null &&
       settings !== null &&
-      JSON.stringify(draft) !== JSON.stringify(settings)) ||
-    (localDraft !== null &&
-      local !== null &&
-      JSON.stringify(localDraft) !== JSON.stringify(local));
+      JSON.stringify(draft) !== JSON.stringify(settings));
 
   useUnsavedChangesPrompt(dirty, handleSave);
 
@@ -73,16 +54,10 @@ export function SettingsPage() {
   const update = (patch: Partial<ProjectSettings>) =>
     setDraft({ ...draft, ...patch });
 
-  const updateLocalDraft = (patch: Partial<LocalProjectState>) =>
-    setLocalDraft((current) => (current ? { ...current, ...patch } : current));
-
   async function handleSave() {
     if (!draft) return false;
     try {
       await saveSettings(draft);
-      if (localDraft) await updateLocal(localDraft);
-      // Rescan icons in case the images folder changed.
-      void useDraftsStore.getState().refreshImages();
       toast.success("Settings saved");
       return true;
     } catch (e) {
@@ -97,8 +72,6 @@ export function SettingsPage() {
     <SettingsContent
       draft={draft}
       update={update}
-      imagesDir={localDraft?.imagesDir ?? ""}
-      setImagesDir={(imagesDir) => updateLocalDraft({ imagesDir })}
       handleSave={handleSave}
       dirty={dirty}
     />
@@ -229,15 +202,11 @@ function DiscordWebhookCard() {
 function SettingsContent({
   draft,
   update,
-  imagesDir,
-  setImagesDir,
   handleSave,
   dirty,
 }: {
   draft: ProjectSettings;
   update: (patch: Partial<ProjectSettings>) => void;
-  imagesDir: string;
-  setImagesDir: (value: string) => void;
   handleSave: () => void;
   dirty: boolean;
 }) {
@@ -273,27 +242,12 @@ function SettingsContent({
                 onChange={(e) => update({ cluster: e.target.value })}
               />
             </Field>
-            <Field
-              label="Images folder"
-              hint="Scanned (incl. subfolders like creatures\ and items\) for entry icons. Empty = images folder inside the project folder."
-            >
-              <div className="flex gap-2">
-                <Input
-                  className="mono"
-                  value={imagesDir}
-                  onChange={(e) => setImagesDir(e.target.value)}
-                  placeholder="e.g. C:\...\DinoDepotClaude\images"
-                />
-                <Button
-                  onClick={async () => {
-                    const dir = await pickFolder("Choose the images folder");
-                    if (dir) setImagesDir(dir);
-                  }}
-                >
-                  Browse…
-                </Button>
-              </div>
-            </Field>
+            <p className="text-xs text-ink-400">
+              Official and modpack icons are resolved automatically from their
+              managed packages. Project-owned overrides live in the project's
+              <span className="mono"> images</span> folder; WebP is preferred
+              and PNG is also accepted.
+            </p>
           </div>
         </Card>
 
@@ -684,8 +638,8 @@ function MapsCard({
       <p className="text-xs text-ink-400 mb-3">
         Offered when assigning an entry's map of origin in Content Sources. The
         icon and color follow the map onto the entry list. Icons can be emoji or
-        images from your images folder — drop the official map art in there and
-        pick it here.
+        project overrides. Stock map art is resolved automatically from the
+        managed official package; no image-folder setup is required.
       </p>
       <p className="text-xs text-ink-400 mb-3">
         Turning a map <b>off</b> says the cluster does not run it. Nothing is
@@ -727,7 +681,7 @@ function MapsCard({
                 !map.enabled && "opacity-50",
               )}
             >
-              <IconValue icon={map.icon} size={24} />
+              <IconValue icon={map.icon} officialMap={map.name} size={24} />
             </button>
 
             <Input

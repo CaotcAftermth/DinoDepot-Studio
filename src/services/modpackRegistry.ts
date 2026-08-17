@@ -11,6 +11,11 @@ import {
   type ModpackRegistry,
   type RegistryEntry,
 } from "../model/modpack";
+import {
+  packageBytesToBase64,
+  packageHttpGet,
+  packageHttpText,
+} from "./packageHttp";
 
 /**
  * Client for the published modpack registry.
@@ -28,7 +33,7 @@ const API = "https://api.github.com";
 /** How many packs to pull when a registry has no index to read. */
 const UNINDEXED_LIMIT = 40;
 
-function rawUrl(registry: ModpackRegistry, file: string): string {
+export function registryFileUrl(registry: ModpackRegistry, file: string): string {
   const path = registry.path.replace(/^\/|\/$/g, "");
   return `${RAW}/${registry.owner}/${registry.repo}/${registry.branch}/${
     path ? `${path}/` : ""
@@ -37,9 +42,9 @@ function rawUrl(registry: ModpackRegistry, file: string): string {
 
 /** A fetch that turns HTTP and network failures into one readable message. */
 async function getJson(url: string, what: string): Promise<unknown> {
-  let res: Response;
+  let res: Awaited<ReturnType<typeof packageHttpGet>>;
   try {
-    res = await fetch(url, { headers: { Accept: "application/json" } });
+    res = await packageHttpGet(url);
   } catch {
     // Offline, DNS, or a blocked request — all indistinguishable from here.
     throw new Error(`Could not reach the registry. Check your connection.`);
@@ -50,9 +55,11 @@ async function getJson(url: string, what: string): Promise<unknown> {
       "GitHub rate-limited this machine. Try again in a few minutes.",
     );
   }
-  if (!res.ok) throw new Error(`${what} — GitHub returned ${res.status}`);
+  if (res.status < 200 || res.status >= 300) {
+    throw new Error(`${what} — GitHub returned ${res.status}`);
+  }
   try {
-    return await res.json();
+    return JSON.parse(packageHttpText(res)) as unknown;
   } catch {
     throw new Error(`${what} is not valid JSON`);
   }
@@ -88,7 +95,10 @@ export async function fetchRegistry(
   registry: ModpackRegistry,
 ): Promise<RegistryListing> {
   try {
-    const raw = await getJson(rawUrl(registry, "index.json"), "The registry index");
+    const raw = await getJson(
+      registryFileUrl(registry, "index.json"),
+      "The registry index",
+    );
     const parsed = RegistryIndexSchema.safeParse(raw);
     if (!parsed.success) {
       throw new Error("The registry index is malformed");
@@ -121,22 +131,28 @@ async function fetchUnindexed(
   const listing = await getJson(url, "The registry folder");
   if (!Array.isArray(listing)) throw new Error("The registry folder is not a folder");
 
-  const files = listing
-    .filter(
-      (f): f is { name: string; type: string } =>
-        typeof f === "object" &&
-        f !== null &&
-        (f as { type?: unknown }).type === "file" &&
-        typeof (f as { name?: unknown }).name === "string" &&
-        (f as { name: string }).name.toLowerCase().endsWith(".json") &&
-        (f as { name: string }).name.toLowerCase() !== "index.json",
-    )
-    .map((f) => f.name);
+  const candidates = listing.flatMap((value) => {
+    if (typeof value !== "object" || value === null) return [];
+    const item = value as { name?: unknown; type?: unknown };
+    if (typeof item.name !== "string") return [];
+    if (item.type === "dir") return [{ dir: item.name, file: "" }];
+    if (
+      item.type === "file" &&
+      item.name.toLowerCase().endsWith(".json") &&
+      item.name.toLowerCase() !== "index.json"
+    ) {
+      return [{ dir: "", file: item.name }];
+    }
+    return [];
+  });
 
-  const truncated = files.length > UNINDEXED_LIMIT;
+  const truncated = candidates.length > UNINDEXED_LIMIT;
   const packs: RegistryEntry[] = [];
-  for (const file of files.slice(0, UNINDEXED_LIMIT)) {
+  for (const candidate of candidates.slice(0, UNINDEXED_LIMIT)) {
     try {
+      const file = candidate.dir
+        ? `${candidate.dir}/${PACK_FILE}`
+        : candidate.file;
       const pack = await fetchPackFile(registry, file);
       packs.push({
         id: pack.meta.id,
@@ -146,8 +162,8 @@ async function fetchUnindexed(
         author: pack.meta.author,
         description: pack.meta.description,
         curseforgeId: pack.meta.curseforgeId,
-        dir: "",
-        file,
+        dir: candidate.dir,
+        file: candidate.file,
         creatureCount: pack.creatures.length,
         itemCount: pack.items.length,
       });
@@ -163,7 +179,10 @@ export async function fetchPackFile(
   registry: ModpackRegistry,
   file: string,
 ): Promise<Modpack> {
-  const raw = await getJson(rawUrl(registry, file), `Modpack "${file}"`);
+  const raw = await getJson(
+    registryFileUrl(registry, file),
+    `Modpack "${file}"`,
+  );
   const parsed = ModpackSchema.safeParse(raw);
   if (!parsed.success) {
     throw new Error(
@@ -200,18 +219,24 @@ export interface FetchedIcon {
   contentB64: string;
 }
 
+export interface PackIconFetchResult {
+  icons: FetchedIcon[];
+  /** Referenced files that could not be read from the selected source. */
+  missing: string[];
+}
+
 /**
  * Downloads a pack's icon images.
  *
- * Failures are collected rather than thrown: a missing icon should cost that
- * one image, not the whole install — the creature still lands, just with its
- * category emoji.
+ * Both `icons/` and the legacy `Icons/` spelling are read. New exports always
+ * use lowercase, but the compatibility reader cannot strand an existing pack
+ * on a case-sensitive host.
  */
 export async function fetchPackIcons(
   registry: ModpackRegistry,
   entry: RegistryEntry,
   pack: Modpack,
-): Promise<{ icons: FetchedIcon[]; missing: string[] }> {
+): Promise<PackIconFetchResult> {
   const dir = packDirFor(entry);
   const wanted = packIconFiles(pack);
   if (!dir || wanted.length === 0) return { icons: [], missing: wanted };
@@ -220,29 +245,23 @@ export async function fetchPackIcons(
   const missing: string[] = [];
   for (const name of wanted) {
     const file = iconBaseName(name);
-    try {
-      const res = await fetch(rawUrl(registry, `${dir}/${PACK_ICONS_DIR}/${file}`));
-      if (!res.ok) {
-        missing.push(file);
-        continue;
+    let found = false;
+    for (const iconsDir of [PACK_ICONS_DIR, "Icons"]) {
+      try {
+        const res = await packageHttpGet(
+          registryFileUrl(registry, `${dir}/${iconsDir}/${file}`),
+        );
+        if (res.status < 200 || res.status >= 300) continue;
+        icons.push({ name: file, contentB64: packageBytesToBase64(res.bytes) });
+        found = true;
+        break;
+      } catch {
+        /* try the compatibility spelling before reporting it missing */
       }
-      const buffer = await res.arrayBuffer();
-      icons.push({ name: file, contentB64: bytesToBase64(new Uint8Array(buffer)) });
-    } catch {
-      missing.push(file);
     }
+    if (!found) missing.push(file);
   }
   return { icons, missing };
-}
-
-/** Chunked so a large image cannot blow the argument limit of String.fromCharCode. */
-function bytesToBase64(bytes: Uint8Array): string {
-  let binary = "";
-  const CHUNK = 0x8000;
-  for (let i = 0; i < bytes.length; i += CHUNK) {
-    binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
-  }
-  return btoa(binary);
 }
 
 /** Suggested folder name for a pack being published. */

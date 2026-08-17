@@ -19,7 +19,7 @@ import { compareVersions, STUDIO_NAME, STUDIO_VERSION } from "./studio";
 export const PROJECT_FORMAT = "dinodepot.project";
 
 /** The schema this build reads and writes. Bumped by adding a migration. */
-export const CURRENT_PROJECT_SCHEMA = 2;
+export const CURRENT_PROJECT_SCHEMA = 3;
 
 /**
  * The oldest Studio that can safely open a project this build writes.
@@ -27,7 +27,7 @@ export const CURRENT_PROJECT_SCHEMA = 2;
  * Stamped into every project so an older install refuses rather than quietly
  * dropping the fields it does not know about.
  */
-export const MINIMUM_STUDIO_VERSION = "0.2.0";
+export const MINIMUM_STUDIO_VERSION = "0.3.0";
 
 /**
  * Optional feature flags a project may declare.
