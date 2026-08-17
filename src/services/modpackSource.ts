@@ -88,7 +88,7 @@ export interface LinkedPackageSource {
 }
 
 /**
- * Resolves only links that unambiguously name an immutable v2 manifest.
+ * Resolves only links that unambiguously name an immutable package manifest.
  * Compatibility-pack folders continue through `resolvePackUrls` unchanged.
  */
 export function resolvePackageManifestUrl(

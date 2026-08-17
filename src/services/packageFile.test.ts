@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  packageAssetV3,
   packageFile,
   packageJson,
   PackageManifestSchema,
@@ -101,6 +102,44 @@ describe("offline package folders", () => {
     expect(result.files.map((file) => file.path)).toContain(
       "assets/creatures/Achatina.webp",
     );
+  });
+
+  it("reads v3 blobs from the package root rather than the version folder", async () => {
+    const packageRoot = "C:\\offline\\content-addressed";
+    const root = `${packageRoot}\\versions\\1.0.0`;
+    const content = new TextEncoder().encode(
+      packageJson({
+        format: "dinodepot.package-content",
+        schemaVersion: 1,
+        icons: { "/m/c.c": "file:assets/Icon.webp" },
+      }),
+    );
+    const asset = await packageAssetV3(
+      "assets/Icon.webp",
+      WEBP,
+      "image/webp",
+    );
+    const manifest = PackageManifestSchema.parse({
+      format: "dinodepot.package",
+      formatVersion: 3,
+      kind: "modpack",
+      packageId: "offline-pack",
+      version: "1.0.0",
+      meta: { name: "Offline Pack" },
+      content: await packageFile("content.json", content, "application/json"),
+      assets: [asset],
+    });
+    const manifestPath = `${root}\\manifest.json`;
+    fixture.text.set(manifestPath, packageJson(manifest));
+    fixture.bytes.set(`${root}\\content.json`, content);
+    fixture.bytes.set(
+      `${packageRoot}\\${asset.blob.replace(/\//g, "\\")}`,
+      WEBP,
+    );
+
+    const result = await readPackageManifestFile(manifestPath);
+
+    expect(result.files.map((file) => file.path)).toContain("assets/Icon.webp");
   });
 
   it("rejects an image whose bytes do not match its extension", async () => {

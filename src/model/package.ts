@@ -15,7 +15,8 @@ import {
 import { normalizeAssetPath } from "./assetRef";
 
 export const PACKAGE_FORMAT = "dinodepot.package";
-export const PACKAGE_FORMAT_VERSION = 2;
+export const LEGACY_PACKAGE_FORMAT_VERSION = 2;
+export const PACKAGE_FORMAT_VERSION = 3;
 export const PACKAGE_CONTENT_FORMAT = "dinodepot.package-content";
 
 const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/i);
@@ -29,8 +30,43 @@ export const PackageFileSchema = z.object({
   sha256: Sha256Schema,
   size: z.number().int().min(0),
   mediaType: z.string().default("application/octet-stream"),
-});
+}).strict();
 export type PackageFile = z.infer<typeof PackageFileSchema>;
+
+const PackageBlobPathSchema = z
+  .string()
+  .regex(
+    /^assets\/sha256\/[a-f0-9]{2}\/[a-f0-9]{64}\.(?:webp|png)$/,
+    "Package blobs must use their canonical content-addressed path",
+  );
+
+/** Canonical package-root path for one immutable image blob. */
+export function packageBlobPath(
+  sha256: string,
+  logicalPath: string,
+): string {
+  const extension = logicalPath.toLowerCase().endsWith(".webp")
+    ? "webp"
+    : logicalPath.toLowerCase().endsWith(".png")
+      ? "png"
+      : "";
+  const hash = sha256.toLowerCase();
+  return `assets/sha256/${hash.slice(0, 2)}/${hash}.${extension}`;
+}
+
+export const PackageAssetV3Schema = PackageFileSchema.extend({
+  /** Path relative to the package root, shared by every package version. */
+  blob: PackageBlobPathSchema,
+}).superRefine((asset, context) => {
+  if (asset.blob !== packageBlobPath(asset.sha256, asset.path)) {
+    context.addIssue({
+      code: "custom",
+      path: ["blob"],
+      message: "Package blob path does not match the asset hash and media type",
+    });
+  }
+});
+export type PackageAssetV3 = z.infer<typeof PackageAssetV3Schema>;
 
 export const PackageManifestMetaSchema = ModpackMetaSchema.omit({
   id: true,
@@ -38,10 +74,8 @@ export const PackageManifestMetaSchema = ModpackMetaSchema.omit({
   curseforgeId: true,
 });
 
-export const PackageManifestSchema = z
-  .object({
+const PackageManifestBaseSchema = z.object({
     format: z.literal(PACKAGE_FORMAT),
-    formatVersion: z.literal(PACKAGE_FORMAT_VERSION),
     kind: z.enum(["modpack", "official"]),
     packageId: z.string().regex(/^[a-z0-9][a-z0-9._-]*$/),
     version: z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._+-]*$/),
@@ -49,9 +83,14 @@ export const PackageManifestSchema = z
     publishedAt: z.string().default(""),
     meta: PackageManifestMetaSchema,
     content: PackageFileSchema,
-    assets: z.array(PackageFileSchema).default([]),
-  })
-  .superRefine((manifest, context) => {
+  });
+
+function validateManifest(
+  manifest: z.infer<typeof PackageManifestBaseSchema> & {
+    assets: PackageFile[];
+  },
+  context: z.RefinementCtx,
+): void {
     if (manifest.kind === "official" && manifest.packageId !== "official-asa") {
       context.addIssue({
         code: "custom",
@@ -98,7 +137,24 @@ export const PackageManifestSchema = z
       }
       seen.add(key);
     }
-  });
+}
+
+/** Published before content-addressed storage; permanently supported. */
+export const PackageManifestV2Schema = PackageManifestBaseSchema.extend({
+  formatVersion: z.literal(LEGACY_PACKAGE_FORMAT_VERSION),
+  assets: z.array(PackageFileSchema).default([]),
+}).superRefine(validateManifest);
+
+/** Logical asset paths backed by immutable package-root SHA-256 blobs. */
+export const PackageManifestV3Schema = PackageManifestBaseSchema.extend({
+  formatVersion: z.literal(PACKAGE_FORMAT_VERSION),
+  assets: z.array(PackageAssetV3Schema).default([]),
+}).superRefine(validateManifest);
+
+export const PackageManifestSchema = z.union([
+  PackageManifestV3Schema,
+  PackageManifestV2Schema,
+]);
 export type PackageManifest = z.infer<typeof PackageManifestSchema>;
 
 export const PackageContentSchema = z
@@ -286,5 +342,17 @@ export async function packageFile(
     sha256: await sha256Hex(bytes),
     size: bytes.length,
     mediaType,
+  });
+}
+
+export async function packageAssetV3(
+  path: string,
+  bytes: Uint8Array,
+  mediaType: string,
+): Promise<PackageAssetV3> {
+  const file = await packageFile(path, bytes, mediaType);
+  return PackageAssetV3Schema.parse({
+    ...file,
+    blob: packageBlobPath(file.sha256, file.path),
   });
 }

@@ -78,6 +78,9 @@ configure — official and modpack artwork is installed automatically from
 immutable, integrity-checked packages, and the app ships with the official
 package so it works on a first launch with no network.
 
+Package format v3 stores each unique image once by SHA-256 and reuses it across
+exact package versions. Previously published v2 packages remain supported.
+
 Resolution order for an entry:
 
 1. a project override — click any entry icon in Content Sources to set an

@@ -1,4 +1,4 @@
-# Packages and assets v2 architecture
+# Packages and assets v2/v3 architecture
 
 This document is the implementation record for moving DinoDepot Studio from
 copy-on-import modpacks and contextual icon strings to immutable packages,
@@ -41,16 +41,32 @@ also the offline recovery fallback if an exact package is unavailable.
 ### Packages
 
 Package versions are immutable and coexist in the platform application-data
-directory:
+directory. V2 assets are ordinary files. V3 logical files are hard links to a
+single verified blob whenever the filesystem supports them:
 
 ```text
 content/
+  blobs/sha256/<prefix>/<sha256>.<webp|png>
   official/asa/<version>/
   modpacks/<package-id>/<version>/
     manifest.json
     content.json
     assets/
 ```
+
+Published v3 packages keep metadata per version and bytes per package:
+
+```text
+<package-root>/
+  assets/sha256/<prefix>/<sha256>.<webp|png>
+  versions/<version>/
+    manifest.json
+    content.json
+```
+
+The manifest maps each human-readable logical `assets/...` path to a canonical
+blob. Blob names are derived from the declared hash and image type, so an old
+version cannot be changed by overwriting a friendly filename.
 
 The package library is reconstructable. Deleting it must never delete project
 custom data or overrides.
@@ -69,7 +85,7 @@ changing that slug cannot let one ASA mod enter a project twice.
 There was no `.ddpack` reader or writer in the codebase before this migration.
 A ZIP transport remains a possible convenience, not a storage authority and
 not a compatibility requirement. The implemented offline export is the
-ordinary package folder (`manifest.json`, `content.json`, `assets/`) alongside
+ordinary package root (`versions/<version>/` plus `assets/sha256/`) alongside
 the permanent v1 compatibility alias. Adding archive transport later therefore
 does not change either schema or URL resolution.
 
@@ -107,17 +123,18 @@ published viewer.
 | Application artwork | `src/assets/` and installer artwork in `src-tauri/icons/` | Application-owned; unchanged |
 | Project custom artwork | Project `images/`, or the machine-local `imagesDir` override | `file:` remains the schema-1 compatibility encoding for project-owned references |
 | Legacy per-mod source folders | Deprecated machine-local `sourceIconDirs[sourceId]` | Read only for compatibility; there is no folder-selection UI and managed packages never use them |
-| Installed v2 package artwork | App data `content/modpacks/<packageId>/<version>/assets/` | Package-owned, side-by-side, integrity checked |
+| Installed package artwork | Logical paths below each exact version; v3 bytes in app data `content/blobs/sha256/` | V2 remains readable; v3 is deduplicated and integrity checked |
 | Official ASA artwork | Publication source `Public_Content/Official_Icons/`; installed at app data `content/official/asa/<version>/assets/` | Automatically exact-pinned and resolved; no folder setting |
 | Remote previews | App-data icon cache | Disposable; never becomes package or project authority implicitly |
 | Legacy public pack artwork | `Public_Content/ModPacks/<ModID-name>/icons/` or historical `Icons/` | Permanent v1 compatibility input |
-| Immutable public pack artwork | `Public_Content/ModPacks/<ModID-name>/versions/<version>/assets/` | Canonical v2 publication |
+| Immutable v2 pack artwork | `Public_Content/ModPacks/<ModID-name>/versions/<version>/assets/` | Permanent compatibility artifact |
+| Immutable v3 pack artwork | `Public_Content/ModPacks/<ModID-name>/assets/sha256/` | Shared by every new exact version |
 | Published viewer artwork | Generated `data:` URLs in viewer data | Exact delivery bytes; no local path or private repository dependency |
 
-`Public_Content/Official_Icons/` is the authoritative publication source for
-Core Content. Its generated immutable manifest includes only PNG and WebP
-assets, matches creature/item files to the bundled official catalog, and may
-also carries convention-mapped artwork for supported official maps.
+`Public_Content/Official_Icons/assets.json` is the authoritative logical-name
+map for Core Content. Its blobs include only PNG and WebP assets. The generated
+manifest matches creature/item names to the bundled official catalog and may
+also carry convention-mapped artwork for supported official maps.
 
 ## Compatibility matrix
 
@@ -141,8 +158,8 @@ also carries convention-mapped artwork for supported official maps.
 | Package Manager | `model/package.ts`, `services/packageManager.ts`, Rust `package_http`, `package_files`, and `package_library` commands | Download, size/hash verification, staging, immutable installation, exact-version reads |
 | Dependency Manager | `model/dependency.ts`, `services/dependencyManager.ts`, project schema 3, drafts-store reconciliation | Exact project pins, restore-on-another-machine, deterministic layer precedence, collision diagnostics, project override extraction |
 
-Publication is a Package Manager producer: it emits immutable v2 artifacts and
-the v1 alias together, then updates `index.json`. Discovery remains an input
+Publication is a Package Manager producer: it emits immutable v3 metadata and
+content-addressed blobs plus the v1 alias, then updates `index.json`. Discovery remains an input
 adapter. It does not own package installation or asset paths.
 
 ## Implemented migration behavior
@@ -152,7 +169,7 @@ adapter. It does not own package installation or asset paths.
 - Schema 2 migrates to schema 3 and records every source with a known
   `modpackId` and `modpackVersion` as an exact **materialized** dependency.
   No attempt is made to guess which old values came from the pack.
-- New v2 installs are **linked** dependencies. Package defaults are resolved
+- New v2 and v3 installs are **linked** dependencies. Package defaults are resolved
   below project-owned maps, and only values differing from package defaults
   are written back as project overrides.
 - Discovery snapshots and hand-added structural rows are stored separately
@@ -209,6 +226,8 @@ adapter. It does not own package installation or asset paths.
 6. Use the resolver in publication and make delivery artifacts self-contained.
 7. Revisit archive transport and project-level package vendoring only when a
    real offline-distribution requirement justifies them.
+8. Add package v3 content-addressed publication and installation without
+   changing project schema 3 or rewriting any published v2 version.
 
 Every phase must pass the full frontend suite, production build, and Rust checks
 before the next phase becomes authoritative.

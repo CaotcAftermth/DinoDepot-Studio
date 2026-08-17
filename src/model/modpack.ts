@@ -135,11 +135,15 @@ export const RegistryEntrySchema = z.object({
     .array(
       z.object({
         version: z.string().min(1),
-        /** Relative path to the immutable v2 manifest in this registry. */
+        /** Relative path to the immutable package manifest in this registry. */
         manifest: z.string().min(1),
         /** SHA-256 of the manifest bytes, when the publisher supplied it. */
         integrity: z.string().regex(/^[a-f0-9]{64}$/i).default(""),
         publishedAt: z.string().default(""),
+        /** Storage format of this exact version; absent historical rows are v2. */
+        packageFormat: z.union([z.literal(2), z.literal(3)]).optional(),
+        /** Earliest Studio release that understands this package format. */
+        minStudioVersion: z.string().optional(),
       }),
     )
     .optional(),

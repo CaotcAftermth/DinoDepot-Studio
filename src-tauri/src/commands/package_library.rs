@@ -18,6 +18,8 @@ struct ManifestFile {
     path: String,
     sha256: String,
     size: usize,
+    #[serde(default)]
+    blob: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -118,10 +120,32 @@ fn image_signature_matches(path: &str, bytes: &[u8]) -> bool {
     }
 }
 
+fn canonical_public_blob(file: &ManifestFile) -> Option<String> {
+    let extension = image_extension(&file.path)?;
+    let hash = file.sha256.to_ascii_lowercase();
+    Some(format!(
+        "assets/sha256/{}/{}.{}",
+        &hash[0..2],
+        hash,
+        extension
+    ))
+}
+
+fn local_blob_target(root: &Path, file: &ManifestFile) -> Result<PathBuf, String> {
+    let extension = image_extension(&file.path)
+        .ok_or_else(|| format!("Package asset '{}' is not an image", file.path))?;
+    let hash = file.sha256.to_ascii_lowercase();
+    Ok(root
+        .join("blobs")
+        .join("sha256")
+        .join(&hash[0..2])
+        .join(format!("{hash}.{extension}")))
+}
+
 fn parse_manifest(text: &str) -> Result<PackageManifest, String> {
     let manifest: PackageManifest =
         serde_json::from_str(text).map_err(|e| format!("Package manifest is invalid: {e}"))?;
-    if manifest.format != "dinodepot.package" || manifest.format_version != 2 {
+    if manifest.format != "dinodepot.package" || !matches!(manifest.format_version, 2 | 3) {
         return Err("Unsupported package manifest format".into());
     }
     if !matches!(manifest.kind.as_str(), "modpack" | "official") {
@@ -138,6 +162,9 @@ fn parse_manifest(text: &str) -> Result<PackageManifest, String> {
     }
 
     let mut seen = HashSet::new();
+    if manifest.content.blob.is_some() {
+        return Err("Package content cannot be stored as an image blob".into());
+    }
     for file in std::iter::once(&manifest.content).chain(manifest.assets.iter()) {
         if !safe_relative(&file.path) || !valid_sha256(&file.sha256) {
             return Err(format!("Package file '{}' is invalid", file.path));
@@ -150,6 +177,20 @@ fn parse_manifest(text: &str) -> Result<PackageManifest, String> {
                 "Package asset '{}' is not a WebP or PNG image",
                 file.path
             ));
+        }
+        if file.path.starts_with("assets/") {
+            match manifest.format_version {
+                2 if file.blob.is_some() => {
+                    return Err("Package v2 assets cannot declare blob paths".into());
+                }
+                3 if file.blob.as_deref() != canonical_public_blob(file).as_deref() => {
+                    return Err(format!(
+                        "Package asset '{}' has a non-canonical blob path",
+                        file.path
+                    ));
+                }
+                _ => {}
+            }
         }
         if !seen.insert(file.path.to_ascii_lowercase()) {
             return Err(format!("Package file '{}' is duplicated", file.path));
@@ -201,6 +242,31 @@ fn installed_is_self_consistent(target: &Path) -> bool {
         return false;
     };
     installed_is_valid(target, &manifest_json, &manifest)
+}
+
+fn ensure_local_blob(root: &Path, record: &ManifestFile, bytes: &[u8]) -> Result<PathBuf, String> {
+    let target = local_blob_target(root, record)?;
+    let existing_is_valid = fs::read(&target).is_ok_and(|existing| {
+        existing.len() == record.size
+            && sha256_hex(&existing).eq_ignore_ascii_case(&record.sha256)
+            && image_signature_matches(&record.path, &existing)
+    });
+    if !existing_is_valid {
+        write_atomic(&target, bytes)?;
+    }
+    Ok(target)
+}
+
+fn link_blob(blob: &Path, logical: &Path, bytes: &[u8]) -> Result<(), String> {
+    if let Some(parent) = logical.parent() {
+        fs::create_dir_all(parent).map_err(|error| error.to_string())?;
+    }
+    match fs::hard_link(blob, logical) {
+        Ok(()) => Ok(()),
+        // App data and its blob store normally share a filesystem. A copy is a
+        // safe fallback for filesystems or policies that disallow hard links.
+        Err(_) => write_atomic(logical, bytes),
+    }
 }
 
 fn install_at(
@@ -290,7 +356,14 @@ fn install_at(
         return Err(error);
     }
     for (path, bytes) in supplied {
-        if let Err(error) = write_atomic(&staging.join(path), &bytes) {
+        let record = &expected[&path];
+        let result = if manifest.format_version == 3 && path.starts_with("assets/") {
+            ensure_local_blob(root, record, &bytes)
+                .and_then(|blob| link_blob(&blob, &staging.join(&path), &bytes))
+        } else {
+            write_atomic(&staging.join(&path), &bytes)
+        };
+        if let Err(error) = result {
             let _ = fs::remove_dir_all(&staging);
             return Err(error);
         }
@@ -398,6 +471,7 @@ fn read_at(
             path: "content.json".into(),
             sha256: String::new(),
             size: 0,
+            blob: None,
         },
         assets: vec![],
     };
@@ -460,8 +534,7 @@ pub fn package_bundled_manifest(
     let Ok(resources) = app.path().resource_dir() else {
         return Ok(None);
     };
-    Ok(bundled_manifest_in(&resources, &version)
-        .map(|path| path.to_string_lossy().to_string()))
+    Ok(bundled_manifest_in(&resources, &version).map(|path| path.to_string_lossy().to_string()))
 }
 
 /// Both layouts a directory resource can land in.
@@ -602,6 +675,32 @@ mod tests {
         )
     }
 
+    fn v3_asset_fixture(version: &str) -> (String, Vec<PackageLibraryFile>) {
+        let content = br#"{"format":"dinodepot.package-content","schemaVersion":1}"#;
+        let image_hash = sha256_hex(PNG);
+        let blob = format!("assets/sha256/{}/{}.png", &image_hash[0..2], image_hash);
+        let manifest = format!(
+            r#"{{"format":"dinodepot.package","formatVersion":3,"kind":"official","packageId":"official-asa","version":"{version}","meta":{{"name":"Core"}},"content":{{"path":"content.json","sha256":"{}","size":{},"mediaType":"application/json"}},"assets":[{{"path":"assets/creatures/Achatina.png","blob":"{blob}","sha256":"{}","size":{},"mediaType":"image/png"}}]}}"#,
+            sha256_hex(content),
+            content.len(),
+            image_hash,
+            PNG.len()
+        );
+        (
+            manifest,
+            vec![
+                PackageLibraryFile {
+                    path: "content.json".into(),
+                    content_b64: STANDARD.encode(content),
+                },
+                PackageLibraryFile {
+                    path: "assets/creatures/Achatina.png".into(),
+                    content_b64: STANDARD.encode(PNG),
+                },
+            ],
+        )
+    }
+
     #[test]
     fn finds_the_bundled_manifest_in_either_resource_layout() {
         let temp = tempfile::tempdir().unwrap();
@@ -634,6 +733,38 @@ mod tests {
         // The resolver hands this exact path to the asset protocol, so it has
         // to sit under the app-data content root the scope allows.
         assert!(info.path.replace('\\', "/").contains("/official/asa/1.0.0"));
+    }
+
+    #[test]
+    fn v3_versions_share_one_verified_content_addressed_blob() {
+        let temp = tempfile::tempdir().unwrap();
+        let (first_manifest, first_files) = v3_asset_fixture("1.0.0");
+        let (second_manifest, second_files) = v3_asset_fixture("1.0.1");
+        let first = install_at(temp.path(), &first_manifest, "", first_files).unwrap();
+        let second = install_at(temp.path(), &second_manifest, "", second_files).unwrap();
+
+        let hash = sha256_hex(PNG);
+        let blob = temp
+            .path()
+            .join("blobs/sha256")
+            .join(&hash[0..2])
+            .join(format!("{hash}.png"));
+        assert_eq!(fs::read(blob).unwrap(), PNG);
+        assert_eq!(
+            fs::read(Path::new(&first.path).join("assets/creatures/Achatina.png")).unwrap(),
+            PNG
+        );
+        assert_eq!(
+            fs::read(Path::new(&second.path).join("assets/creatures/Achatina.png")).unwrap(),
+            PNG
+        );
+    }
+
+    #[test]
+    fn v3_rejects_a_blob_path_that_does_not_match_its_hash() {
+        let (manifest, _) = v3_asset_fixture("1.0.0");
+        let changed = manifest.replace("assets/sha256/", "assets/sha256/ff/");
+        assert!(parse_manifest(&changed).is_err());
     }
 
     #[test]

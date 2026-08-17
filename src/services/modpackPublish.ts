@@ -14,7 +14,9 @@ import {
   type RegistryVersion,
 } from "../model/modpack";
 import {
+  PACKAGE_FORMAT_VERSION,
   PackageManifestSchema,
+  packageAssetV3,
   packageContentFromModpack,
   packageFile,
   packageJson,
@@ -26,7 +28,7 @@ import { ipc } from "./ipc";
  * Getting a modpack out of the app and into the registry.
  *
  * Two routes, one assembled shape: the permanent `modpack.json`/`icons/`
- * compatibility alias plus one immutable v2 version. Saving it to disk and
+ * compatibility alias plus one immutable content-addressed version. Saving it to disk and
  * opening a pull request produce byte-identical package content.
  */
 
@@ -49,7 +51,7 @@ export interface AssembledPack {
   registryVersion: RegistryVersion | null;
   /** Complete index row, including this immutable version. */
   registryEntry: RegistryEntry | null;
-  /** Byte-exact v2 manifest, used to reject an immutable-version overwrite. */
+  /** Byte-exact manifest, used to reject an immutable-version overwrite. */
   manifestText: string | null;
 }
 
@@ -126,15 +128,21 @@ export async function assemblePack(
   const content = packageContentFromModpack(packaged);
   const contentText = packageJson(content);
   const contentBytes = new TextEncoder().encode(contentText);
-  const assets = await Promise.all(
-    [...assetBytes.entries()].map(([name, bytes]) =>
-      packageFile(`assets/${name}`, bytes, mediaTypeFor(name)),
-    ),
+  const assetEntries = await Promise.all(
+    [...assetBytes.entries()].map(async ([name, bytes]) => ({
+      bytes,
+      record: await packageAssetV3(
+        `assets/${name}`,
+        bytes,
+        mediaTypeFor(name),
+      ),
+    })),
   );
+  const assets = assetEntries.map(({ record }) => record);
   assets.sort((left, right) => left.path.localeCompare(right.path));
   const manifest = PackageManifestSchema.parse({
     format: "dinodepot.package",
-    formatVersion: 2,
+    formatVersion: PACKAGE_FORMAT_VERSION,
     kind: "modpack",
     packageId: pack.meta.id,
     version: pack.meta.version,
@@ -156,11 +164,11 @@ export async function assemblePack(
   const manifestText = packageJson(manifest);
   const versionRoot = `versions/${pack.meta.version}`;
   files.push({ path: `${versionRoot}/content.json`, text: contentText });
-  for (const [name, bytes] of assetBytes) {
-    files.push({
-      path: `${versionRoot}/assets/${name}`,
-      contentB64: base64FromBytes(bytes),
-    });
+  const emittedBlobs = new Set<string>();
+  for (const { record, bytes } of assetEntries) {
+    if (emittedBlobs.has(record.blob)) continue;
+    emittedBlobs.add(record.blob);
+    files.push({ path: record.blob, contentB64: base64FromBytes(bytes) });
   }
   files.push({ path: `${versionRoot}/manifest.json`, text: manifestText });
 
@@ -169,6 +177,8 @@ export async function assemblePack(
     manifest: `${dir}/${versionRoot}/manifest.json`,
     integrity: await sha256Hex(new TextEncoder().encode(manifestText)),
     publishedAt: pack.meta.updatedAt,
+    packageFormat: PACKAGE_FORMAT_VERSION,
+    minStudioVersion: "0.4.0",
   };
   const registryEntry: RegistryEntry = {
     ...registryEntryFor(pack),
@@ -216,6 +226,17 @@ function base64FromBytes(bytes: Uint8Array): string {
     binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
   }
   return btoa(binary);
+}
+
+async function gitBlobSha(bytes: Uint8Array): Promise<string> {
+  const header = new TextEncoder().encode(`blob ${bytes.length}\0`);
+  const input = new Uint8Array(header.length + bytes.length);
+  input.set(header);
+  input.set(bytes, header.length);
+  const digest = await crypto.subtle.digest("SHA-1", input as BufferSource);
+  return [...new Uint8Array(digest)]
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 function mediaTypeFor(name: string): string {
@@ -392,7 +413,7 @@ export function mergeRegistryIndex(
     versions,
   };
   return RegistryIndexSchema.parse({
-    formatVersion: Math.max(2, next.formatVersion),
+    formatVersion: Math.max(3, next.formatVersion),
     packs: existing
       ? next.packs.map((entry) => (entry.id === incoming.id ? merged : entry))
       : [...next.packs, merged],
@@ -509,7 +530,7 @@ export async function publishPack(
     branch: plan.branch,
     path: indexPath,
   });
-  let currentIndex: unknown = { formatVersion: 2, packs: [] };
+  let currentIndex: unknown = { formatVersion: 3, packs: [] };
   if (remoteIndex.exists) {
     try {
       currentIndex = JSON.parse(remoteIndex.content ?? "");
@@ -535,6 +556,21 @@ export async function publishPack(
         message,
       });
     } else if (file.contentB64 !== undefined) {
+      if (file.path.startsWith("assets/sha256/")) {
+        const existing = await ipc<GithubTextFile>("github_get_file", {
+          owner: plan.headOwner,
+          repo: plan.headRepo,
+          branch: plan.branch,
+          path,
+        });
+        if (existing.exists) {
+          const expected = await gitBlobSha(bytesFromBase64(file.contentB64));
+          if (existing.sha?.toLowerCase() !== expected) {
+            throw new Error(`Content-addressed asset ${file.path} already exists with different bytes`);
+          }
+          continue;
+        }
+      }
       await ipc("github_put_file_b64", {
         owner: plan.headOwner,
         repo: plan.headRepo,

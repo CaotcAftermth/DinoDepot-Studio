@@ -13,9 +13,10 @@ A project pins each dependency by package ID, exact version and manifest
 SHA-256. Resolving one tries, in order:
 
 1. **the installed library** — `%APPDATA%/com.ggfizz.dinodepotstudio/content/`,
-   laid out as `official/asa/<version>/` and `modpacks/<packageId>/<version>/`;
+   laid out as `official/asa/<version>/` and `modpacks/<packageId>/<version>/`,
+   with v3 image bytes shared below `content/blobs/sha256/`;
 2. **the bundled official package** — shipped as a Tauri resource under
-   `official-package/<version>/`, installed through the same verification the
+   `official-package/versions/<version>/`, installed through the same verification the
    downloaded path uses;
 3. **a machine-local manifest folder** — recorded per project in local state
    when you install from disk;
@@ -36,10 +37,18 @@ names. To change it:
 node scripts/build-official-package.mjs
 ```
 
-That reads `Public_Content/Official_Icons/official.json` for the version and
-packages every `.webp`/`.png` under `creatures/`, `items/` and `maps/`,
-matching creature and item files to the bundled catalog by name. Versions are
-immutable: to change bytes, bump `version` in `official.json` and rebuild.
+Official image bytes live once in the content-addressed store. To add or
+replace human-named images, prepare a temporary directory containing
+`creatures/`, `items/`, and/or `maps/`, then run:
+
+```bash
+node scripts/import-official-assets.mjs C:/path/to/staged-icons
+```
+
+That updates `Public_Content/Official_Icons/assets.json` and adds only new
+SHA-256 blobs. Next bump `version` in `official.json` and run
+`build-official-package.mjs`; it matches the logical names in `assets.json` to
+the bundled catalog. Published versions and blobs are immutable.
 
 `npm run tauri dev` picks the new resource up on the next start. Nothing is
 uploaded.
@@ -49,10 +58,12 @@ uploaded.
 Build a package that cannot reach the published registry:
 
 ```bash
-node scripts/build-package-v2.mjs --dev Public_Content/ModPacks/987274-Additions_Ascended_Anomalocaris
+node scripts/build-package-v3.mjs --dev Public_Content/ModPacks/987274-Additions_Ascended_Anomalocaris
 ```
 
-`--dev` writes to `dev-packages/<packageId>/<version>/` (gitignored) and
+`--dev` writes the manifest to
+`dev-packages/<packageId>/versions/<version>/` and shared blobs to
+`dev-packages/<packageId>/assets/sha256/` (all gitignored), and
 **does not touch `Public_Content/ModPacks/index.json`**, so a local iteration
 can never become the version other administrators are offered. Without
 `--dev`, the build writes the immutable published artifact and updates the
@@ -66,7 +77,7 @@ give development builds a distinct one such as `1.0.1-dev.1` in
 
 1. Edit `modpack.json` and the icons beside it.
 2. Bump `meta.version` to a fresh development version.
-3. `node scripts/build-package-v2.mjs --dev <pack dir>` — it prints the
+3. `node scripts/build-package-v3.mjs --dev <pack dir>` — it prints the
    manifest path.
 4. In the app: **Content Sources → Add modpack → From file**, and pick that
    printed `manifest.json`.
@@ -77,6 +88,9 @@ give development builds a distinct one such as `1.0.1-dev.1` in
 Step 4 records the manifest folder in **this machine's** local state only. It
 is never written to `project.json` or `catalog.mods.json` — a shared project
 file must not carry one administrator's drive letter.
+
+`build-package-v2.mjs` remains available only for reproducing and testing the
+historical self-contained v2 layout. New packages should use v3.
 
 ## Images
 

@@ -542,6 +542,16 @@ machine.
 **Expect** both versions coexist. `1.0.0` retains its PNG asset; `1.0.1` uses
 the WebP set. Neither project silently changes its exact dependency.
 
+### H5 — Content-addressed package versions reuse bytes
+
+Install two v3 package versions that reference at least one identical image,
+then inspect `%APPDATA%/com.ggfizz.dinodepotstudio/content/`.
+
+**Expect** each version retains its logical `assets/...` path, both render
+offline, and only one verified image exists below `blobs/sha256/`. A filesystem
+that supports hard links does not allocate a second copy for either logical
+path. V2 package folders continue to render without conversion.
+
 ---
 
 ## What a pass means
