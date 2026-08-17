@@ -1,0 +1,51 @@
+{
+  "format": "dinodepot.package",
+  "formatVersion": 2,
+  "kind": "modpack",
+  "packageId": "additions-ascended-anomalocaris",
+  "version": "1.0.1",
+  "curseforgeId": "987274",
+  "publishedAt": "2026-08-15",
+  "meta": {
+    "name": "Additions Ascended: Anomalocaris",
+    "updatedAt": "2026-08-15",
+    "author": "Garuda",
+    "description": "Adds the Adaptive Anomalocaris to your ARK! (Freemium)",
+    "url": "https://www.curseforge.com/ark-survival-ascended/mods/additions-ascended-anomalocaris",
+    "docsUrl": "",
+    "discordUrl": "https://discord.gg/9X6TETNr5e",
+    "variantTag": ""
+  },
+  "content": {
+    "path": "content.json",
+    "sha256": "3f470ff65cfc41299f607348c2bdfd549b20d26f60ebd3aaca2d2274f4c787d1",
+    "size": 3556,
+    "mediaType": "application/json"
+  },
+  "assets": [
+    {
+      "path": "assets/Anomalo_Entry.webp",
+      "sha256": "8044a3aa0f2006261011b0b7f6041d5367be50ae7531e00e01fecd4b2a233140",
+      "size": 11578,
+      "mediaType": "image/webp"
+    },
+    {
+      "path": "assets/Anomalo-SaddleHUD-Icon.webp",
+      "sha256": "f9aef75a9da16a744cee01eba575f4f15ad8efc417242d0f371c3a812ae1432d",
+      "size": 2158,
+      "mediaType": "image/webp"
+    },
+    {
+      "path": "assets/UI_Anomalo-ShrimpCocktail.webp",
+      "sha256": "be0518377f031e5b613d40454d1aa4cd7ec0000b3785c17582adacfa85cbb2bb",
+      "size": 6626,
+      "mediaType": "image/webp"
+    },
+    {
+      "path": "assets/UI_Anomalo-ShrimpMeat.webp",
+      "sha256": "9342eb2ee9b04629adf91ff9b4b4ceebd7485dd3671357538354a9be38824e0a",
+      "size": 4798,
+      "mediaType": "image/webp"
+    }
+  ]
+}

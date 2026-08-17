@@ -32,3 +32,6 @@ dist-ssr
 *.key.pub
 .tauri/
 src-tauri/target/
+
+# Locally built development packages. Never published; see docs/local-package-testing.md
+dev-packages/

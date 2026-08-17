@@ -1,0 +1,19 @@
+{
+  "formatVersion": 1,
+  "package": {
+    "id": "official-asa",
+    "name": "Official ASA Core Content",
+    "version": "1.0.1",
+    "manifest": "versions/1.0.1/manifest.json",
+    "integrity": "9e663d589c74a5bfce0bb4fa10fc66d769f8f2143bc791079bd56fbf22573873",
+    "publishedAt": "2026-08-16",
+    "versions": [
+      {
+        "version": "1.0.1",
+        "manifest": "versions/1.0.1/manifest.json",
+        "integrity": "9e663d589c74a5bfce0bb4fa10fc66d769f8f2143bc791079bd56fbf22573873",
+        "publishedAt": "2026-08-16"
+      }
+    ]
+  }
+}
