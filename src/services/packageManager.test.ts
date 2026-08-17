@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { defaultModpackRegistry, RegistryEntrySchema } from "../model/modpack";
 import {
+  packageAssetV3,
   packageFile,
   packageJson,
   PackageManifestSchema,
@@ -83,6 +84,89 @@ describe("exact package downloads", () => {
     await expect(
       downloadRegistryPackage(defaultModpackRegistry(), entry, "1.0.0"),
     ).rejects.toThrow(/not available as an immutable package/i);
+  });
+
+  it("refuses a registry package that requires a newer Studio", async () => {
+    const entry = RegistryEntrySchema.parse({
+      id: "future-pack",
+      name: "Future Pack",
+      version: "9.0.0",
+      versions: [
+        {
+          version: "9.0.0",
+          manifest: "future-pack/versions/9.0.0/manifest.json",
+          integrity: "1".repeat(64),
+          packageFormat: 3,
+          minStudioVersion: "9.0.0",
+        },
+      ],
+    });
+
+    await expect(
+      downloadRegistryPackage(defaultModpackRegistry(), entry, "9.0.0"),
+    ).rejects.toThrow(/requires DinoDepot Studio 9\.0\.0/i);
+  });
+
+  it("downloads v3 assets from the package-root blob store", async () => {
+    const registry = defaultModpackRegistry();
+    const content = new TextEncoder().encode(
+      packageJson({
+        format: "dinodepot.package-content",
+        schemaVersion: 1,
+        icons: { "/m/c.c": "file:assets/Creature.png" },
+      }),
+    );
+    const icon = Uint8Array.from([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ]);
+    const asset = await packageAssetV3(
+      "assets/Creature.png",
+      icon,
+      "image/png",
+    );
+    const manifest = PackageManifestSchema.parse({
+      format: "dinodepot.package",
+      formatVersion: 3,
+      kind: "modpack",
+      packageId: "test-pack",
+      version: "2.0.0",
+      curseforgeId: "12345",
+      meta: { name: "Test Pack" },
+      content: await packageFile("content.json", content, "application/json"),
+      assets: [asset],
+    });
+    const manifestBytes = new TextEncoder().encode(packageJson(manifest));
+    const entry = RegistryEntrySchema.parse({
+      id: "test-pack",
+      name: "Test Pack",
+      version: "2.0.0",
+      curseforgeId: "12345",
+      versions: [
+        {
+          version: "2.0.0",
+          manifest: "test-pack/versions/2.0.0/manifest.json",
+          integrity: await sha256Hex(manifestBytes),
+          packageFormat: 3,
+        },
+      ],
+    });
+    const fetch = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      return new Response(
+        url.endsWith("manifest.json")
+          ? manifestBytes
+          : url.endsWith("content.json")
+            ? content
+            : icon,
+      );
+    });
+    vi.stubGlobal("fetch", fetch);
+
+    await downloadRegistryPackage(registry, entry, "2.0.0");
+
+    expect(fetch.mock.calls.map(([input]) => String(input))).toContain(
+      `https://raw.githubusercontent.com/${registry.owner}/${registry.repo}/${registry.branch}/${registry.path}/test-pack/${asset.blob}`,
+    );
   });
 
   it("refuses content that references an asset omitted from the manifest", async () => {

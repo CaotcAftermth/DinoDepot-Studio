@@ -93,10 +93,13 @@ describe("bundled official package", () => {
   it("ships the official package folder as a Tauri resource", () => {
     // Without this, a first launch with no network has no Core Content art at
     // all — which is the state the app was actually shipping in.
+    expect(tauriConfig.bundle.resources).toMatchObject({
+      "resources/official-package": "official-package",
+    });
     expect(
       Object.keys(tauriConfig.bundle.resources).some((source) =>
         source.includes("Official_Icons/versions"),
       ),
-    ).toBe(true);
+    ).toBe(false);
   });
 });

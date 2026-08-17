@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createHash } from "node:crypto";
-import { mkdir, readFile, readdir, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 
 const repository = process.cwd();
@@ -9,6 +9,7 @@ const sourceRoot = path.join(repository, "Public_Content", "Official_Icons");
 const catalogPath = path.join(repository, "src", "assets", "catalog", "official-asa.json");
 const metadata = JSON.parse(await readFile(path.join(sourceRoot, "official.json"), "utf8"));
 const catalog = JSON.parse(await readFile(catalogPath, "utf8"));
+const assetMap = JSON.parse(await readFile(path.join(sourceRoot, "assets.json"), "utf8"));
 const version = String(metadata.version ?? "");
 if (!/^[A-Za-z0-9][A-Za-z0-9._+-]*$/.test(version)) {
   throw new Error(`Unsafe official package version: ${version}`);
@@ -27,36 +28,25 @@ function validImage(file, bytes) {
   return false;
 }
 
-async function imageFiles(folder) {
-  const root = path.join(sourceRoot, folder);
-  const found = [];
-  async function walk(current) {
-    for (const entry of await readdir(current, { withFileTypes: true })) {
-      const absolute = path.join(current, entry.name);
-      if (entry.isDirectory()) await walk(absolute);
-      else if (/\.(?:webp|png)$/i.test(entry.name)) {
-        found.push(path.relative(sourceRoot, absolute).replaceAll("\\", "/"));
-      }
-    }
-  }
-  await walk(root);
-  return found;
+if (assetMap.formatVersion !== 1 || !Array.isArray(assetMap.assets)) {
+  throw new Error("Official asset map is malformed");
 }
-
-const relativeImages = (
-  await Promise.all(["creatures", "items", "maps"].map(imageFiles))
-).flat().sort((a, b) => {
-  const aBase = a.replace(/\.(?:webp|png)$/i, "").toLowerCase();
-  const bBase = b.replace(/\.(?:webp|png)$/i, "").toLowerCase();
+const mappedAssets = assetMap.assets.sort((a, b) => {
+  const aPath = String(a.path ?? "");
+  const bPath = String(b.path ?? "");
+  const aBase = aPath.replace(/\.(?:webp|png)$/i, "").toLowerCase();
+  const bBase = bPath.replace(/\.(?:webp|png)$/i, "").toLowerCase();
   if (aBase === bBase) {
-    return Number(/\.png$/i.test(a)) - Number(/\.png$/i.test(b));
+    return Number(/\.png$/i.test(aPath)) - Number(/\.png$/i.test(bPath));
   }
-  return a.localeCompare(b);
+  return aPath.localeCompare(bPath);
 });
 
 const byKind = { creatures: new Map(), items: new Map() };
 for (const kind of ["creatures", "items"]) {
-  for (const file of relativeImages.filter((candidate) => candidate.startsWith(`${kind}/`))) {
+  for (const { path: file } of mappedAssets.filter((candidate) =>
+    String(candidate.path ?? "").startsWith(`${kind}/`),
+  )) {
     const stem = file.split("/").at(-1) ?? file;
     const keys = new Set([
       normalizedName(stem),
@@ -92,8 +82,7 @@ const content = {
 };
 
 const versionRoot = path.join(sourceRoot, "versions", version);
-const assetsRoot = path.join(versionRoot, "assets");
-await mkdir(assetsRoot, { recursive: true });
+await mkdir(versionRoot, { recursive: true });
 
 async function writeImmutable(file, bytes) {
   try {
@@ -112,13 +101,34 @@ const contentBytes = Buffer.from(json(content));
 await writeImmutable(path.join(versionRoot, "content.json"), contentBytes);
 
 const assets = [];
-for (const relative of relativeImages) {
-  const bytes = await readFile(path.join(sourceRoot, relative));
+const seenLogical = new Set();
+for (const mapped of mappedAssets) {
+  const relative = String(mapped.path ?? "");
+  const blob = String(mapped.blob ?? "");
+  const expectedHash = String(mapped.sha256 ?? "").toLowerCase();
+  if (!/^(?:creatures|items|maps)\/.+\.(?:webp|png)$/i.test(relative)) {
+    throw new Error(`Unsafe official logical asset path: ${relative}`);
+  }
+  if (!/^assets\/sha256\/[a-f0-9]{2}\/[a-f0-9]{64}\.(?:webp|png)$/.test(blob)) {
+    throw new Error(`Unsafe official blob path: ${blob}`);
+  }
+  if (seenLogical.has(relative.toLowerCase())) {
+    throw new Error(`Duplicate official logical asset path: ${relative}`);
+  }
+  seenLogical.add(relative.toLowerCase());
+  const bytes = await readFile(path.join(sourceRoot, ...blob.split("/")));
   if (!validImage(relative, bytes)) throw new Error(`${relative} does not match its PNG/WebP extension`);
-  await writeImmutable(path.join(assetsRoot, relative), bytes);
+  const hash = sha256(bytes);
+  if (hash !== expectedHash || !blob.includes(`/${hash.slice(0, 2)}/${hash}.`)) {
+    throw new Error(`${relative} does not match its content-addressed blob`);
+  }
+  if (Number(mapped.size) !== bytes.length || mapped.mediaType !== mediaType(relative)) {
+    throw new Error(`${relative} metadata does not match its blob`);
+  }
   assets.push({
     path: `assets/${relative}`,
-    sha256: sha256(bytes),
+    blob,
+    sha256: hash,
     size: bytes.length,
     mediaType: mediaType(relative),
   });
@@ -126,7 +136,7 @@ for (const relative of relativeImages) {
 
 const manifest = {
   format: "dinodepot.package",
-  formatVersion: 2,
+  formatVersion: 3,
   kind: "official",
   packageId: "official-asa",
   version,
@@ -166,6 +176,8 @@ versions.push({
   manifest: `versions/${version}/manifest.json`,
   integrity: sha256(manifestBytes),
   publishedAt: String(metadata.publishedAt ?? ""),
+  packageFormat: 3,
+  minStudioVersion: "0.4.0",
 });
 versions.sort((a, b) => a.version.localeCompare(b.version, undefined, { numeric: true }));
 await writeFile(indexPath, json({
@@ -181,4 +193,6 @@ await writeFile(indexPath, json({
   },
 }));
 
-console.log(`Built official-asa@${version} with ${Object.keys(icons).length} matched icons and ${assets.length} assets`);
+console.log(
+  `Built official-asa@${version} with ${Object.keys(icons).length} matched icons, ${assets.length} logical assets, and ${new Set(assets.map((asset) => asset.blob)).size} unique blobs`,
+);

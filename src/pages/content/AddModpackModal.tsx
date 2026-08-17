@@ -284,7 +284,7 @@ function RegistryTab({
       // batch; missing or unsupported pictures are removed from the imported
       // assignments so their entries use the normal default icon.
       if (commitPackage) await commitPackage();
-      // Linked v2 packages keep their assets in the shared immutable library.
+      // Linked packages keep their assets in the shared immutable library.
       // Legacy packs still materialize icons so old projects stay standalone.
       let iconsWritten = 0;
       let fallbackIcons = 0;

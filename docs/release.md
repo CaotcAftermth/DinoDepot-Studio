@@ -152,16 +152,10 @@ because the setup above being finished does not mean the release path works.
 | | Trigger | Status |
 |---|---|---|
 | `ci.yml` | pull request, push | **Run, and passing.** Version check, `tsc`, frontend tests, Rust tests, production build all green on merged PRs. |
-| `release.yml` | `v*.*.*` tag | **Never run.** No tag has been pushed. |
+| `release.yml` | `v*.*.*` tag | **Run for v0.3.0.** The release is live on GitHub. |
 
-So what is currently unverified is everything CI does not touch: `tauri-action`
-itself, signing in the runner with the secrets, whether the draft release is
-created with the assets step 6 expects, and whether `latest.json` is generated
-and uploaded. A local `npm run tauri build` has produced a signed installer on
-the maintainer's machine, which is evidence about the bundler and the key — not
-about the workflow.
-
-Expect to have to look hard at the first tagged run.
+The v0.3.0 run established the workflow, signing, and updater path. Every new
+draft still needs the asset and update checks below before it is published.
 
 ---
 
@@ -173,7 +167,7 @@ Expect to have to look hard at the first tagged run.
 2. Set it everywhere at once:
 
    ```bash
-   node scripts/check-versions.mjs --set 0.3.0
+   node scripts/check-versions.mjs --set 0.4.0
    ```
 
    That writes `package.json`, `src-tauri/Cargo.toml`,
@@ -188,8 +182,8 @@ Expect to have to look hard at the first tagged run.
 4. Commit, then tag with a leading `v`:
 
    ```bash
-   git commit -am "Release 0.3.0"
-   git tag v0.3.0
+   git commit -am "Release 0.4.0"
+   git tag v0.4.0
    git push origin main --tags
    ```
 
@@ -199,9 +193,9 @@ Expect to have to look hard at the first tagged run.
 
 6. Look at the draft. It should carry exactly three assets:
 
-   - `DinoDepot Studio_0.3.0_x64-setup.exe` — the installer, which is also the
+   - `DinoDepot Studio_0.4.0_x64-setup.exe` — the installer, which is also the
      updater artifact; they are the same file
-   - `DinoDepot Studio_0.3.0_x64-setup.exe.sig` — its detached signature
+   - `DinoDepot Studio_0.4.0_x64-setup.exe.sig` — its detached signature
    - `latest.json` — the manifest the updater reads
 
    **There is no `.nsis.zip`.** With `createUpdaterArtifacts: true`, Tauri v2

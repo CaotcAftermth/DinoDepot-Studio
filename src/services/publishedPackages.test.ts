@@ -24,9 +24,11 @@ interface ManifestFile {
   path: string;
   sha256: string;
   size: number;
+  blob?: string;
 }
 
 interface Manifest {
+  formatVersion: 2 | 3;
   packageId: string;
   version: string;
   content: ManifestFile;
@@ -46,7 +48,21 @@ function verify(manifestPath: string, expectedIntegrity: string): string[] {
   const dir = path.dirname(manifestPath);
 
   for (const file of [manifest.content, ...(manifest.assets ?? [])]) {
-    const filePath = path.join(dir, file.path);
+    const isV3Asset = manifest.formatVersion === 3 && file !== manifest.content;
+    const storedPath = isV3Asset ? file.blob : file.path;
+    if (
+      isV3Asset &&
+      !new RegExp(
+        `^assets/sha256/${file.sha256.slice(0, 2)}/${file.sha256}\\.(?:webp|png)$`,
+        "i",
+      ).test(storedPath ?? "")
+    ) {
+      problems.push(`${file.path} has a non-canonical blob path`);
+      continue;
+    }
+    const filePath = isV3Asset
+      ? path.join(dir, "..", "..", storedPath ?? "")
+      : path.join(dir, file.path);
     if (!existsSync(filePath)) {
       problems.push(`missing file ${file.path}`);
       continue;

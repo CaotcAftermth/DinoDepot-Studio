@@ -5,6 +5,7 @@ import {
   PackageManifestSchema,
   sha256Hex,
   type PackageContent,
+  type PackageAssetV3,
   type PackageManifest,
 } from "../model/package";
 import {
@@ -17,6 +18,7 @@ import {
 import { ipc, isTauri } from "./ipc";
 import type { PackIconFetchResult } from "./modpackRegistry";
 import { registryFileUrl } from "./modpackRegistry";
+import { studioSatisfies } from "../model/studio";
 import {
   packageBase64ToBytes,
   packageBytesToBase64,
@@ -132,6 +134,15 @@ interface ExpectedPackageIdentity {
   integrity?: string;
 }
 
+function storedAssetPath(
+  manifest: PackageManifest,
+  record: PackageManifest["assets"][number],
+): string {
+  return manifest.formatVersion === 3
+    ? (record as PackageAssetV3).blob
+    : record.path;
+}
+
 async function downloadPackageManifest(
   manifestUrl: string,
   expected: ExpectedPackageIdentity,
@@ -176,13 +187,36 @@ async function downloadPackageManifest(
     throw new Error("Package CurseForge ID does not match the registry index");
   }
 
+  if (manifest.formatVersion === 3) {
+    const segments = new URL(manifestUrl).pathname
+      .split("/")
+      .filter(Boolean)
+      .map((segment) => decodeURIComponent(segment));
+    if (
+      segments.at(-3) !== "versions" ||
+      segments.at(-2) !== manifest.version ||
+      segments.at(-1) !== "manifest.json"
+    ) {
+      throw new Error(
+        "Package v3 manifests must remain below versions/<exact-version>/",
+      );
+    }
+  }
+
   const base = new URL(".", manifestUrl);
-  const records = [manifest.content, ...manifest.assets];
-  const files = await Promise.all(
-    records.map((record) =>
-      downloadFile(new URL(record.path, base).toString(), record),
+  const packageRoot = new URL("../../", manifestUrl);
+  const files = await Promise.all([
+    downloadFile(new URL(manifest.content.path, base).toString(), manifest.content),
+    ...manifest.assets.map((record) =>
+      downloadFile(
+        new URL(
+          storedAssetPath(manifest, record),
+          manifest.formatVersion === 3 ? packageRoot : base,
+        ).toString(),
+        record,
+      ),
     ),
-  );
+  ]);
   const contentFile = files.find((file) => file.path === manifest.content.path)!;
   let contentRaw: unknown;
   try {
@@ -218,6 +252,14 @@ export async function downloadRegistryPackage(
       `${entry.name} version ${version} is not available as an immutable package`,
     );
   }
+  if (
+    exact.minStudioVersion &&
+    !studioSatisfies(exact.minStudioVersion)
+  ) {
+    throw new Error(
+      `${entry.name} version ${version} requires DinoDepot Studio ${exact.minStudioVersion} or newer`,
+    );
+  }
   return downloadPackageManifest(registryFileUrl(registry, exact.manifest), {
     packageId: entry.id,
     version: exact.version,
@@ -236,7 +278,7 @@ export function downloadPackageFromManifestUrl(
   return downloadPackageManifest(manifestUrl, {});
 }
 
-/** Reads and verifies an ordinary offline v2 package folder. */
+/** Reads and verifies an ordinary offline v2 or content-addressed v3 package. */
 export async function readPackageManifestFile(
   manifestPath: string,
 ): Promise<DownloadedPackage> {
@@ -256,10 +298,35 @@ export async function readPackageManifestFile(
   const separator =
     manifestPath.includes("\\") && !manifestPath.includes("/") ? "\\" : "/";
   const directory = manifestPath.replace(/[/\\][^/\\]+$/, "");
+  const parent = (value: string) => value.replace(/[/\\][^/\\]+$/, "");
+  if (manifest.formatVersion === 3) {
+    const segments = directory.split(/[/\\]/).filter(Boolean);
+    if (
+      segments.at(-2) !== "versions" ||
+      segments.at(-1) !== manifest.version
+    ) {
+      throw new Error(
+        "Package v3 manifests must remain below versions/<exact-version>/",
+      );
+    }
+  }
+  const packageRoot = parent(parent(directory));
   const files: DownloadedPackageFile[] = [];
-  for (const record of [manifest.content, ...manifest.assets]) {
+  const records = [
+    {
+      record: manifest.content,
+      storedRoot: directory,
+      storedPath: manifest.content.path,
+    },
+    ...manifest.assets.map((record) => ({
+      record,
+      storedRoot: manifest.formatVersion === 3 ? packageRoot : directory,
+      storedPath: storedAssetPath(manifest, record),
+    })),
+  ];
+  for (const { record, storedRoot, storedPath } of records) {
     const contentB64 = await ipc<string>("read_file_b64", {
-      path: `${directory}${separator}${record.path.replace(/\//g, separator)}`,
+      path: `${storedRoot}${separator}${storedPath.replace(/\//g, separator)}`,
     });
     const bytes = packageBase64ToBytes(contentB64.replace(/\s/g, ""));
     if (
@@ -331,7 +398,7 @@ export async function installRegistryPackage(
   return { downloaded, installed };
 }
 
-/** Compatibility view for applying a v2 package to a materialized project. */
+/** Compatibility view for applying a linked package to a materialized project. */
 export function downloadedAsLegacyInstall(downloaded: DownloadedPackage): {
   pack: Modpack;
   icons: PackIconFetchResult;
@@ -352,7 +419,7 @@ export function downloadedAsLegacyInstall(downloaded: DownloadedPackage): {
 }
 
 /**
- * Installs any local v2 package folder — `modpack` or `official`.
+ * Installs any supported local package folder — `modpack` or `official`.
  *
  * Same verification as a download: manifest shape and identity, per-file size
  * and SHA-256, traversal safety, and PNG/WebP file signatures. The path itself

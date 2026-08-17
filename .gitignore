@@ -35,3 +35,7 @@ src-tauri/target/
 
 # Locally built development packages. Never published; see docs/local-package-testing.md
 dev-packages/
+
+# Generated from the exact official version in index.json before dev/build.
+/src-tauri/resources/official-package/*
+!/src-tauri/resources/official-package/.gitkeep

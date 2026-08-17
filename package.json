@@ -1,11 +1,12 @@
 {
   "name": "dino-depot-studio",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
+    "stage:official": "node scripts/stage-bundled-official.mjs",
+    "dev": "npm run stage:official && vite",
+    "build": "npm run stage:official && tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri"
   },

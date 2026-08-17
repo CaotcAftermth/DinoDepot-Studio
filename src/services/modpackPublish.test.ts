@@ -1,8 +1,21 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { templateModpack, type RegistryEntry } from "../model/modpack";
 import { assemblePack, mergeRegistryIndex } from "./modpackPublish";
 
-describe("v2 modpack publication", () => {
+const fixture = vi.hoisted(() => ({
+  files: new Map<string, string>(),
+}));
+
+vi.mock("./ipc", () => ({
+  ipc: async (command: string, args: { path: string }) => {
+    if (command !== "read_file_b64") throw new Error(`Unexpected ${command}`);
+    const value = fixture.files.get(args.path);
+    if (!value) throw new Error(`Missing fixture ${args.path}`);
+    return value;
+  },
+}));
+
+describe("content-addressed modpack publication", () => {
   it("exports the legacy alias and an immutable exact-version package", async () => {
     const assembled = await assemblePack(templateModpack(), "");
 
@@ -33,6 +46,38 @@ describe("v2 modpack publication", () => {
     ]);
     const legacy = JSON.parse(assembled.files[0].text ?? "") as { icons: object };
     expect(Object.values(legacy.icons)).toEqual(["🦖"]);
+  });
+
+  it("stores identical icon bytes once while retaining logical names", async () => {
+    const png = Uint8Array.from([
+      0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
+    ]);
+    let binary = "";
+    for (const byte of png) binary += String.fromCharCode(byte);
+    fixture.files.set("C:\\icons\\A.png", btoa(binary));
+    fixture.files.set("C:\\icons\\B.png", btoa(binary));
+    const pack = templateModpack();
+    pack.icons["/test/a.a"] = "file:A.png";
+    pack.icons["/test/b.b"] = "file:B.png";
+
+    const assembled = await assemblePack(pack, "C:\\icons");
+    const manifestFile = assembled.files.find((file) =>
+      file.path.endsWith("/manifest.json"),
+    );
+    const manifest = JSON.parse(manifestFile?.text ?? "") as {
+      formatVersion: number;
+      assets: { path: string; blob: string }[];
+    };
+
+    expect(manifest.formatVersion).toBe(3);
+    expect(manifest.assets.map((asset) => asset.path)).toEqual([
+      "assets/A.png",
+      "assets/B.png",
+    ]);
+    expect(new Set(manifest.assets.map((asset) => asset.blob)).size).toBe(1);
+    expect(
+      assembled.files.filter((file) => file.path.startsWith("assets/sha256/")),
+    ).toHaveLength(1);
   });
 
   it("merges exact versions without discarding history", () => {
@@ -75,7 +120,7 @@ describe("v2 modpack publication", () => {
       incoming,
     );
 
-    expect(merged.formatVersion).toBe(2);
+    expect(merged.formatVersion).toBe(3);
     expect(merged.packs[0].versions?.map((version) => version.version)).toEqual([
       "1.0.0",
       "2.0.0",

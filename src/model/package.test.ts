@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { templateModpack } from "./modpack";
 import {
   modpackFromPackage,
+  packageAssetV3,
   PackageContentSchema,
   packageContentFromModpack,
   packageFile,
@@ -9,7 +10,7 @@ import {
   sha256Hex,
 } from "./package";
 
-describe("package v2", () => {
+describe("package formats", () => {
   it("round-trips current modpack content without changing its meaning", async () => {
     const pack = templateModpack();
     const content = packageContentFromModpack(pack);
@@ -99,6 +100,37 @@ describe("package v2", () => {
           await packageFile("assets/Icon.jpg", new Uint8Array(), "image/jpeg"),
         ],
       }).success,
+    ).toBe(false);
+  });
+
+  it("requires canonical content-addressed blobs in package v3", async () => {
+    const content = new TextEncoder().encode("{}");
+    const icon = new Uint8Array([1, 2, 3]);
+    const asset = await packageAssetV3(
+      "assets/Icon.webp",
+      icon,
+      "image/webp",
+    );
+    const base = {
+      format: "dinodepot.package",
+      formatVersion: 3,
+      kind: "modpack",
+      packageId: "pack",
+      version: "1.0.0",
+      meta: { name: "Pack" },
+      content: await packageFile("content.json", content, "application/json"),
+      assets: [asset],
+    };
+
+    expect(PackageManifestSchema.safeParse(base).success).toBe(true);
+    expect(
+      PackageManifestSchema.safeParse({
+        ...base,
+        assets: [{ ...asset, blob: asset.blob.replace(/^assets/, "other") }],
+      }).success,
+    ).toBe(false);
+    expect(
+      PackageManifestSchema.safeParse({ ...base, formatVersion: 2 }).success,
     ).toBe(false);
   });
 
