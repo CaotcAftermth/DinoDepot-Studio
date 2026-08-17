@@ -73,10 +73,29 @@ Requires: Node 18+, Rust toolchain, Google Chrome (for the CurseForge scraper).
 
 ## Icons
 
-Icon resolution order: manual assignment (click any entry icon in Content
-Sources — emoji, image URL, or a file from the project's `images/` folder) →
-automatic `images/` match by name (e.g. `Achatina.png`) → category emoji.
-Drop your icon PNGs into `<project folder>/images`.
+Icons are resolved from managed packages. There is no icon folder to
+configure — official and modpack artwork is installed automatically from
+immutable, integrity-checked packages, and the app ships with the official
+package so it works on a first launch with no network.
+
+Resolution order for an entry:
+
+1. a project override — click any entry icon in Content Sources to set an
+   emoji, an image URL, or a file from the project's own `images/` folder;
+2. the exact official or modpack package asset pinned by this project;
+3. an `images/` match by name (e.g. `Achatina.webp`), then the parent
+   creature's icon for variants;
+4. the category glyph.
+
+Project-owned images go in `<project folder>/images`. **WebP is preferred and
+PNG is the only fallback** — file signatures are checked, so an image is read
+by its actual bytes rather than its extension. Anything else is ignored.
+
+A missing, unreadable, or malformed icon is never fatal: the entry falls back
+to its glyph, and mods still add, export and publish normally.
+
+Building or testing packages locally? See
+[docs/local-package-testing.md](docs/local-package-testing.md).
 
 ## Project data
 

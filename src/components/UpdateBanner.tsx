@@ -12,6 +12,7 @@ import {
 import { isTauri } from "../services/ipc";
 import { flushPendingSaves } from "../stores/draftsStore";
 import { flushJournal, useProjectStore } from "../stores/projectStore";
+import { releaseLock } from "../services/projectSession";
 import { studioRepoPath } from "../model/studio";
 import { openExternal } from "../services/openExternal";
 
@@ -59,6 +60,11 @@ export function UpdateBanner() {
         toast.error("Some changes are not saved yet. Fix that before updating.");
         return;
       }
+      // The relaunch is a kill: nothing runs after it to give the project lock
+      // back, and the new instance would find its own machine holding a lock
+      // it cannot explain. Handing it back here is the difference between
+      // reopening the project and being told it is open somewhere else.
+      await releaseLock(dir);
     }
 
     setState("downloading");

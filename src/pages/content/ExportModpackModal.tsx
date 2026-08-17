@@ -70,7 +70,10 @@ export function ExportModpackModal({
     let cancelled = false;
     assemblePack(pack, imagesDir)
       .then((result) => {
-        if (!cancelled) setAssembled(result);
+        if (!cancelled) {
+          setAssembled(result);
+          setPlan(null);
+        }
       })
       .catch(() => {
         if (!cancelled) setAssembled(null);
@@ -149,19 +152,32 @@ export function ExportModpackModal({
             </Button>
             <Button
               onClick={saveToDisk}
-              disabled={!isTauri || !assembled || Boolean(busy)}
-              title={isTauri ? undefined : "Saving files needs the desktop app"}
+              disabled={
+                !isTauri ||
+                !assembled ||
+                Boolean(busy)
+              }
+              title={
+                !isTauri
+                  ? "Saving files needs the desktop app"
+                  : undefined
+              }
             >
               Save to folder…
             </Button>
             <Button
               variant="primary"
               onClick={plan ? submitPr : preparePr}
-              disabled={!isTauri || !assembled || Boolean(busy) || Boolean(prUrl)}
+              disabled={
+                !isTauri ||
+                !assembled ||
+                Boolean(busy) ||
+                Boolean(prUrl)
+              }
               title={
-                isTauri
-                  ? "Open a pull request adding this pack to the registry"
-                  : "Submitting needs the desktop app"
+                !isTauri
+                  ? "Submitting needs the desktop app"
+                  : "Open a pull request adding this pack to the registry"
               }
             >
               {plan ? "Confirm & open pull request" : "Submit pull request…"}
@@ -212,9 +228,9 @@ export function ExportModpackModal({
           {assembled && assembled.missingIcons.length > 0 && (
             <p className="text-xs text-amber-400 mt-2">
               {assembled.missingIcons.length} referenced icon image
-              {assembled.missingIcons.length === 1 ? "" : "s"} could not be read
-              from {imagesDir || "the images folder"} and will not be included:{" "}
-              {assembled.missingIcons.join(", ")}
+              {assembled.missingIcons.length === 1 ? "" : "s"} could not be
+              used from the project's managed images folder and will use the
+              default fallback instead: {" "}{assembled.missingIcons.join(", ")}
             </p>
           )}
         </div>

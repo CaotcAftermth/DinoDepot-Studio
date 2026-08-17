@@ -4,44 +4,45 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use tauri::Manager;
 
-/// A persistent cache for shared modpack icons.
-///
-/// Project icons come from the synchronized checkout and need none of this.
-/// What does need it are the icons belonging to *official* modpacks, which live
-/// in the public registry and are the same 80×80 WebP for everybody who
-/// installs that pack.
+/// A persistent cache for remote previews and legacy HTTPS icon overrides.
+/// Managed official/modpack icons resolve from the immutable package library.
 ///
 /// Content-addressed by hash, so the same image fetched twice under two names
 /// is stored once and an image that changes gets a new key rather than a stale
 /// hit. Bounded by total bytes, evicted least-recently-used, and readable with
 /// no network at all — an administrator working offline still sees their icons.
 ///
-/// Deliberately not Git LFS and not a custom asset service. These are 80×80
-/// WebP files; the cheapest correct thing is a folder with a size limit.
+/// Deliberately not Git LFS and not a custom asset service. These are small
+/// WebP/PNG files; the cheapest correct thing is a folder with a size limit.
 
 /// Total bytes kept before the least recently used are dropped.
 const MAX_BYTES: u64 = 64 * 1024 * 1024;
 
 const CACHE_DIR: &str = "icon-cache";
 
-/// WebP only.
-///
-/// The registry publishes WebP, the viewer expects WebP, and accepting anything
-/// else would mean this folder — which is served to the webview through the
-/// asset protocol — could hold arbitrary file types.
+/// Only the two managed icon formats are served through the asset protocol.
 const MAGIC_RIFF: &[u8] = b"RIFF";
 const MAGIC_WEBP: &[u8] = b"WEBP";
+const MAGIC_PNG: &[u8] = b"\x89PNG\r\n\x1a\n";
 
 fn root(app: &tauri::AppHandle) -> Outcome<PathBuf> {
     let dir = app
         .path()
         .app_data_dir()
         .map_err(|e| {
-            Failure::new("unknown", "Could not find the icon cache folder.", e.to_string())
+            Failure::new(
+                "unknown",
+                "Could not find the icon cache folder.",
+                e.to_string(),
+            )
         })?
         .join(CACHE_DIR);
     fs::create_dir_all(&dir).map_err(|e| {
-        Failure::new("save.failed", "The icon cache folder could not be made.", e.to_string())
+        Failure::new(
+            "save.failed",
+            "The icon cache folder could not be made.",
+            e.to_string(),
+        )
     })?;
     Ok(dir)
 }
@@ -51,7 +52,7 @@ fn root(app: &tauri::AppHandle) -> Outcome<PathBuf> {
 /// Keys are content hashes the app computes, but they arrive here from the
 /// frontend — which renders untrusted modpack content — so the shape is checked
 /// rather than trusted.
-fn key_path(dir: &Path, key: &str) -> Outcome<PathBuf> {
+fn key_path(dir: &Path, key: &str, extension: &str) -> Outcome<PathBuf> {
     let safe = key.len() >= 8
         && key.len() <= 128
         && key.chars().all(|c| c.is_ascii_alphanumeric() || c == '-');
@@ -62,11 +63,17 @@ fn key_path(dir: &Path, key: &str) -> Outcome<PathBuf> {
             format!("refused cache key '{key}'"),
         ));
     }
-    Ok(dir.join(format!("{key}.webp")))
+    Ok(dir.join(format!("{key}.{extension}")))
 }
 
-fn is_webp(bytes: &[u8]) -> bool {
-    bytes.len() > 12 && &bytes[0..4] == MAGIC_RIFF && &bytes[8..12] == MAGIC_WEBP
+fn icon_extension(bytes: &[u8]) -> Option<&'static str> {
+    if bytes.len() > 12 && &bytes[0..4] == MAGIC_RIFF && &bytes[8..12] == MAGIC_WEBP {
+        Some("webp")
+    } else if bytes.starts_with(MAGIC_PNG) {
+        Some("png")
+    } else {
+        None
+    }
 }
 
 #[derive(Serialize)]
@@ -90,39 +97,37 @@ pub fn icon_cache_get(app: tauri::AppHandle, key: String) -> Result<CachedIcon, 
 
 fn get_inner(app: &tauri::AppHandle, key: &str) -> Outcome<CachedIcon> {
     let dir = root(app)?;
-    let path = key_path(&dir, key)?;
-    if !path.is_file() {
+    for extension in ["webp", "png"] {
+        let path = key_path(&dir, key, extension)?;
+        if !path.is_file() {
+            continue;
+        }
+
+        // A truncated or mislabeled file is a disposable cache miss.
+        match fs::read(&path) {
+            Ok(bytes) if icon_extension(&bytes) == Some(extension) => {}
+            _ => {
+                let _ = fs::remove_file(&path);
+                let _ = fs::remove_file(etag_path(&path));
+                continue;
+            }
+        }
+
+        // Best-effort: a cache whose timestamps cannot be updated still works,
+        // it simply evicts in a less useful order.
+        let _ = filetime_touch(&path);
+
         return Ok(CachedIcon {
-            path: String::new(),
-            cached: false,
-            etag: String::new(),
+            path: path.to_string_lossy().to_string(),
+            cached: true,
+            etag: fs::read_to_string(etag_path(&path)).unwrap_or_default(),
         });
     }
 
-    // A truncated or non-WebP file is treated as a miss and removed, so a
-    // half-written download from a previous session repairs itself rather than
-    // rendering as a broken image forever.
-    match fs::read(&path) {
-        Ok(bytes) if is_webp(&bytes) => {}
-        _ => {
-            let _ = fs::remove_file(&path);
-            let _ = fs::remove_file(etag_path(&path));
-            return Ok(CachedIcon {
-                path: String::new(),
-                cached: false,
-                etag: String::new(),
-            });
-        }
-    }
-
-    // Best-effort: a cache whose timestamps cannot be updated still works, it
-    // simply evicts in a less useful order.
-    let _ = filetime_touch(&path);
-
     Ok(CachedIcon {
-        path: path.to_string_lossy().to_string(),
-        cached: true,
-        etag: fs::read_to_string(etag_path(&path)).unwrap_or_default(),
+        path: String::new(),
+        cached: false,
+        etag: String::new(),
     })
 }
 
@@ -156,24 +161,28 @@ fn put_inner(
     etag: &str,
 ) -> Outcome<CachedIcon> {
     let dir = root(app)?;
-    let path = key_path(&dir, key)?;
 
     let cleaned: String = content_b64.chars().filter(|c| !c.is_whitespace()).collect();
     let bytes = base64::Engine::decode(&base64::engine::general_purpose::STANDARD, cleaned)
         .map_err(|e| Failure::new("unknown", "That icon could not be read.", e.to_string()))?;
 
-    if !is_webp(&bytes) {
-        return Err(Failure::new(
+    let extension = icon_extension(&bytes).ok_or_else(|| {
+        Failure::new(
             "unknown",
-            "That icon is not a WebP image and was not saved.",
-            "content did not begin with a WebP header",
-        ));
-    }
+            "That icon is not a WebP or PNG image and was not saved.",
+            "content did not have an accepted image header",
+        )
+    })?;
+    let path = key_path(&dir, key, extension)?;
+    let alternate = key_path(&dir, key, if extension == "webp" { "png" } else { "webp" })?;
+    let _ = fs::remove_file(alternate);
 
     super::project_io::write_atomic(&path, &bytes)
         .map_err(|detail| Failure::new("save.failed", "That icon could not be saved.", detail))?;
     if !etag.is_empty() {
         let _ = super::project_io::write_atomic(&etag_path(&path), etag.as_bytes());
+    } else {
+        let _ = fs::remove_file(etag_path(&path));
     }
 
     prune(&dir)?;
@@ -262,16 +271,20 @@ async fn fetch_inner(url: &str, etag: &str) -> Outcome<FetchedIcon> {
         .to_string();
 
     let bytes = response.bytes().await.map_err(|e| {
-        Failure::new("network.offline", "That icon could not be read.", e.to_string())
+        Failure::new(
+            "network.offline",
+            "That icon could not be read.",
+            e.to_string(),
+        )
     })?;
 
     // Checked before it is handed back, so a server answering with something
     // else never reaches the cache.
-    if !is_webp(&bytes) {
+    if icon_extension(&bytes).is_none() {
         return Err(Failure::new(
             "unknown",
-            "That icon is not a WebP image.",
-            "content did not begin with a WebP header",
+            "That icon is not a WebP or PNG image.",
+            "content did not have an accepted image header",
         ));
     }
 
@@ -326,7 +339,11 @@ struct Entry {
 fn list(dir: &Path) -> Outcome<Vec<Entry>> {
     let mut out = Vec::new();
     let entries = fs::read_dir(dir).map_err(|e| {
-        Failure::new("unknown", "The icon cache could not be read.", e.to_string())
+        Failure::new(
+            "unknown",
+            "The icon cache could not be read.",
+            e.to_string(),
+        )
     })?;
     for entry in entries.flatten() {
         let path = entry.path();
@@ -342,7 +359,10 @@ fn list(dir: &Path) -> Outcome<Vec<Entry>> {
                 .map(|d| d.as_secs() as i64)
                 .unwrap_or(0),
             size: meta.len(),
-            is_icon: path.extension().and_then(|e| e.to_str()) == Some("webp"),
+            is_icon: matches!(
+                path.extension().and_then(|e| e.to_str()),
+                Some("webp" | "png")
+            ),
             path,
         });
     }
@@ -385,20 +405,20 @@ mod tests {
     }
 
     #[test]
-    fn only_webp_is_accepted() {
-        assert!(is_webp(&webp(b"VP8 data")));
-        assert!(!is_webp(b"\x89PNG\r\n\x1a\n"));
-        assert!(!is_webp(b"RIFF short"));
-        assert!(!is_webp(b""));
+    fn only_webp_and_png_are_accepted() {
+        assert_eq!(icon_extension(&webp(b"VP8 data")), Some("webp"));
+        assert_eq!(icon_extension(b"\x89PNG\r\n\x1a\nfixture"), Some("png"));
+        assert_eq!(icon_extension(b"RIFF short"), None);
+        assert_eq!(icon_extension(b""), None);
         // RIFF but not WebP — a WAV file, say.
-        assert!(!is_webp(b"RIFF\0\0\0\0WAVEfmt "));
+        assert_eq!(icon_extension(b"RIFF\0\0\0\0WAVEfmt "), None);
     }
 
     #[test]
     fn cache_keys_stay_inside_the_folder() {
         let dir = PathBuf::from("C:\\cache");
-        assert!(key_path(&dir, "a1b2c3d4e5f6").is_ok());
-        assert!(key_path(&dir, "sha256-a1b2c3d4").is_ok());
+        assert!(key_path(&dir, "a1b2c3d4e5f6", "webp").is_ok());
+        assert!(key_path(&dir, "sha256-a1b2c3d4", "png").is_ok());
         for bad in [
             "",
             "short",
@@ -408,13 +428,16 @@ mod tests {
             "a.b.c.d.e.f",
             "has space here",
         ] {
-            assert!(key_path(&dir, bad).is_err(), "{bad} should be refused");
+            assert!(
+                key_path(&dir, bad, "webp").is_err(),
+                "{bad} should be refused"
+            );
         }
     }
 
     #[test]
     fn an_over_long_key_is_refused() {
-        assert!(key_path(&PathBuf::from("C:\\cache"), &"a".repeat(129)).is_err());
+        assert!(key_path(&PathBuf::from("C:\\cache"), &"a".repeat(129), "webp").is_err());
     }
 
     #[test]

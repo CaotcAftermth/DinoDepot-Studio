@@ -502,6 +502,7 @@ const SETTINGS_LABELS: Record<string, string> = {
   modules: "Enabled pages",
   playerData: "Player Data settings",
   modpackRegistry: "Modpack registry",
+  packageDependencies: "Exact package dependencies",
 };
 
 /**
@@ -520,11 +521,34 @@ export function mergeSettings(
   const mineObj = asObject(mine);
   const theirsObj = asObject(theirs);
   const identity = ["projectId", "format", "schemaVersion", "createdAt"];
+  const baseObj = base === undefined ? undefined : asObject(base);
+
+  const dependencies = mergeList(
+    baseObj ? asArray(baseObj.packageDependencies) : undefined,
+    asArray(mineObj.packageDependencies),
+    asArray(theirsObj.packageDependencies),
+    {
+      keyOf: (dependency) =>
+        str(dependency.kind) === "modpack" && str(dependency.curseforgeId)
+          ? `modpack:curseforge:${str(dependency.curseforgeId)}`
+          : `${str(dependency.kind)}:${str(dependency.packageId)}`,
+      labelOf: (dependency) =>
+        `${str(dependency.packageId)}@${str(dependency.version)}`,
+      domain: "package dependency",
+      labels: {
+        version: "Exact version",
+        integrity: "Manifest integrity",
+        sourceId: "Content source",
+        mode: "Dependency mode",
+        locator: "Package registry location",
+      },
+    },
+  );
 
   const result = mergeObject(
-    base === undefined ? undefined : asObject(base),
-    mineObj,
-    theirsObj,
+    baseObj ? { ...baseObj, packageDependencies: undefined } : undefined,
+    { ...mineObj, packageDependencies: undefined },
+    { ...theirsObj, packageDependencies: undefined },
     {
       domain: "project",
       itemId: str(mineObj.projectId),
@@ -535,7 +559,10 @@ export function mergeSettings(
   );
 
   // The identity fields are carried across from this computer untouched.
-  const value = { ...result.value } as Json;
+  const value = {
+    ...result.value,
+    packageDependencies: dependencies.value,
+  } as Json;
   for (const key of identity) value[key] = mineObj[key];
-  return { value, conflicts: result.conflicts };
+  return { value, conflicts: [...result.conflicts, ...dependencies.conflicts] };
 }

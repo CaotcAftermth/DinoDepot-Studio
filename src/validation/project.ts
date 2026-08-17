@@ -10,6 +10,7 @@ import type { PlayersFile } from "../model/players";
 import type { ProductionDraft } from "../model/production";
 import type { ProjectSettings } from "../model/project";
 import type { RemapsDraft } from "../model/remaps";
+import type { DependencyDiagnostic } from "../services/dependencyManager";
 
 /**
  * One place that says whether a project is fit to publish.
@@ -32,6 +33,7 @@ export type ValidationArea =
   | "remaps"
   | "cosmetics"
   | "catalog"
+  | "dependencies"
   | "players"
   | "assets";
 
@@ -49,6 +51,8 @@ export interface ValidationInput {
   index: CatalogIndex | null;
   /** File names found in the images folder, for the icon checks. */
   imageFiles: string[];
+  dependencyDiagnostics?: DependencyDiagnostic[];
+  dependenciesLoading?: boolean;
 }
 
 export interface ValidationReport {
@@ -85,6 +89,25 @@ export function validateProject(input: ValidationInput): ValidationReport {
     ...withArea("remaps", validateRemaps(input.remaps, input.index)),
     ...cosmeticIssues(input),
     ...catalogIssues(input),
+    ...(input.dependenciesLoading
+      ? [
+          issue(
+            "dependencies",
+            "error",
+            "Exact packages",
+            "Package dependencies are still resolving. Try again when they finish.",
+          ),
+        ]
+      : []),
+    ...(input.dependencyDiagnostics ?? []).map((diagnostic) =>
+      issue(
+        "dependencies",
+        diagnostic.severity,
+        diagnostic.dependency,
+        diagnostic.message,
+        diagnostic.dependency,
+      ),
+    ),
     ...playerIssues(input),
     ...assetIssues(input),
   ];
@@ -238,9 +261,8 @@ function playerIssues(input: ValidationInput): ProjectIssue[] {
  * Icons the viewer will ask for.
  *
  * A missing icon is a warning: the viewer falls back to a category emoji, so
- * the site is still correct, just plainer. A *non-WebP* icon is also a warning
- * rather than an error for the same reason — it works, it is simply heavier
- * than it needs to be.
+ * the site is still correct, just plainer. WebP is preferred and PNG is the
+ * accepted fallback format.
  */
 function assetIssues(input: ValidationInput): ProjectIssue[] {
   const issues: ProjectIssue[] = [];
@@ -255,13 +277,13 @@ function assetIssues(input: ValidationInput): ProjectIssue[] {
       );
       continue;
     }
-    if (!/\.webp$/i.test(file)) {
+    if (!/\.(?:webp|png)$/i.test(file)) {
       issues.push(
         issue(
           "assets",
           "warning",
           "Icons",
-          `${file} is not a WebP. The public site will be slower to load than it needs to be.`,
+          `${file} is not an accepted WebP or PNG icon.`,
           path,
         ),
       );

@@ -84,3 +84,20 @@ export function activeEntries(draft: CosmeticsDraft): CosmeticEntry[] {
 export function deprecatedEntries(draft: CosmeticsDraft): CosmeticEntry[] {
   return draft.entries.filter((e) => !isActive(e));
 }
+
+/**
+ * CurseForge IDs Discovery should treat as Custom Cosmetic Mods.
+ *
+ * A deprecated entry is historical context, not a mod the project still asks
+ * clients to download. An active entry explicitly excluded from publication is
+ * likewise not part of the live CCM list. Both remain visible on the Cosmetics
+ * page, but neither should hide an installed gameplay mod from Discovery.
+ */
+export function includedActiveModIds(draft: CosmeticsDraft): Set<string> {
+  return new Set(
+    draft.entries
+      .filter((entry) => isActive(entry) && entry.included)
+      .map((entry) => entry.modId.trim())
+      .filter(Boolean),
+  );
+}

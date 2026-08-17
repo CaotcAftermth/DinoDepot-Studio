@@ -99,6 +99,23 @@ export const LocalProjectStateSchema = z.object({
 
   /** Folder scanned for icon images. Empty = `<project>/images`. */
   imagesDir: z.string().default(""),
+  /**
+   * Per-content-source icon-art folders on this machine.
+   *
+   * These used to live as `ContentSource.iconsDir` in shared catalog JSON,
+   * making two administrators synchronize each other's drive letters. The
+   * source id is portable identity; the folder is deliberately not.
+   */
+  sourceIconDirs: z.record(z.string(), z.string()).default({}),
+  /**
+   * Manifest folders for packages installed from this machine, keyed by
+   * `<packageId>@<version>`.
+   *
+   * A locally built development package has no published URL to re-resolve
+   * from. This lets the library be rebuilt after a cache wipe without ever
+   * putting a drive letter into shared project JSON.
+   */
+  localPackageSources: z.record(z.string(), z.string()).default({}),
   /** Resolved ASA `Mods/<gameId>` folder for Mod Discovery. */
   modsDir: z.string().default(""),
 
@@ -150,6 +167,26 @@ export function newLocalProjectState(
     name,
     openedAt: now.toISOString(),
   });
+}
+
+/** Local folder with a shared-schema fallback for projects not migrated yet. */
+export function sourceIconDir(
+  state: LocalProjectState | null,
+  sourceId: string,
+  legacy = "",
+): string {
+  return state?.sourceIconDirs[sourceId]?.trim() || legacy.trim();
+}
+
+export function withSourceIconDir(
+  state: LocalProjectState,
+  sourceId: string,
+  dir: string,
+): LocalProjectState {
+  const sourceIconDirs = { ...state.sourceIconDirs };
+  if (dir.trim()) sourceIconDirs[sourceId] = dir.trim();
+  else delete sourceIconDirs[sourceId];
+  return { ...state, sourceIconDirs };
 }
 
 // ---------------------------------------------------------------------------

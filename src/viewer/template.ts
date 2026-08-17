@@ -406,6 +406,7 @@ function esc(s){
   });
 }
 function imgUrl(rel){
+  if(/^data:image\//i.test(rel || "") || /^https:\/\//i.test(rel || "")) return rel;
   if(!CFG.imagesUrl || !rel) return null;
   return CFG.imagesUrl + "/" + rel.split("/").map(encodeURIComponent).join("/");
 }

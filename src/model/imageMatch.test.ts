@@ -79,6 +79,16 @@ describe("image matching", () => {
       "items/achatina-paste.webp",
     );
   });
+
+  it("prefers WebP when both accepted formats have the same name", () => {
+    const idx = buildImageIndex([
+      "creatures/Achatina.png",
+      "creatures/Achatina.webp",
+    ]);
+    expect(matchImage(idx, "creatures", ["Achatina"])).toBe(
+      "creatures/Achatina.webp",
+    );
+  });
 });
 
 describe("variant base names for icon inheritance", () => {

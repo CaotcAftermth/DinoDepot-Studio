@@ -1443,7 +1443,11 @@ function ProfileSection({
                 style={{ color: style?.color || undefined }}
                 title="Map this profile came from"
               >
-                <IconValue icon={style?.icon ?? "🗺️"} size={13} />
+                <IconValue
+                  icon={style?.icon ?? "🗺️"}
+                  officialMap={profile.map}
+                  size={13}
+                />
                 {profile.map}
               </span>
             ) : (

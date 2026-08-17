@@ -49,7 +49,6 @@ import {
 import { toast } from "../components/toast";
 import { confirmDialog } from "../components/confirm";
 import { openExternal } from "../services/openExternal";
-import { pickFolder } from "../services/dialogs";
 import { IniSettingsPanel } from "./content/IniSettingsPanel";
 import { CreatureDetailsModal } from "./content/CreatureDetailsModal";
 import { CreaturePreviewModal } from "./content/CreaturePreviewModal";
@@ -67,7 +66,6 @@ import {
 } from "../model/creatureInfo";
 import {
   EntityIcon,
-  type IconFolder,
   IconValue,
 } from "../components/EntityIcon";
 import { PlayerFieldInput } from "../components/PlayerFieldInput";
@@ -199,8 +197,16 @@ type EntryKind = "creatures" | "items";
 type TabKind = EntryKind | "ini";
 
 export function ContentSourcesPage() {
-  const { catalog, setCatalog, hydrate } = useDraftsStore();
+  const {
+    catalog,
+    setCatalog,
+    hydrate,
+    dependencyDiagnostics,
+    dependenciesLoading,
+    refreshDependencies,
+  } = useDraftsStore();
   const projectSettings = useProjectStore((s) => s.settings);
+  const saveSettings = useProjectStore((s) => s.saveSettings);
   useEffect(hydrate, [hydrate]);
 
   const [selectedId, setSelectedId] = useState<string>(OFFICIAL_SOURCE_ID);
@@ -221,6 +227,9 @@ export function ContentSourcesPage() {
   );
   const selected = allSources.find((s) => s.id === selectedId) ?? official;
   const isOfficial = selected.id === OFFICIAL_SOURCE_ID;
+  const selectedDependency = projectSettings?.packageDependencies.find(
+    (dependency) => dependency.sourceId === selected.id,
+  );
 
   /**
    * Official ASA is backed by bundled data, so its edits are stored as an
@@ -279,6 +288,9 @@ export function ContentSourcesPage() {
   }
 
   async function deleteSource() {
+    const dependency = projectSettings?.packageDependencies.find(
+      (candidate) => candidate.sourceId === selected.id,
+    );
     const ok = await confirmDialog({
       title: `Delete "${selected.name}"?`,
       message:
@@ -287,16 +299,28 @@ export function ContentSourcesPage() {
         plural(selected.creatures.length, "creature"),
         plural(selected.items.length, "item"),
         plural(selected.iniSettings.length, "INI setting"),
+        ...(dependency
+          ? [`Exact dependency ${dependency.packageId}@${dependency.version}`]
+          : []),
         "This cannot be undone (previous versions remain in the project's backups folder)",
       ],
       confirmLabel: "Delete mod",
       danger: true,
     });
     if (!ok) return;
+    if (dependency && projectSettings) {
+      await saveSettings({
+        ...projectSettings,
+        packageDependencies: projectSettings.packageDependencies.filter(
+          (candidate) => candidate.sourceId !== selected.id,
+        ),
+      });
+    }
     setCatalog({
       ...catalog,
       sources: catalog.sources.filter((s) => s.id !== selected.id),
     });
+    if (dependency) void refreshDependencies();
     setSelectedId(OFFICIAL_SOURCE_ID);
     recordActivity({
       kind: "source",
@@ -313,6 +337,19 @@ export function ContentSourcesPage() {
    * dropped anything it matched without saying so, which quietly lost entries.
    */
   function moveEntries(kind: EntryKind, entryIds: Set<string>, targetId: string) {
+    if (selectedDependency?.mode === "linked") {
+      toast.info("Creature and item membership comes from the exact package version");
+      return;
+    }
+    if (
+      projectSettings?.packageDependencies.some(
+        (dependency) =>
+          dependency.mode === "linked" && dependency.sourceId === targetId,
+      )
+    ) {
+      toast.info("Entries cannot be moved into an exact package source");
+      return;
+    }
     const moving = selected[kind].filter((e) => entryIds.has(e.id));
     if (moving.length === 0) return;
 
@@ -338,10 +375,40 @@ export function ContentSourcesPage() {
       official,
       sources: catalog.sources.map((s) => {
         if (s.id === selected.id) {
-          return { ...s, [kind]: s[kind].filter((e) => !movedIds.has(e.id)) };
+          const entries = s[kind].filter((e) => !movedIds.has(e.id));
+          return s.discovery
+            ? {
+                ...s,
+                [kind]: entries,
+                discovery: {
+                  ...s.discovery,
+                  [kind]: s.discovery[kind].filter(
+                    (entry) => !movedIds.has(entry.id),
+                  ),
+                },
+                structuralOverrides: {
+                  ...(s.structuralOverrides ?? { creatures: [], items: [] }),
+                  [kind]: (s.structuralOverrides?.[kind] ?? []).filter(
+                    (entry) => !movedIds.has(entry.id),
+                  ),
+                },
+              }
+            : { ...s, [kind]: entries };
         }
         if (s.id === targetId) {
-          return { ...s, [kind]: [...s[kind], ...plan.moved] };
+          return s.discovery
+            ? {
+                ...s,
+                [kind]: [...s[kind], ...plan.moved],
+                structuralOverrides: {
+                  ...(s.structuralOverrides ?? { creatures: [], items: [] }),
+                  [kind]: [
+                    ...(s.structuralOverrides?.[kind] ?? []),
+                    ...plan.moved,
+                  ],
+                },
+              }
+            : { ...s, [kind]: [...s[kind], ...plan.moved] };
         }
         return s;
       }),
@@ -390,6 +457,36 @@ export function ContentSourcesPage() {
       />
 
       <CatalogHealthBanner sources={allSources} modSources={catalog.sources} />
+
+      {(dependenciesLoading || dependencyDiagnostics.length > 0) && (
+        <div className="mb-4 rounded-lg border border-amber-flag/40 bg-amber-flag/5 px-3 py-2 flex items-start justify-between gap-3">
+          <div>
+            <p className="text-sm text-amber-300 font-medium">
+              {dependenciesLoading
+                ? "Resolving exact package dependencies…"
+                : `${dependencyDiagnostics.length} package dependency issue${dependencyDiagnostics.length === 1 ? "" : "s"}`}
+            </p>
+            {!dependenciesLoading && (
+              <ul className="text-xs text-ink-300 mt-1 flex flex-col gap-0.5">
+                {dependencyDiagnostics.map((diagnostic, index) => (
+                  <li key={`${diagnostic.dependency}:${index}`}>
+                    {diagnostic.message}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          {!dependenciesLoading && (
+            <Button
+              variant="ghost"
+              className="shrink-0"
+              onClick={() => void refreshDependencies()}
+            >
+              Retry exact versions
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* minmax(0,…) so long values wrap instead of widening the page. */}
       <div className="grid grid-cols-[280px_minmax(0,1fr)] gap-5">
@@ -457,6 +554,7 @@ export function ContentSourcesPage() {
         <SourceDetail
           source={selected}
           isOfficial={isOfficial}
+          packageLinked={selectedDependency?.mode === "linked"}
           allSources={allSources}
           onUpdate={updateSource}
           onDelete={deleteSource}
@@ -643,6 +741,7 @@ interface RowData {
 function SourceDetail({
   source,
   isOfficial,
+  packageLinked,
   allSources,
   onUpdate,
   onDelete,
@@ -650,12 +749,13 @@ function SourceDetail({
 }: {
   source: ContentSource;
   isOfficial: boolean;
+  packageLinked: boolean;
   allSources: ContentSource[];
   onUpdate: (patch: Partial<ContentSource>) => void;
   onDelete: () => void;
   onMove: (kind: EntryKind, entryIds: Set<string>, targetId: string) => void;
 }) {
-  const { catalog, setCatalog } = useDraftsStore();
+  const { catalog } = useDraftsStore();
   const settings = useProjectStore((s) => s.settings);
   const index = useCatalogIndex();
   const [exporting, setExporting] = useState(false);
@@ -675,11 +775,10 @@ function SourceDetail({
   const [associationFor, setAssociationFor] = useState<CatalogEntry | null>(null);
   /**
    * The entry whose own record is being edited, with the source it belongs to
-   * (for its icon folder) and whether the catalog lets it be changed at all.
+   * and whether the catalog lets it be changed at all.
    */
   const [entryDataFor, setEntryDataFor] = useState<{
     entry: CatalogEntry;
-    sourceId: string;
     editable: boolean;
   } | null>(null);
   const [infoFor, setInfoFor] = useState<CatalogEntry | null>(null);
@@ -809,8 +908,16 @@ function SourceDetail({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, tab, groupVariants, catalog.variantParents, index]);
 
+  const linkedSourceIds = new Set(
+    settings?.packageDependencies
+      .filter((dependency) => dependency.mode === "linked")
+      .map((dependency) => dependency.sourceId) ?? [],
+  );
   const moveTargets = allSources.filter(
-    (s) => s.id !== source.id && s.kind !== "official",
+    (s) =>
+      s.id !== source.id &&
+      s.kind !== "official" &&
+      !linkedSourceIds.has(s.id),
   );
   const cfUrl = sourceCurseforgeUrl(source);
   // Official ASA content belongs to the bundled catalog — moving it out
@@ -818,7 +925,36 @@ function SourceDetail({
   const showCheckboxes = moveMode && !globalSearch && !isOfficial;
 
   function setEntries(kind: EntryKind, next: CatalogEntry[]) {
-    onUpdate({ [kind]: next });
+    if (packageLinked) {
+      toast.info("Creature and item membership comes from the exact package version");
+      return;
+    }
+    if (!source.discovery) {
+      onUpdate({ [kind]: next });
+      return;
+    }
+    const previousDiscovery = source.discovery[kind];
+    const nextByPath = new Map(
+      next.map((entry) => [normalizeBpPath(entry.bpPath), entry]),
+    );
+    const discovery = previousDiscovery.filter((entry) =>
+      nextByPath.has(normalizeBpPath(entry.bpPath)),
+    );
+    const previousByPath = new Map(
+      previousDiscovery.map((entry) => [normalizeBpPath(entry.bpPath), entry]),
+    );
+    const overrides = next.filter((entry) => {
+      const previous = previousByPath.get(normalizeBpPath(entry.bpPath));
+      return !previous || JSON.stringify(previous) !== JSON.stringify(entry);
+    });
+    onUpdate({
+      [kind]: next,
+      discovery: { ...source.discovery, [kind]: discovery },
+      structuralOverrides: {
+        ...(source.structuralOverrides ?? { creatures: [], items: [] }),
+        [kind]: overrides,
+      },
+    });
   }
 
   function toggleSelected(id: string) {
@@ -828,35 +964,13 @@ function SourceDetail({
     setSelection(next);
   }
 
-  /**
-   * The icon folder to offer for an entry, by owning source.
-   *
-   * Only mods have one: bundled Official ASA content is stored as an overlay
-   * with nowhere to keep the path, and its art belongs in the project's own
-   * images folder anyway.
-   */
-  function iconFolderFor(sourceId: string): IconFolder | undefined {
-    const owner = catalog.sources.find((s) => s.id === sourceId);
-    if (!owner) return undefined;
-    return {
-      label: owner.name,
-      dir: owner.iconsDir,
-      onChangeDir: (dir) =>
-        setCatalog({
-          ...catalog,
-          sources: catalog.sources.map((s) =>
-            s.id === owner.id ? { ...s, iconsDir: dir } : s,
-          ),
-        }),
-    };
-  }
-
   const rowProps = (row: RowData): EntryRowProps => {
     const { entry } = row;
     const ownSource = row.source;
     // Bundled Official ASA content can't be removed; admin-added entries can.
     const editable =
       !globalSearch &&
+      !linkedSourceIds.has(ownSource.id) &&
       (ownSource.kind !== "official" || !isBundledOfficialId(entry.id));
     const mapLabel = mapOf(catalog, entry.bpPath);
     const style = mapLabel ? mapStyle(settings, mapLabel) : null;
@@ -905,7 +1019,7 @@ function SourceDetail({
       onSpawn: () => setSpawnFor(entry),
       onAssociation: () => setAssociationFor(entry),
       onEntryData: () =>
-        setEntryDataFor({ entry, sourceId: ownSource.id, editable }),
+        setEntryDataFor({ entry, editable }),
       onInfo: () => setInfoFor(entry),
       onPreview: () => setPreviewFor(entry),
       onMap: () => setMapFor(entry),
@@ -934,6 +1048,7 @@ function SourceDetail({
             ) : (
               source.name
             )}
+            {packageLinked && <Badge tone="info">Exact package</Badge>}
             <LinkChip
               url={source.docsUrl}
               icon={<span>📖</span>}
@@ -1045,38 +1160,6 @@ function SourceDetail({
             </Field>
           </div>
         )}
-        {!isOfficial && (
-          <div className="flex items-center gap-2 mt-3 text-xs text-ink-400 min-w-0">
-            <span className="font-semibold uppercase tracking-wide text-ink-300 shrink-0">
-              Icon folder
-            </span>
-            <span className="mono truncate" title={source.iconsDir}>
-              {source.iconsDir || "not set"}
-            </span>
-            <Button
-              className="shrink-0"
-              onClick={async () => {
-                const dir = await pickFolder(`Icon folder for ${source.name}`);
-                if (dir) onUpdate({ iconsDir: dir });
-              }}
-            >
-              {source.iconsDir ? "Change…" : "Choose…"}
-            </Button>
-            {source.iconsDir && (
-              <Button
-                variant="ghost"
-                className="shrink-0"
-                onClick={() => onUpdate({ iconsDir: "" })}
-              >
-                Clear
-              </Button>
-            )}
-            <span className="shrink-0">
-              — this mod's own art, searched by its entries' icon pickers
-              alongside the images folder.
-            </span>
-          </div>
-        )}
         {source.removed && (
           <p className="text-xs text-red-400 mt-3">
             This source is marked as being removed. Production rules and remap
@@ -1116,7 +1199,7 @@ function SourceDetail({
           </span>
         }
         actions={
-          tab === "ini" || globalSearch ? null : (
+          tab === "ini" || globalSearch || packageLinked ? null : (
             // Six buttons competed for attention when only one is used often.
             // Adding an entry stays a button; the rest are occasional jobs and
             // live behind one menu. Move mode is the exception — while it is
@@ -1139,7 +1222,7 @@ function SourceDetail({
                 label="Tools"
                 title={`Bulk and maintenance actions for these ${entryTab}`}
                 items={[
-                  ...(!isOfficial && !moveMode
+                  ...(!isOfficial && !packageLinked && !moveMode
                     ? [
                         {
                           label: "Move to another mod…",
@@ -1166,7 +1249,7 @@ function SourceDetail({
                         },
                       ]
                     : []),
-                  ...(tab === "creatures" && !isOfficial
+                  ...(tab === "creatures" && !isOfficial && !packageLinked
                     ? [
                         {
                           label: "Clean up names…",
@@ -1186,15 +1269,27 @@ function SourceDetail({
                     : []),
                 ]}
               />
-              <Button variant="primary" onClick={() => setAddingEntry(true)}>
-                + Add {tab === "creatures" ? "creature" : "item"}
-              </Button>
+              {!packageLinked && (
+                <Button variant="primary" onClick={() => setAddingEntry(true)}>
+                  + Add {tab === "creatures" ? "creature" : "item"}
+                </Button>
+              )}
             </>
           )
         }
       >
         {tab === "ini" ? (
-          <IniSettingsPanel source={source} onChange={onUpdate} />
+          <IniSettingsPanel
+            source={source}
+            onChange={
+              packageLinked
+                ? () =>
+                    toast.info(
+                      "INI definitions come from the exact package version",
+                    )
+                : onUpdate
+            }
+          />
         ) : (
           <>
         <div className="flex items-center gap-3 mb-3">
@@ -1396,7 +1491,6 @@ function SourceDetail({
           entry={entryDataFor.entry}
           kind={entryTab}
           editable={entryDataFor.editable}
-          iconFolder={iconFolderFor(entryDataFor.sourceId)}
           findConflict={(bpPath) => {
             const owner = findEntryOwner(
               buildEntryOwners(allSources, entryTab),
@@ -1513,11 +1607,12 @@ function SourceDetail({
           source={source}
           onClose={() => setCleanupOpen(false)}
           onApply={(renames) => {
-            onUpdate({
-              creatures: source.creatures.map((e) =>
+            setEntries(
+              "creatures",
+              source.creatures.map((e) =>
                 renames.has(e.id) ? { ...e, name: renames.get(e.id)! } : e,
               ),
-            });
+            );
             setCleanupOpen(false);
             toast.success(`Renamed ${renames.size} creatures`);
           }}
@@ -2322,7 +2417,7 @@ function EntryRow(props: EntryRowProps) {
               className="text-xs flex items-center gap-1"
               style={{ color: mapColor || undefined }}
             >
-              <IconValue icon={mapIcon} size={14} />
+              <IconValue icon={mapIcon} officialMap={mapLabel} size={14} />
               <span className={mapColor ? "" : "text-ink-400"}>{mapLabel}</span>
             </div>
           )}

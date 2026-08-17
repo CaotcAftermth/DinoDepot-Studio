@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { PlayerDataSettingsSchema } from "./playerData";
 import { ModpackRegistrySchema, defaultModpackRegistry } from "./modpack";
+import { dependencyKey, PackageDependencySchema } from "./dependency";
 import {
   CURRENT_PROJECT_SCHEMA,
   MINIMUM_STUDIO_VERSION,
@@ -168,6 +169,21 @@ export const ProjectSettingsSchema = z.object({
    * or a branch before they go live.
    */
   modpackRegistry: ModpackRegistrySchema.default(() => defaultModpackRegistry()),
+  /** Exact, portable package requirements. Order is dependency precedence. */
+  packageDependencies: z.array(PackageDependencySchema).default([]),
+}).superRefine((settings, context) => {
+  const seen = new Set<string>();
+  for (let index = 0; index < settings.packageDependencies.length; index++) {
+    const key = dependencyKey(settings.packageDependencies[index]);
+    if (seen.has(key)) {
+      context.addIssue({
+        code: "custom",
+        path: ["packageDependencies", index],
+        message: `Duplicate exact dependency ${key}`,
+      });
+    }
+    seen.add(key);
+  }
 });
 
 export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;
@@ -232,6 +248,7 @@ export function defaultProjectSettings(
     modules: {},
     playerData: PlayerDataSettingsSchema.parse({}),
     modpackRegistry: defaultModpackRegistry(),
+    packageDependencies: [],
   };
 }
 

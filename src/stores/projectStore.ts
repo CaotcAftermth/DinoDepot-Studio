@@ -26,11 +26,20 @@ import {
   type ProjectMode,
 } from "../services/projectSession";
 import { newLocalProjectState } from "../model/localState";
+import { withManagedOfficialSettings } from "../services/officialContent";
 
 export interface RecentProject {
   dir: string;
   name: string;
   openedAt: string;
+  /**
+   * The project's own id, when this machine has a record for it.
+   *
+   * Empty for an entry written by a build that only remembered paths. Forget
+   * needs it — dropping the row without the machine-local record would leave
+   * the project to reappear the next time the list is rebuilt from disk.
+   */
+  projectId: string;
 }
 
 const RECENTS_KEY = "ddstudio.recentProjects";
@@ -39,11 +48,23 @@ const RECENTS_KEY = "ddstudio.recentProjects";
 const HEARTBEAT_MS = 30_000;
 
 function loadRecents(): RecentProject[] {
+  let stored: unknown;
   try {
-    return JSON.parse(localStorage.getItem(RECENTS_KEY) ?? "[]");
+    stored = JSON.parse(localStorage.getItem(RECENTS_KEY) ?? "[]");
   } catch {
     return [];
   }
+  if (!Array.isArray(stored)) return [];
+  return stored.map((entry) => ({
+    dir: String((entry as RecentProject)?.dir ?? ""),
+    name: String((entry as RecentProject)?.name ?? ""),
+    openedAt: String((entry as RecentProject)?.openedAt ?? ""),
+    projectId: String((entry as RecentProject)?.projectId ?? ""),
+  }));
+}
+
+function saveRecents(recents: RecentProject[]) {
+  localStorage.setItem(RECENTS_KEY, JSON.stringify(recents.slice(0, 8)));
 }
 
 /**
@@ -65,10 +86,14 @@ async function flushDrafts(): Promise<void> {
   }
 }
 
-function pushRecent(dir: string, name: string) {
-  const recents = loadRecents().filter((r) => r.dir !== dir);
-  recents.unshift({ dir, name, openedAt: new Date().toISOString() });
-  localStorage.setItem(RECENTS_KEY, JSON.stringify(recents.slice(0, 8)));
+function pushRecent(dir: string, name: string, projectId: string) {
+  // Matched on id as well as path: a project that has been moved and reopened
+  // would otherwise sit in the list twice, once at a folder that is gone.
+  const recents = loadRecents().filter(
+    (r) => r.dir !== dir && !(projectId && r.projectId === projectId),
+  );
+  recents.unshift({ dir, name, openedAt: new Date().toISOString(), projectId });
+  saveRecents(recents);
 }
 
 /**
@@ -88,6 +113,9 @@ export interface SaveHealth {
 }
 
 const HEALTHY: SaveHealth = { ok: true, failing: [], lastError: null, lastFailureAt: "" };
+
+/** Tail of the serialized settings-write chain. See `updateSettings`. */
+let settingsQueue: Promise<void> = Promise.resolve();
 
 interface ProjectState {
   /** Absolute path of the open project folder, or null when no project open. */
@@ -115,6 +143,16 @@ interface ProjectState {
   /** Persists one project file to disk (with backup) and updates the in-memory copy. */
   saveFile(fileName: ProjectFileName, content: string): Promise<void>;
   saveSettings(settings: ProjectSettings): Promise<void>;
+  /**
+   * Serialized read-modify-write of project settings.
+   *
+   * Prefer this over `saveSettings` whenever the new value depends on the old
+   * one — it reads the current settings at commit time rather than from a
+   * closure captured before some other operation wrote.
+   */
+  updateSettings(
+    update: (current: ProjectSettings) => ProjectSettings,
+  ): Promise<void>;
   /** Updates this machine's record for the open project. */
   updateLocal(patch: Partial<LocalProjectState>): Promise<void>;
   /**
@@ -127,6 +165,19 @@ interface ProjectState {
   refreshRecents(): void;
   /** Rebuilds the recents list from this machine's project records. */
   loadRecentProjects(): Promise<void>;
+  /**
+   * Removes a project from this machine entirely: the recents row and the
+   * machine-local record behind it. Touches nothing in the project folder —
+   * forgetting a project is not deleting it.
+   */
+  forgetProject(dir: string): Promise<void>;
+  /**
+   * Drops one recents row, keeping the machine-local record.
+   *
+   * What re-linking a moved project needs: the record is the same one, now
+   * pointing at the new folder, and only the row naming the old path is stale.
+   */
+  dropRecentEntry(dir: string): void;
 }
 
 /** Writes are refused outright in read-only mode rather than failing later. */
@@ -213,7 +264,12 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   async createProject(dir, name, cluster) {
     await ipc("create_project_dir", { dir });
     const projectId = newId();
-    const settings = defaultProjectSettings(name, cluster, projectId);
+    // The managed Core Content pin is written with the very first settings
+    // file, so no later asynchronous "add it if missing" pass can race an
+    // administrator's own dependency write.
+    const settings = withManagedOfficialSettings(
+      defaultProjectSettings(name, cluster, projectId),
+    );
     const content = `${JSON.stringify(settings, null, 2)}\n`;
     await ipc("save_project_file", {
       dir,
@@ -223,7 +279,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
     const local = newLocalProjectState(projectId, dir, name);
     await saveLocalState(local);
-    pushRecent(dir, name);
+    pushRecent(dir, name, projectId);
     set({
       dir,
       settings,
@@ -253,7 +309,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const inspection = await inspectProject(dir);
     const opened = await openInspectedProject(inspection, options);
 
-    pushRecent(dir, opened.settings.name);
+    pushRecent(dir, opened.settings.name, opened.settings.projectId);
     set({
       dir: opened.dir,
       settings: opened.settings,
@@ -320,6 +376,22 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     set({ settings });
   },
 
+  async updateSettings(update) {
+    // Serialized on one chain so two callers cannot both read the settings,
+    // both edit their own copy, and have the slower write erase the faster
+    // one. Each `update` sees whatever the previous one committed.
+    const run = settingsQueue.then(async () => {
+      const current = get().settings;
+      if (!current) throw new StudioError("save.failed", "No project is open.");
+      const next = update(current);
+      if (next === current) return;
+      await get().saveSettings(next);
+    });
+    // The queue keeps going after a failure; only this caller sees the error.
+    settingsQueue = run.catch(() => undefined);
+    await run;
+  },
+
   async updateLocal(patch) {
     const current = get().local;
     if (!current) throw new StudioError("save.failed", "No project is open.");
@@ -359,12 +431,41 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   async loadRecentProjects() {
     const records = await listLocalProjects();
     if (records.length === 0) return;
-    set({
-      recents: records
-        .filter((r) => r.localPath)
-        .slice(0, 8)
-        .map((r) => ({ dir: r.localPath, name: r.name, openedAt: r.openedAt })),
-    });
+    const recents = records
+      .filter((r) => r.localPath)
+      .slice(0, 8)
+      .map((r) => ({
+        dir: r.localPath,
+        name: r.name,
+        openedAt: r.openedAt,
+        projectId: r.projectId,
+      }));
+    // Mirrored back, so the stored list carries the ids the records have and
+    // Forget can reach the record behind a row.
+    saveRecents(recents);
+    set({ recents });
+  },
+
+  async forgetProject(dir) {
+    const entry = get().recents.find((r) => r.dir === dir);
+    const recents = loadRecents().filter((r) => r.dir !== dir);
+    saveRecents(recents);
+    set({ recents });
+    if (!entry?.projectId) return;
+    try {
+      await ipc("local_state_delete", { projectId: entry.projectId });
+    } catch (e) {
+      // The row is already gone from the list the admin is looking at. A
+      // record that outlives it reappears on the next rebuild, which is worth
+      // saying rather than throwing over.
+      console.error("Could not remove the local record for this project:", e);
+    }
+  },
+
+  dropRecentEntry(dir) {
+    const recents = loadRecents().filter((r) => r.dir !== dir);
+    saveRecents(recents);
+    set({ recents });
   },
 }));
 

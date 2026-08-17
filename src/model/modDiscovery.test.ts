@@ -281,6 +281,13 @@ describe("discovering a mod", () => {
     ),
   };
 
+  it("preserves the plugin CurseForge id when the install folder is unusual", () => {
+    const result = discoverMod({ ...raw, folderName: "PortsOfAtlas" }, counter());
+    expect(result.projectId).toBe("945275");
+    expect(result.fileId).toBe("");
+    expect(result.warnings[0]).toContain("not the expected");
+  });
+
   it("produces catalog entries for creatures and items only", () => {
     const mod = discoverMod(raw, counter());
     expect(mod.creatures.map((c) => c.name)).toEqual(["Grand Tortugar"]);
@@ -539,6 +546,10 @@ describe("review then apply", () => {
 
     const source = next.sources.find((s) => s.id === "src-1")!;
     expect(source.creatures.map((c) => c.name).sort()).toEqual(["Raptor", "Rex"]);
+    expect(source.discovery?.creatures.map((c) => c.name)).toEqual(["Rex"]);
+    expect(source.structuralOverrides?.creatures.map((c) => c.name)).toEqual([
+      "Raptor",
+    ]);
     expect(keptUnmatched).toBe(1);
   });
 
@@ -584,6 +595,10 @@ describe("review then apply", () => {
     expect(source.curseforgeId).toBe("945275");
     expect(source.url).toBe("https://example.com/mod");
     expect(source.kind).toBe("mod");
+    expect(source.discovery).toMatchObject({
+      fileId: "7802896",
+      shortName: "M",
+    });
   });
 
   it("carries a detected variant tag onto a brand new source", () => {

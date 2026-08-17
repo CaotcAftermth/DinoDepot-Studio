@@ -173,7 +173,11 @@ export function CreaturePreviewModal({
                 style={{ color: originStyle?.color || undefined }}
                 title="Map of origin"
               >
-                <IconValue icon={originStyle?.icon ?? "🗺️"} size={13} />
+                <IconValue
+                  icon={originStyle?.icon ?? "🗺️"}
+                  officialMap={origin}
+                  size={13}
+                />
                 {origin}
               </span>
             )}
@@ -271,7 +275,7 @@ export function CreaturePreviewModal({
                     )}
                     title={off ? "This cluster does not run this map" : undefined}
                   >
-                    <IconValue icon={style.icon} size={13} />
+                    <IconValue icon={style.icon} officialMap={map} size={13} />
                     {map}
                     {off && " ⚠"}
                   </span>

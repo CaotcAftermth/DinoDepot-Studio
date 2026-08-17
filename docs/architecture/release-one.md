@@ -5,6 +5,11 @@ tool into something two administrators can share safely, and its current state.
 
 This document is the implementation plan. It is updated as each phase lands.
 
+> Package, icon, and project-schema-3 work added after this release-one plan is
+> recorded in [packages-and-assets-v2.md](packages-and-assets-v2.md). Schema-2
+> examples below remain as the historical contract that the 2→3 migration
+> accepts; they are not the current write schema.
+
 ---
 
 ## Repository model
@@ -711,7 +716,7 @@ returned at once rather than one problem at a time.
 | schema this build cannot publish from | source with no name |
 | missing project id or name | profile reference with no file behind it |
 | output path escaping the repository | icon not in the images folder |
-| duplicate mod in the cosmetics list | icon that is not a WebP |
+| duplicate mod in the cosmetics list | icon that is not WebP or PNG |
 | duplicate source or player id | |
 
 ### The artifact
@@ -815,26 +820,26 @@ Not offered for the current version (nothing to do) or for a Publish commit
 
 ### The icon cache
 
-Project icons load from the synchronized checkout and need none of this. This is
-for *official modpack* icons — the same 80×80 WebP for everybody who installs
-that pack.
+Project icons load from the synchronized checkout and need none of this. This
+cache is only for remote previews/legacy URLs; exact official and modpack icons
+now load from their managed package roots.
 
 - **Content-addressed**, by Git blob SHA where the registry publishes one. A
   changed image means a changed key, so a stale hit is impossible.
-- **WebP only**, checked by magic bytes. This folder is reachable through the
-  asset protocol, so it must not hold arbitrary file types.
+- **WebP preferred, PNG accepted**, checked by magic bytes. This folder is
+  reachable through the asset protocol, so it must not hold arbitrary types.
 - **ETag conditional requests.** A 304 transfers nothing and refreshes the
   copy's place in the eviction order.
 - **Offline reads.** A cached icon works with no network; without one the icon
   falls back to its emoji rather than failing.
 - **64 MB, least-recently-used**, evicting the ETag alongside its icon.
-- **Self-repairing.** A truncated or non-WebP file reads as a miss and is
+- **Self-repairing.** A truncated or mislabeled file reads as a miss and is
   deleted, so a half-written download from a previous session fixes itself
   rather than rendering broken forever.
 - **Clearable**, always safe — everything in it is re-fetchable.
 
-Deliberately not Git LFS and not a custom asset service: these are 80×80 WebP
-files, and the cheapest correct thing is a folder with a size limit.
+Deliberately not Git LFS and not a custom asset service: these are small WebP
+or PNG files, and the cheapest correct thing is a folder with a size limit.
 
 ### A real bug the tests caught
 
@@ -1007,7 +1012,7 @@ than reporting an error, because that is the normal state of a new one.
 The Content Security Policy set in Phase 1 blocks remote `img-src`, so **https
 icons could not load in the desktop app at all** — the cache turned out to be
 the fix rather than an optimisation. `icon_fetch` pulls the bytes in Rust
-(HTTPS only, WebP verified before it is handed back), the cache stores them, and
+(HTTPS only, WebP/PNG verified before it is handed back), the cache stores them, and
 `useRemoteIcon` serves them through the asset protocol. Icons now work offline
 as a side effect.
 

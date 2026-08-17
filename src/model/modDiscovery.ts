@@ -371,7 +371,11 @@ export function discoverMod(
   }
 
   return {
-    projectId: folder?.projectId ?? "",
+    // The listing path already falls back to cf_ugcID for installations that
+    // do not use CurseForge's normal `<projectId>_<fileId>` directory name.
+    // Preserve that identity through the full read as well, or review shows a
+    // known mod that apply then persists with no ID.
+    projectId: folder?.projectId ?? meta.cfUgcId,
     fileId: folder?.fileId ?? "",
     shortName: raw.shortName,
     name: meta.friendlyName.trim() || raw.shortName,
@@ -654,8 +658,14 @@ export function planDiscovery(
   mod: DiscoveredMod,
 ): DiscoveryPlan {
   const existing = findExistingSource(catalog, mod);
-  const creatures = diffDiscovery(existing?.creatures ?? [], mod.creatures);
-  const items = diffDiscovery(existing?.items ?? [], mod.items);
+  const creatures = diffDiscovery(
+    existing?.discovery?.creatures ?? existing?.creatures ?? [],
+    mod.creatures,
+  );
+  const items = diffDiscovery(
+    existing?.discovery?.items ?? existing?.items ?? [],
+    mod.items,
+  );
 
   return {
     mod,
@@ -665,8 +675,12 @@ export function planDiscovery(
     items,
     // Removals are what an admin would lose; surfacing them separately from the
     // diff makes the "keep these" choice concrete rather than abstract.
-    unmatchedCreatures: creatures.removed,
-    unmatchedItems: items.removed,
+    unmatchedCreatures: existing?.discovery
+      ? (existing.structuralOverrides?.creatures ?? [])
+      : creatures.removed,
+    unmatchedItems: existing?.discovery
+      ? (existing.structuralOverrides?.items ?? [])
+      : items.removed,
     // A mod the project has never seen is always a change — everything about it
     // is new. Only an existing source that matches what was just read has
     // nothing to do.
@@ -731,7 +745,9 @@ export function applyDiscovery(
   const { mod } = plan;
 
   const merge = (discovered: CatalogEntry[], unmatched: CatalogEntry[]) => {
-    const kept = discovered.filter((e) => !exclude.has(normalizeBpPath(e.bpPath)));
+    const kept = discovered.filter(
+      (e) => !exclude.has(normalizeBpPath(e.bpPath)),
+    );
     if (!keepUnmatched || unmatched.length === 0) return kept;
     const known = new Set(kept.map((e) => normalizeBpPath(e.bpPath)));
     return [
@@ -742,6 +758,16 @@ export function applyDiscovery(
 
   const creatures = merge(mod.creatures, plan.unmatchedCreatures);
   const items = merge(mod.items, plan.unmatchedItems);
+  const discoveredCreatures = mod.creatures.filter(
+    (entry) => !exclude.has(normalizeBpPath(entry.bpPath)),
+  );
+  const discoveredItems = mod.items.filter(
+    (entry) => !exclude.has(normalizeBpPath(entry.bpPath)),
+  );
+  const structuralOverrides = {
+    creatures: keepUnmatched ? plan.unmatchedCreatures : [],
+    items: keepUnmatched ? plan.unmatchedItems : [],
+  };
 
   const source: ContentSource = ContentSourceSchema.parse({
     ...(existing ?? {}),
@@ -753,6 +779,13 @@ export function applyDiscovery(
     curseforgeId: mod.projectId || (existing?.curseforgeId ?? ""),
     url: existing?.url?.trim() || mod.url,
     variantTag: existing?.variantTag?.trim() || mod.variantTag,
+    discovery: {
+      fileId: mod.fileId,
+      shortName: mod.shortName,
+      creatures: discoveredCreatures,
+      items: discoveredItems,
+    },
+    structuralOverrides,
     enabled: existing?.enabled ?? true,
     removed: existing?.removed ?? false,
     // Required by the schema with no default, so a new source must supply it.

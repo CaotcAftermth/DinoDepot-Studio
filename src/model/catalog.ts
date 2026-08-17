@@ -84,6 +84,20 @@ export const IniBuildStateSchema = z.object({
 });
 export type IniBuildState = z.infer<typeof IniBuildStateSchema>;
 
+export const DiscoverySnapshotSchema = z.object({
+  /** CurseForge file ID from `<projectId>_<fileId>`, when available. */
+  fileId: z.string().default(""),
+  /** Unreal plugin/mount name used to reproduce blueprint paths. */
+  shortName: z.string().default(""),
+  creatures: z.array(CatalogEntrySchema).default([]),
+  items: z.array(CatalogEntrySchema).default([]),
+});
+
+export const StructuralOverridesSchema = z.object({
+  creatures: z.array(CatalogEntrySchema).default([]),
+  items: z.array(CatalogEntrySchema).default([]),
+});
+
 export const ContentSourceSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -126,6 +140,10 @@ export const ContentSourceSchema = z.object({
    */
   modpackId: z.string().default(""),
   modpackVersion: z.string().default(""),
+  /** Local-first structural truth captured from ShooterGame Discovery. */
+  discovery: DiscoverySnapshotSchema.nullable().optional(),
+  /** Hand-added structural rows retained above Discovery and package layers. */
+  structuralOverrides: StructuralOverridesSchema.optional(),
   /** Whether this content is currently enabled on the server. */
   enabled: z.boolean(),
   /** Marked when the mod is being removed from the server (triggers remap warnings). */

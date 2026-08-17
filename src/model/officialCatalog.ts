@@ -10,6 +10,34 @@ import type { CatalogEntry, CatalogFile, ContentSource } from "./catalog";
 
 export const OFFICIAL_SOURCE_ID = "official-asa";
 
+const OFFICIAL_MAP_ASSETS: Record<string, { file: string; glyph: string }> = {
+  aberration: { file: "aberration.png", glyph: "🍄" },
+  "crystal isles": { file: "crystal_isles.png", glyph: "💎" },
+  extinction: { file: "extinction.png", glyph: "🏙️" },
+  fjordur: { file: "fjordur.png", glyph: "🛡️" },
+  "genesis part 1": { file: "genesis.png", glyph: "🧬" },
+  "genesis part 2": { file: "genesis_2.png", glyph: "🚀" },
+  "lost colony": { file: "lost_colony.png", glyph: "❄️" },
+  "lost island": { file: "lost_island.png", glyph: "🧭" },
+  ragnarok: { file: "ragnarok.png", glyph: "⚔️" },
+  "scorched earth": { file: "scorched_earth.png", glyph: "🏜️" },
+  "the island": { file: "the_island.png", glyph: "🏝️" },
+  valguero: { file: "valguero.png", glyph: "🗻" },
+};
+
+/** Managed map artwork unless the project replaced the stock glyph. */
+export function officialMapAssetPath(
+  name: string,
+  currentIcon?: string,
+): string | null {
+  const key = name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+  const asset = OFFICIAL_MAP_ASSETS[key];
+  if (!asset || (currentIcon !== undefined && currentIcon !== asset.glyph)) {
+    return null;
+  }
+  return `assets/maps/${asset.file}`;
+}
+
 interface RawEntry {
   name: string;
   category: string;

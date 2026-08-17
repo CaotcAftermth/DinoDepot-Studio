@@ -120,7 +120,11 @@ export function ItemPreviewModal({
                 style={{ color: originStyle?.color || undefined }}
                 title="Map of origin"
               >
-                <IconValue icon={originStyle?.icon ?? "🗺️"} size={13} />
+                <IconValue
+                  icon={originStyle?.icon ?? "🗺️"}
+                  officialMap={origin}
+                  size={13}
+                />
                 {origin}
               </span>
             )}

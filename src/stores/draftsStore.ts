@@ -28,6 +28,7 @@ import {
   emptyActivity,
 } from "../model/activity";
 import { newId } from "../model/ids";
+import type { AssetRef } from "../model/assetRef";
 import { asStudioError, type StudioError } from "../model/errors";
 import {
   COSMETIC_SPEC,
@@ -41,6 +42,17 @@ import {
 } from "../model/changeDetection";
 import type { StructuredAction } from "../model/commitActions";
 import { useProjectStore } from "./projectStore";
+import {
+  ensureProjectDependencies,
+  projectOverridesFromResolved,
+  resolveDependencyLayers,
+  type DependencyDiagnostic,
+} from "../services/dependencyManager";
+import {
+  managedOfficialDependency,
+  withManagedOfficialDependency,
+} from "../services/officialContent";
+import { mergeDependencies } from "../model/dependency";
 
 /**
  * Domain drafts for the open project. Hydrated from the project files when a
@@ -132,6 +144,14 @@ function schedulePersist(fileName: ProjectFileName, content: string) {
   );
 }
 
+/** Drops a queued debounced write, for callers that write the file themselves. */
+function cancelPendingPersist(fileName: ProjectFileName) {
+  const existing = saveTimers.get(fileName);
+  if (existing) clearTimeout(existing);
+  saveTimers.delete(fileName);
+  pendingContent.delete(fileName);
+}
+
 /**
  * Writes every pending change immediately.
  *
@@ -153,7 +173,7 @@ export async function flushPendingSaves(): Promise<FlushResult> {
     [PROJECT_FILE.production, state.production],
     [PROJECT_FILE.remaps, state.remaps],
     [PROJECT_FILE.cosmetics, state.cosmetics],
-    [PROJECT_FILE.catalog, state.catalog],
+    [PROJECT_FILE.catalog, state.projectCatalog],
     [PROJECT_FILE.watchlist, state.watchlist],
     [PROJECT_FILE.history, state.history],
     [PROJECT_FILE.players, state.players],
@@ -263,7 +283,17 @@ interface DraftsState {
   production: ProductionDraft;
   remaps: RemapsDraft;
   cosmetics: CosmeticsDraft;
+  /** Resolved editing view: package defaults plus project-owned overrides. */
   catalog: CatalogFile;
+  /** Portable data actually persisted to catalog.mods.json. */
+  projectCatalog: CatalogFile;
+  packageDefaults: CatalogFile;
+  packageAssets: Record<string, AssetRef>;
+  packageRoots: Record<string, string>;
+  /** Pinned Core Content version, so managed official art resolves exactly. */
+  officialVersion: string;
+  dependencyDiagnostics: DependencyDiagnostic[];
+  dependenciesLoading: boolean;
   watchlist: Watchlist;
   history: HistoryFile;
   players: PlayersFile;
@@ -278,11 +308,14 @@ interface DraftsState {
   unloadable: UnloadableFile[];
 
   hydrate(): void;
+  refreshDependencies(): Promise<void>;
   refreshImages(): Promise<void>;
   setProduction(draft: ProductionDraft): void;
   setRemaps(draft: RemapsDraft): void;
   setCosmetics(draft: CosmeticsDraft): void;
   setCatalog(catalog: CatalogFile): void;
+  /** `setCatalog` that resolves only once `catalog.mods.json` is on disk. */
+  setCatalogDurable(catalog: CatalogFile): Promise<void>;
   setWatchlist(watchlist: Watchlist): void;
   setHistory(history: HistoryFile): void;
   setPlayers(players: PlayersFile): void;
@@ -300,6 +333,13 @@ export const useDraftsStore = create<DraftsState>((set, get) => ({
   remaps: emptyRemapsDraft(),
   cosmetics: emptyCosmeticsDraft(),
   catalog: emptyCatalog(),
+  projectCatalog: emptyCatalog(),
+  packageDefaults: emptyCatalog(),
+  packageAssets: {},
+  packageRoots: {},
+  officialVersion: "",
+  dependencyDiagnostics: [],
+  dependenciesLoading: false,
   watchlist: emptyWatchlist(),
   history: emptyHistory(),
   players: emptyPlayers(),
@@ -309,16 +349,31 @@ export const useDraftsStore = create<DraftsState>((set, get) => ({
   unloadable: [],
 
   hydrate() {
-    const { dir, files, mode } = useProjectStore.getState();
+    const projectState = useProjectStore.getState();
+    const { dir, files, mode, local } = projectState;
     if (!dir || get().hydratedFor === dir) return;
     const damaged: UnloadableFile[] = [];
+    const projectCatalog = parseFile(
+      files,
+      PROJECT_FILE.catalog,
+      CatalogFileSchema,
+      emptyCatalog(),
+      damaged,
+    );
     set({
       hydratedFor: dir,
       unloadable: [],
       production: parseFile(files, PROJECT_FILE.production, ProductionDraftSchema, emptyProductionDraft(), damaged),
       remaps: parseFile(files, PROJECT_FILE.remaps, RemapsDraftSchema, emptyRemapsDraft(), damaged),
       cosmetics: parseFile(files, PROJECT_FILE.cosmetics, CosmeticsDraftSchema, emptyCosmeticsDraft(), damaged),
-      catalog: parseFile(files, PROJECT_FILE.catalog, CatalogFileSchema, emptyCatalog(), damaged),
+      catalog: projectCatalog,
+      projectCatalog,
+      packageDefaults: emptyCatalog(),
+      packageAssets: {},
+      packageRoots: {},
+      officialVersion: "",
+      dependencyDiagnostics: [],
+      dependenciesLoading: false,
       watchlist: parseFile(files, PROJECT_FILE.watchlist, WatchlistSchema, emptyWatchlist(), damaged),
       history: parseFile(files, PROJECT_FILE.history, HistoryFileSchema, emptyHistory(), damaged),
       players: parseFile(files, PROJECT_FILE.players, PlayersFileSchema, emptyPlayers(), damaged),
@@ -331,7 +386,107 @@ export const useDraftsStore = create<DraftsState>((set, get) => ({
       set({ unloadable: damaged });
       if (mode === "editable") void quarantineDamaged(dir, damaged);
     }
+    const legacyIconSources = projectCatalog.sources.filter(
+      (source) =>
+        source.iconsDir.trim() &&
+        !local?.sourceIconDirs[source.id]?.trim(),
+    );
+    if (mode === "editable" && local && legacyIconSources.length > 0) {
+      const sourceIconDirs = { ...local.sourceIconDirs };
+      for (const source of legacyIconSources) {
+        sourceIconDirs[source.id] = source.iconsDir.trim();
+      }
+      void projectState
+        .updateLocal({ sourceIconDirs })
+        .then(() => {
+          if (useProjectStore.getState().dir !== dir) return;
+          const migrated = new Set(
+            legacyIconSources.map((source) => source.id),
+          );
+          const clean = (value: CatalogFile): CatalogFile => ({
+            ...value,
+            sources: value.sources.map((source) =>
+              migrated.has(source.id) ? { ...source, iconsDir: "" } : source,
+            ),
+          });
+          const projectCatalog = clean(get().projectCatalog);
+          set({ catalog: clean(get().catalog), projectCatalog });
+          schedulePersist(
+            PROJECT_FILE.catalog,
+            JSON.stringify(projectCatalog, null, 2),
+          );
+        })
+        .catch(async (error: unknown) => {
+          const { toast } = await import("../components/toast");
+          toast.error(
+            `Could not move mod icon folders to this machine's settings: ${
+              error instanceof Error ? error.message : String(error)
+            }`,
+          );
+        });
+    }
     void get().refreshImages();
+    void get().refreshDependencies();
+  },
+
+  async refreshDependencies() {
+    const project = useProjectStore.getState();
+    const openedDir = project.dir;
+    if (!openedDir || !project.settings) return;
+    const configured = project.settings.packageDependencies;
+    let dependencies = withManagedOfficialDependency(configured);
+    if (dependencies !== configured && project.mode === "editable") {
+      // Core Content is a portable exact dependency, not a selected local
+      // folder. Persist the first managed release without making an offline
+      // download a condition of opening the project.
+      //
+      // Merged rather than assigned: an administrator may be installing a
+      // modpack at this very moment, and its pin must not be erased by a list
+      // that was read before it landed. An existing official pin is left
+      // exactly as it is — this never silently upgrades one.
+      try {
+        await project.updateSettings((current) => ({
+          ...current,
+          packageDependencies: mergeDependencies(
+            current.packageDependencies,
+            [managedOfficialDependency()],
+            { asDefaults: true },
+          ),
+        }));
+        dependencies =
+          useProjectStore.getState().settings?.packageDependencies ??
+          dependencies;
+      } catch (error) {
+        const { toast } = await import("../components/toast");
+        toast.error(
+          `Could not save the managed Official ASA dependency: ${
+            error instanceof Error ? error.message : String(error)
+          }`,
+        );
+      }
+    }
+    set({ dependenciesLoading: true });
+    const ensured = await ensureProjectDependencies(
+      dependencies,
+      project.local?.localPackageSources ?? {},
+    );
+    // A slow download finishing after the user changed projects must not put
+    // one project's catalog into another project's store.
+    if (useProjectStore.getState().dir !== openedDir) return;
+    const resolved = resolveDependencyLayers(
+      get().projectCatalog,
+      ensured.available,
+      ensured.diagnostics,
+    );
+    set({
+      catalog: resolved.catalog,
+      packageDefaults: resolved.defaults,
+      packageAssets: resolved.packageAssets,
+      packageRoots: resolved.packageRoots,
+      officialVersion: resolved.officialVersion,
+      dependencyDiagnostics: resolved.diagnostics,
+      dependenciesLoading: false,
+    });
   },
 
   async refreshImages() {
@@ -365,8 +520,31 @@ export const useDraftsStore = create<DraftsState>((set, get) => ({
   },
   setCatalog(catalog) {
     recordChanges(diffCatalog(get().catalog, catalog));
-    set({ catalog });
-    schedulePersist(PROJECT_FILE.catalog, JSON.stringify(catalog, null, 2));
+    const projectCatalog = projectOverridesFromResolved(
+      catalog,
+      get().packageDefaults,
+    );
+    set({ catalog, projectCatalog });
+    schedulePersist(
+      PROJECT_FILE.catalog,
+      JSON.stringify(projectCatalog, null, 2),
+    );
+  },
+
+  async setCatalogDurable(catalog) {
+    // Same bookkeeping as `setCatalog`, but the write is awaited rather than
+    // debounced. Used where an operation may not report success until the
+    // content is actually on disk — see `commitPackageActivation`.
+    recordChanges(diffCatalog(get().catalog, catalog));
+    const projectCatalog = projectOverridesFromResolved(
+      catalog,
+      get().packageDefaults,
+    );
+    cancelPendingPersist(PROJECT_FILE.catalog);
+    set({ catalog, projectCatalog });
+    await useProjectStore
+      .getState()
+      .saveFile(PROJECT_FILE.catalog, JSON.stringify(projectCatalog, null, 2));
   },
   setWatchlist(watchlist) {
     recordChanges(diffList(get().watchlist.mods, watchlist.mods, WATCHLIST_SPEC));
@@ -429,6 +607,13 @@ useProjectStore.subscribe((state, prev) => {
         remaps: emptyRemapsDraft(),
         cosmetics: emptyCosmeticsDraft(),
         catalog: emptyCatalog(),
+        projectCatalog: emptyCatalog(),
+        packageDefaults: emptyCatalog(),
+        packageAssets: {},
+        packageRoots: {},
+        officialVersion: "",
+        dependencyDiagnostics: [],
+        dependenciesLoading: false,
         watchlist: emptyWatchlist(),
         history: emptyHistory(),
         players: emptyPlayers(),

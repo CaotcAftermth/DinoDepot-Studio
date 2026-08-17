@@ -1,7 +1,7 @@
 # Manual test matrix
 
-The automated suite proves that the pieces behave as written: 1,487 frontend
-tests, 92 Rust tests, a type check and a production build, on every pull
+The automated suite proves that the pieces behave as written: 1,543 frontend
+tests, 103 Rust tests, a type check and a production build, on every pull
 request. None of it proves the thing that actually matters here — that two
 people on two machines can edit one cluster's configuration all week without
 losing work or leaking a player's address.
@@ -177,12 +177,15 @@ reports what was left. Nothing on disk is half-written.
 
 ### B4 — A project from an older schema migrates
 
-1. Take a project written by an older build (schema v1).
+1. Take a project written by an older build (schema v1 or v2).
 2. Open it in this build.
 
-**Expect** it migrates to v2, keeps its repository binding, and says what it
-did. In particular the binding must survive — an empty `githubId` on a migrated
-project must not silently discard the repository connection.
+**Expect** it migrates through each adjacent step to v3, keeps its repository
+binding and materialized content, and says what it did. Sources that already
+carry an exact modpack ID and version become materialized exact dependencies;
+their existing content remains the offline fallback. In particular the binding
+must survive — an empty `githubId` on a migrated project must not silently
+discard the repository connection.
 
 ### B5 — A project from a *newer* schema is refused
 
@@ -397,10 +400,10 @@ Try to publish with no site repository bound, and with a revoked token.
 ## F. The updater
 
 This is the section the release exists for. It needs **two versions**: an
-install of `v0.2.0` as the baseline, and `v0.2.1` published as the newer one.
+install of `v0.2.1` as the baseline, and `v0.3.0` published as the newer one.
 
-> **Order matters.** Install `v0.2.0` *first*, from the v0.2.0 release page.
-> The endpoint is `releases/latest/download/latest.json`, so once `v0.2.1` is
+> **Order matters.** Install `v0.2.1` *first*, from the v0.2.1 release page.
+> The endpoint is `releases/latest/download/latest.json`, so once `v0.3.0` is
 > published it becomes what an install is offered. Installing the baseline
 > after that still works, but you lose the chance to see *Up to date* behave
 > correctly first.
@@ -408,21 +411,21 @@ install of `v0.2.0` as the baseline, and `v0.2.1` published as the newer one.
 ### F1 — Baseline installs
 
 1. On a clean machine, download and run
-   `DinoDepot.Studio_0.2.0_x64-setup.exe` from the v0.2.0 release.
+   `DinoDepot.Studio_0.2.1_x64-setup.exe` from the v0.2.1 release.
 2. Expect a SmartScreen "unknown publisher" prompt — the installer is
    updater-signed but not Authenticode-signed. **This is the known, accepted
    state, not a defect.** Choose *More info* → *Run anyway*.
-3. Launch. Confirm Help/About or the title reports **0.2.0**.
+3. Launch. Confirm Help/About or the title reports **0.2.1**.
 
 ### F2 — Up to date, when it is
 
-With only `v0.2.0` published, check for updates.
+With only `v0.2.1` published, check for updates.
 
 **Expect** **Up to date**. Nothing offered, nothing downloaded.
 
 ### F3 — An update is offered, never silently
 
-With `v0.2.1` published, check for updates from the 0.2.0 install.
+With `v0.3.0` published, check for updates from the 0.2.1 install.
 
 **Expect** the banner names the version and waits. Nothing installs on its own,
 and nothing restarts without being told to.
@@ -431,7 +434,7 @@ and nothing restarts without being told to.
 
 Accept the update.
 
-**Expect** it downloads, installs, and relaunches into **0.2.1**. The project
+**Expect** it downloads, installs, and relaunches into **0.3.0**. The project
 opens afterwards with its settings, its repository binding and its account
 still in place — an update that loses the binding is a failed update.
 
@@ -454,11 +457,11 @@ menu and the window.
 security model and blocks any further release.
 
 > Do this against a *test* endpoint or a copied install. Do not modify the
-> published v0.2.1 release — it is immutable and it is what real installs see.
+> published v0.3.0 release — it is immutable and it is what real installs see.
 
 ### F6 — Downgrade prevention
 
-1. On the 0.2.1 install, point the check at a manifest advertising 0.2.0.
+1. On the 0.3.0 install, point the check at a manifest advertising 0.2.1.
 2. Check for updates.
 
 **Expect** refusal. The plugin declines same-version updates but not older
@@ -501,11 +504,49 @@ Revoke the second account's repository access.
 unavailable**, their local project still opens and their work is still on their
 disk.
 
+## H. Managed icons and exact content packages
+
+### H1 — No icon folder setup
+
+Create or open a project without configuring any image path. Open Content
+Sources and Settings.
+
+**Expect** there is no official/modpack icon-folder picker. The project records
+an exact `official-asa` dependency, available official creature/item images
+render from the managed package library, and entries without one show their
+normal category/default icon.
+
+### H2 — Missing pack icons do not block a mod
+
+Import a legacy pack whose JSON references one PNG/WebP file that is absent, or
+use Discovery and choose **Add without pack**.
+
+**Expect** the mod and all discovered content are added. The missing assignment
+is omitted, its entry displays the default icon, and the success message reports
+the fallback rather than an installation failure.
+
+### H3 — Only WebP and PNG are accepted
+
+Try equivalent `.webp`, `.png`, and `.jpg` package icons, including a file whose
+extension does not match its bytes.
+
+**Expect** WebP is selected first when both accepted formats share a name, PNG
+also works, and JPEG/mislabeled bytes are ignored or rejected as icon bytes
+without preventing locally discovered mod content from being added.
+
+### H4 — Published versions remain immutable
+
+Open projects pinned to Anomalocaris package `1.0.0` and `1.0.1` on the same
+machine.
+
+**Expect** both versions coexist. `1.0.0` retains its PNG asset; `1.0.1` uses
+the WebP set. Neither project silently changes its exact dependency.
+
 ---
 
 ## What a pass means
 
-All of A through G passing means the release is sound for the cluster it was
+All of A through H passing means the release is sound for the cluster it was
 built for. It does not mean the app is finished, and it does not cover
 Authenticode — the SmartScreen prompt in F1 is deliberate and deferred, not a
 defect to be reported here.

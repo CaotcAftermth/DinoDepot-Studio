@@ -10,6 +10,8 @@ import {
   newLocalProjectState,
   remoteUrlFor,
   RepoBindingSchema,
+  sourceIconDir,
+  withSourceIconDir,
   type LocalProjectState,
   type RepoBinding,
 } from "./localState";
@@ -56,6 +58,19 @@ describe("local project state", () => {
     expect(LocalProjectStateSchema.safeParse({ localPath: "C:\\x" }).success).toBe(
       false,
     );
+  });
+
+  it("keeps source icon folders local and falls back during migration", () => {
+    const fresh = newLocalProjectState("p1", "C:\\x", "Name");
+    expect(sourceIconDir(fresh, "source-1", "D:\\legacy-icons")).toBe(
+      "D:\\legacy-icons",
+    );
+
+    const updated = withSourceIconDir(fresh, "source-1", "E:\\local-icons");
+    expect(sourceIconDir(updated, "source-1", "D:\\legacy-icons")).toBe(
+      "E:\\local-icons",
+    );
+    expect(withSourceIconDir(updated, "source-1", "").sourceIconDirs).toEqual({});
   });
 });
 

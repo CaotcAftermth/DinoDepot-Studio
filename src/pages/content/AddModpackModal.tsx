@@ -15,9 +15,12 @@ import {
   type InstalledModSummary,
 } from "../../services/modDiscovery";
 import { normalizeCurseforgeId } from "../../model/catalogDuplicates";
+import { includedActiveModIds } from "../../model/cosmetics";
 import {
   applyModpack,
   compareVersions,
+  matchModpackSource,
+  registryVersion,
   searchRegistry,
   templateModpack,
   templateReadme,
@@ -30,10 +33,30 @@ import {
   fetchPackIcons,
   fetchRegistry,
   registryBrowseUrl,
-  type FetchedIcon,
+  type PackIconFetchResult,
   type RegistryListing,
 } from "../../services/modpackRegistry";
-import { packFromFile, packFromUrl } from "../../services/modpackSource";
+import {
+  linkedPackageFromUrl,
+  linkedPackageFromFile,
+  packFromFile,
+  packFromUrl,
+} from "../../services/modpackSource";
+import { installPackIcons } from "../../services/modpackInstall";
+import { commitPackageActivation } from "../../services/projectActivation";
+import {
+  downloadRegistryPackage,
+  downloadedAsLegacyInstall,
+  installDownloadedPackage,
+  listInstalledPackages,
+  type DownloadedPackage,
+  type InstalledPackageInfo,
+} from "../../services/packageManager";
+import {
+  dependencyForRegistryPackage,
+  PackageDependencySchema,
+  upsertDependency,
+} from "../../model/dependency";
 import { useProjectStore } from "../../stores/projectStore";
 import { useDraftsStore } from "../../stores/draftsStore";
 import { openExternal } from "../../services/openExternal";
@@ -115,6 +138,7 @@ export function AddModpackModal({
       )}
       {tab === "discover" && (
         <DiscoverTab
+          registry={registry}
           onInstalled={onInstalled}
           onClose={onClose}
           onManual={() => setTab("manual")}
@@ -147,8 +171,12 @@ function RegistryTab({
   onManual: () => void;
   onTemplate: () => void;
 }) {
-  const { catalog, setCatalog, refreshImages } = useDraftsStore();
+  const { catalog, setCatalog, refreshImages, refreshDependencies } =
+    useDraftsStore();
   const projectDir = useProjectStore((s) => s.dir);
+  const settings = useProjectStore((s) => s.settings);
+  // No `saveSettings` here on purpose: an install's settings write happens
+  // inside `commitPackageActivation`, which re-reads them at commit time.
   const imagesDirSetting = useProjectStore((s) => s.local?.imagesDir);
   const imagesDir =
     imagesDirSetting?.trim() || (projectDir ? `${projectDir}/images` : "");
@@ -204,47 +232,132 @@ function RegistryTab({
     key: string,
     load: () => Promise<{
       pack: Modpack;
-      icons: () => Promise<FetchedIcon[]>;
+      icons: () => Promise<PackIconFetchResult>;
+      /** Commits an already verified v2 download to the shared library. */
+      commitPackage?: () => Promise<unknown>;
+      linkedPackage?: {
+        entry: RegistryEntry;
+        exact: NonNullable<RegistryEntry["versions"]>[number];
+        downloaded: DownloadedPackage;
+        manifestUrl?: string;
+        localOnly?: boolean;
+        localManifestPath?: string;
+      };
     }>,
   ) {
     setInstalling(key);
     try {
-      const { pack, icons } = await load();
-      const already = installed.get(pack.meta.id);
+      const {
+        pack: loadedPack,
+        icons,
+        commitPackage,
+        linkedPackage,
+      } = await load();
+      let pack = loadedPack;
+      const match = matchModpackSource(catalog, pack);
+      if (match.ambiguous.length > 0) {
+        throw new Error(
+          `${match.ambiguous.length} content sources claim this package identity. Resolve those duplicate sources before installing.`,
+        );
+      }
+      const already = match.source;
       if (already) {
+        const adopting = match.matchedBy === "curseforgeId";
         const ok = await confirmDialog({
-          title: `Update "${already.name}" to ${pack.meta.version}?`,
-          message:
-            `Installed: ${already.modpackVersion || "unknown"}. ` +
-            "The mod's creatures, items and INI settings are replaced with the new version. " +
-            "Anything you wrote yourself on its entries is kept.",
-          confirmLabel: `Update to ${pack.meta.version}`,
+          title: adopting
+            ? `Connect "${already.name}" to this package?`
+            : `Update "${already.name}" to ${pack.meta.version}?`,
+          message: adopting
+            ? `Discovery and this package share CurseForge ID ${pack.meta.curseforgeId}. ` +
+              "The existing source will be preserved and connected to the exact package version; your per-entry edits are kept."
+            : `Installed: ${already.modpackVersion || "unknown"}. ` +
+              "The mod's creatures, items and INI settings are replaced with the new version. " +
+              "Anything you wrote yourself on its entries is kept.",
+          confirmLabel: adopting
+            ? `Connect version ${pack.meta.version}`
+            : `Update to ${pack.meta.version}`,
         });
         if (!ok) return;
       }
 
-      const result = applyModpack(catalog, pack, newId);
-      setCatalog(result.catalog);
-
-      // Icons are image files rather than data, so they land in the project's
-      // images folder — the same place the icon picker already reads from.
-      // A failure here costs icons, never the install.
+      // Resolve optional icons first. Valid PNG/WebP files commit as one native
+      // batch; missing or unsupported pictures are removed from the imported
+      // assignments so their entries use the normal default icon.
+      if (commitPackage) await commitPackage();
+      // Linked v2 packages keep their assets in the shared immutable library.
+      // Legacy packs still materialize icons so old projects stay standalone.
       let iconsWritten = 0;
-      if (isTauri && imagesDir) {
-        try {
-          for (const icon of await icons()) {
-            const sep = imagesDir.includes("\\") && !imagesDir.includes("/") ? "\\" : "/";
-            await ipc("save_file_b64", {
-              path: `${imagesDir.replace(/[/\\]$/, "")}${sep}${icon.name}`,
-              contentB64: icon.contentB64,
-            });
-            iconsWritten++;
-          }
-          if (iconsWritten > 0) void refreshImages();
-        } catch {
-          /* the pack is installed; icons fall back to category emoji */
-        }
+      let fallbackIcons = 0;
+      if (!linkedPackage) {
+        const installedIcons = await installPackIcons(
+          imagesDir,
+          pack,
+          await icons(),
+        );
+        pack = installedIcons.pack;
+        iconsWritten = installedIcons.written;
+        fallbackIcons = installedIcons.skipped.length;
       }
+      const result = applyModpack(catalog, pack, newId);
+      let nextCatalog = result.catalog;
+      if (linkedPackage) {
+        // A package-owned file ref is resolved from the library. Keep an
+        // existing project assignment, but do not turn the package default
+        // into a copied project icon.
+        const nextIcons = { ...nextCatalog.icons };
+        for (const [path, value] of Object.entries(pack.icons)) {
+          const key = normalizeBpPath(path);
+          if (value.startsWith("file:") && catalog.icons[key] === undefined) {
+            delete nextIcons[key];
+          }
+        }
+        nextCatalog = { ...nextCatalog, icons: nextIcons };
+        if (!settings) throw new Error("No project is open");
+        let dependency = dependencyForRegistryPackage(
+          registry,
+          linkedPackage.entry,
+          linkedPackage.exact,
+          linkedPackage.downloaded.manifest,
+          linkedPackage.downloaded.manifestIntegrity,
+          result.sourceId,
+        );
+        if (linkedPackage.manifestUrl || linkedPackage.localOnly) {
+          dependency = {
+            ...dependency,
+            locator: {
+              owner: "",
+              repo: "",
+              branch: "",
+              path: "",
+              manifest: "",
+              manifestUrl: linkedPackage.manifestUrl ?? "",
+            },
+          };
+        }
+        // One unit: the catalog and the pin either both land or neither does,
+        // and the settings are re-read at commit time rather than taken from
+        // the closure this handler started with.
+        await commitPackageActivation({
+          dependency,
+          catalog: nextCatalog,
+          localManifestPath: linkedPackage.localManifestPath,
+        });
+      } else if (settings) {
+        const dependency = PackageDependencySchema.parse({
+          kind: "modpack",
+          packageId: pack.meta.id,
+          version: pack.meta.version,
+          curseforgeId: pack.meta.curseforgeId,
+          sourceId: result.sourceId,
+          mode: "materialized",
+          addedAt: new Date().toISOString(),
+        });
+        await commitPackageActivation({ dependency, catalog: nextCatalog });
+      } else {
+        setCatalog(nextCatalog);
+      }
+      if (linkedPackage) await refreshDependencies();
+      if (iconsWritten > 0) void refreshImages();
 
       onInstalled(result.sourceId, pack.meta.name);
       toast.success(
@@ -254,7 +367,10 @@ function RegistryTab({
               ? ` · ${result.keptLocal} of your own entries kept`
               : "")
           : `${pack.meta.name} added — ${pack.creatures.length} creatures, ${pack.items.length} items`) +
-          (iconsWritten > 0 ? ` · ${iconsWritten} icons` : ""),
+          (iconsWritten > 0 ? ` · ${iconsWritten} icons` : "") +
+          (fallbackIcons > 0
+            ? ` · ${fallbackIcons} default fallback${fallbackIcons === 1 ? "" : "s"}`
+            : ""),
       );
       onClose();
     } catch (e) {
@@ -266,17 +382,42 @@ function RegistryTab({
 
   function install(entry: RegistryEntry) {
     return installFrom(entry.id, async () => {
+      const exact = registryVersion(entry, entry.version);
+      if (exact) {
+        const downloaded = await downloadRegistryPackage(
+          registry,
+          entry,
+          entry.version,
+        );
+        const legacy = downloadedAsLegacyInstall(downloaded);
+        return {
+          pack: legacy.pack,
+          icons: async () => legacy.icons,
+          commitPackage: () => installDownloadedPackage(downloaded),
+          linkedPackage: { entry, exact, downloaded },
+        };
+      }
       const pack = await fetchPack(registry, entry);
       return {
         pack,
-        icons: async () => (await fetchPackIcons(registry, entry, pack)).icons,
+        icons: () => fetchPackIcons(registry, entry, pack),
       };
     });
   }
 
   /** A pack someone linked — a registry folder, a fork, a pull request. */
   function installLink() {
-    return installFrom("link", () => packFromUrl(link, registry));
+    return installFrom("link", async () => {
+      const linked = await linkedPackageFromUrl(link, registry);
+      if (!linked) return packFromUrl(link, registry);
+      const legacy = downloadedAsLegacyInstall(linked.downloaded);
+      return {
+        pack: legacy.pack,
+        icons: async () => legacy.icons,
+        commitPackage: () => installDownloadedPackage(linked.downloaded),
+        linkedPackage: linked,
+      };
+    });
   }
 
   /** A pack sitting on this machine, sent over or built by hand. */
@@ -285,7 +426,17 @@ function RegistryTab({
       { name: "Modpack", extensions: ["json"] },
     ]);
     if (!path) return;
-    await installFrom("file", () => packFromFile(path));
+    await installFrom("file", async () => {
+      const linked = await linkedPackageFromFile(path);
+      if (!linked) return packFromFile(path);
+      const legacy = downloadedAsLegacyInstall(linked.downloaded);
+      return {
+        pack: legacy.pack,
+        icons: async () => legacy.icons,
+        commitPackage: () => installDownloadedPackage(linked.downloaded),
+        linkedPackage: { ...linked, localManifestPath: path },
+      };
+    });
   }
 
   return (
@@ -314,8 +465,9 @@ function RegistryTab({
       <div className="border border-ink-700 rounded-lg p-3 flex flex-col gap-2">
         <p className="text-xs text-ink-400">
           Found one while browsing, or been sent a pack? Paste the link to its
-          folder or <span className="mono">modpack.json</span> — a pull request
-          or a fork works too — or open one saved on this machine.
+          folder, <span className="mono">modpack.json</span>, or an immutable
+          <span className="mono"> manifest.json</span> — a pull request or fork
+          works too — or open one saved on this machine.
         </p>
         <div className="flex items-center gap-2">
           <Input
@@ -471,16 +623,27 @@ function RegistryTab({
  * convention — which is why nothing is written until it has been reviewed.
  */
 function DiscoverTab({
+  registry,
   onInstalled,
   onClose,
   onManual,
 }: {
+  registry: ModpackRegistry;
   onInstalled: (sourceId: string, name: string) => void;
   onClose: () => void;
   onManual: () => void;
 }) {
-  const { catalog, setCatalog, cosmetics, production, remaps } = useDraftsStore();
+  const {
+    catalog,
+    setCatalog,
+    cosmetics,
+    production,
+    remaps,
+    refreshDependencies,
+  } = useDraftsStore();
   const updateLocal = useProjectStore((s) => s.updateLocal);
+  const settings = useProjectStore((s) => s.settings);
+  const saveSettings = useProjectStore((s) => s.saveSettings);
   const root = useProjectStore((s) => s.local?.modsDir)?.trim() ?? "";
 
   const [listing, setListing] = useState<InstalledModSummary[] | null>(null);
@@ -497,6 +660,12 @@ function DiscoverTab({
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
   /** Which per-mod entry lists are open, keyed `<shortName>:<kind>`. */
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [packageListing, setPackageListing] =
+    useState<RegistryListing | null>(null);
+  const [installedPackages, setInstalledPackages] = useState<
+    InstalledPackageInfo[]
+  >([]);
+  const [packageNotice, setPackageNotice] = useState("");
 
   const setExclusion = useCallback((paths: string[], drop: boolean) => {
     setExcluded((prev) => {
@@ -511,8 +680,8 @@ function DiscoverTab({
 
   /** The mod ids the project already treats as cosmetics. */
   const cosmeticIds = useMemo(
-    () => new Set(cosmetics.entries.map((e) => e.modId).filter(Boolean)),
-    [cosmetics.entries],
+    () => includedActiveModIds(cosmetics),
+    [cosmetics],
   );
 
   /** CurseForge ids already catalogued, so a re-scan reads as an update. */
@@ -545,6 +714,76 @@ function DiscoverTab({
   useEffect(() => {
     if (root) void load(root);
   }, [root, load]);
+
+  // Package enrichment is deliberately independent from the local scan. A
+  // registry outage changes badges and optional actions, never the listing or
+  // the ability to apply Discovery by itself.
+  useEffect(() => {
+    let cancelled = false;
+    setPackageNotice("");
+    void fetchRegistry(registry)
+      .then((result) => {
+        if (!cancelled) setPackageListing(result);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setPackageListing(null);
+          setPackageNotice("Package availability could not be checked. Local Discovery still works.");
+        }
+      });
+    void listInstalledPackages()
+      .then((packages) => {
+        if (!cancelled) setInstalledPackages(packages);
+      })
+      .catch(() => {
+        if (!cancelled) setInstalledPackages([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [registry.owner, registry.repo, registry.branch, registry.path]);
+
+  const packagesByModId = useMemo(() => {
+    const grouped = new Map<string, RegistryEntry[]>();
+    for (const entry of packageListing?.packs ?? []) {
+      const id = normalizeCurseforgeId(entry.curseforgeId);
+      if (!id) continue;
+      grouped.set(id, [...(grouped.get(id) ?? []), entry]);
+    }
+    return grouped;
+  }, [packageListing]);
+  const installedPackageKeys = useMemo(
+    () =>
+      new Set(
+        installedPackages.map(
+          (item) => `${item.kind}:${item.packageId}:${item.version}`,
+        ),
+      ),
+    [installedPackages],
+  );
+  const projectDependencyByModId = useMemo(
+    () =>
+      new Map(
+        (settings?.packageDependencies ?? [])
+          .filter((dependency) => dependency.curseforgeId.trim())
+          .map((dependency) => [
+            normalizeCurseforgeId(dependency.curseforgeId),
+            dependency,
+          ]),
+      ),
+    [settings?.packageDependencies],
+  );
+
+  const exactPackageFor = useCallback(
+    (projectId: string) => {
+      const matches = packagesByModId.get(normalizeCurseforgeId(projectId)) ?? [];
+      if (matches.length !== 1) return null;
+      const entry = matches[0];
+      const exact = registryVersion(entry, entry.version);
+      return exact ? { entry, exact } : null;
+    },
+    [packagesByModId],
+  );
 
   /** Points the project at an install, accepting the game folder or the mods folder. */
   async function chooseFolder() {
@@ -605,9 +844,14 @@ function DiscoverTab({
     }
   }
 
-  /** Commits the reviewed plans, threading the catalog through each one. */
-  function apply() {
+  /**
+   * Commits local Discovery first, then optionally enriches matching mods.
+   * A failed package request can therefore never undo or prevent the local
+   * ShooterGame result the administrator already reviewed.
+   */
+  async function apply(installMatching: boolean) {
     if (!plans) return;
+    setBusy(true);
     let next = catalog;
     let firstSource: { id: string; name: string } | null = null;
     let creatures = 0;
@@ -627,12 +871,92 @@ function DiscoverTab({
       if (!firstSource) firstSource = { id: result.sourceId, name: plan.mod.name };
     }
 
+    const discoveredCatalog = next;
     setCatalog(next);
+    const failures: string[] = [];
+    let packagesAdded = 0;
+    let dependencies = [...(settings?.packageDependencies ?? [])];
+
+    if (installMatching) {
+      for (const plan of plans) {
+        const available = exactPackageFor(plan.mod.projectId);
+        if (!available) continue;
+        try {
+          const downloaded = await downloadRegistryPackage(
+            registry,
+            available.entry,
+            available.entry.version,
+          );
+          await installDownloadedPackage(downloaded);
+          const { pack } = downloadedAsLegacyInstall(downloaded);
+          const projectIcons = next.icons;
+          const enriched = applyModpack(next, pack, newId);
+          const icons = { ...enriched.catalog.icons };
+          for (const [path, value] of Object.entries(pack.icons)) {
+            const key = normalizeBpPath(path);
+            if (value.startsWith("file:") && projectIcons[key] === undefined) {
+              delete icons[key];
+            }
+          }
+          next = { ...enriched.catalog, icons };
+          dependencies = upsertDependency(
+            dependencies,
+            dependencyForRegistryPackage(
+              registry,
+              available.entry,
+              available.exact,
+              downloaded.manifest,
+              downloaded.manifestIntegrity,
+              enriched.sourceId,
+            ),
+          );
+          packagesAdded++;
+        } catch (error) {
+          failures.push(
+            `${plan.mod.name}: ${error instanceof Error ? error.message : String(error)}`,
+          );
+        }
+      }
+
+      if (packagesAdded > 0) {
+        if (!settings) {
+          failures.push("The exact package dependencies could not be saved.");
+          packagesAdded = 0;
+          next = discoveredCatalog;
+        } else {
+          try {
+            await saveSettings({ ...settings, packageDependencies: dependencies });
+            setCatalog(next);
+            await refreshDependencies();
+          } catch (error) {
+            failures.push(
+              `Exact dependencies: ${error instanceof Error ? error.message : String(error)}`,
+            );
+            packagesAdded = 0;
+            next = discoveredCatalog;
+            setCatalog(discoveredCatalog);
+          }
+        }
+      }
+    }
+
     if (firstSource) onInstalled(firstSource.id, firstSource.name);
     toast.success(
       `${plans.length} mod${plans.length === 1 ? "" : "s"} catalogued — ` +
-        `${creatures} creatures, ${items} items`,
+        `${creatures} creatures, ${items} items` +
+        (packagesAdded > 0
+          ? ` · ${packagesAdded} exact package${packagesAdded === 1 ? "" : "s"} installed`
+          : ""),
     );
+    if (failures.length > 0) {
+      toast.error(
+        `Discovery was applied, but package enrichment was unavailable: ${failures.join(" · ")}`,
+      );
+    }
+    if (packagesAdded === 0 && settings?.packageDependencies.length) {
+      void refreshDependencies();
+    }
+    setBusy(false);
     onClose();
   }
 
@@ -683,6 +1007,9 @@ function DiscoverTab({
   // --- review stage ---------------------------------------------------------
   if (plans) {
     const nothingToDo = plans.every((p) => p.noChanges);
+    const matchingPackageCount = plans.filter((plan) =>
+      exactPackageFor(plan.mod.projectId),
+    ).length;
     /**
      * Config this update would orphan. Worth seeing before applying: a rule
      * pointing at a moved path keeps validating while producing nothing, and
@@ -743,6 +1070,7 @@ function DiscoverTab({
           {plans.map((plan) => {
             const { mod } = plan;
             const isNew = !plan.existingSourceId;
+            const packageOption = exactPackageFor(mod.projectId);
             return (
               <div
                 key={mod.shortName}
@@ -761,6 +1089,11 @@ function DiscoverTab({
                     <span className="text-xs text-ink-500">
                       variant tag “{mod.variantTag}”
                     </span>
+                  )}
+                  {packageOption && (
+                    <Badge tone="ok">
+                      Exact pack {packageOption.entry.version} available
+                    </Badge>
                   )}
                 </div>
 
@@ -885,10 +1218,27 @@ function DiscoverTab({
             <Button variant="ghost" onClick={onClose}>
               Cancel
             </Button>
-            <Button variant="primary" disabled={nothingToDo} onClick={apply}>
-              {nothingToDo
-                ? "Nothing to apply"
-                : `Apply to ${plans.length} mod${plans.length === 1 ? "" : "s"}`}
+            {matchingPackageCount > 0 && (
+              <Button
+                variant="ghost"
+                disabled={busy || nothingToDo}
+                onClick={() => void apply(false)}
+              >
+                Add without pack
+              </Button>
+            )}
+            <Button
+              variant="primary"
+              disabled={busy || (nothingToDo && matchingPackageCount === 0)}
+              onClick={() => void apply(matchingPackageCount > 0)}
+            >
+              {busy
+                ? "Applying…"
+                : matchingPackageCount > 0
+                  ? `Apply + install ${matchingPackageCount} pack${matchingPackageCount === 1 ? "" : "s"}`
+                  : nothingToDo
+                    ? "Nothing to apply"
+                    : `Apply to ${plans.length} mod${plans.length === 1 ? "" : "s"}`}
             </Button>
           </div>
         </div>
@@ -924,6 +1274,10 @@ function DiscoverTab({
         </div>
       )}
 
+      {packageNotice && (
+        <p className="text-xs text-ink-400">{packageNotice}</p>
+      )}
+
       {hiddenCosmetics > 0 && (
         <Toggle
           checked={showCosmetics}
@@ -950,6 +1304,22 @@ function DiscoverTab({
         <div className="flex flex-col gap-1.5 max-h-80 overflow-y-auto pr-1">
           {visible.map((mod) => {
             const already = existingIds.has(mod.projectId);
+            const packageMatches =
+              packagesByModId.get(normalizeCurseforgeId(mod.projectId)) ?? [];
+            const packageOption = exactPackageFor(mod.projectId);
+            const dependency = projectDependencyByModId.get(
+              normalizeCurseforgeId(mod.projectId),
+            );
+            const dependencyInstalled = dependency
+              ? installedPackageKeys.has(
+                  `${dependency.kind}:${dependency.packageId}:${dependency.version}`,
+                )
+              : false;
+            const latestInstalled = packageOption
+              ? installedPackageKeys.has(
+                  `modpack:${packageOption.entry.id}:${packageOption.entry.version}`,
+                )
+              : false;
             return (
               <label
                 key={mod.folderName}
@@ -972,6 +1342,34 @@ function DiscoverTab({
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-sm text-ink-100">{mod.name}</span>
                     {already && <Badge tone="ok">Added</Badge>}
+                    {dependency && (
+                      <Badge tone={dependencyInstalled ? "ok" : "warn"}>
+                        Pack {dependency.version}
+                        {dependencyInstalled ? " in project" : " missing"}
+                      </Badge>
+                    )}
+                    {!dependency && packageOption && (
+                      <Badge tone={latestInstalled ? "ok" : "warn"}>
+                        Pack {packageOption.entry.version}{" "}
+                        {latestInstalled ? "installed" : "available"}
+                      </Badge>
+                    )}
+                    {dependency &&
+                      packageOption &&
+                      compareVersions(
+                        packageOption.entry.version,
+                        dependency.version,
+                      ) > 0 && <Badge tone="warn">Pack update available</Badge>}
+                    {packageMatches.length > 1 && (
+                      <Badge tone="warn">Package identity conflict</Badge>
+                    )}
+                    {!packageOption &&
+                      packageMatches.length === 1 &&
+                      !dependency && <Badge>Legacy pack available</Badge>}
+                    {packageListing &&
+                      mod.projectId &&
+                      packageMatches.length === 0 &&
+                      !dependency && <Badge>No DD-S pack</Badge>}
                     {mod.cosmetic && <Badge>Cosmetic</Badge>}
                     {!mod.hasManifest && <Badge tone="warn">No manifest</Badge>}
                   </div>

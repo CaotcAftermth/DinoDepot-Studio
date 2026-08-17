@@ -63,7 +63,7 @@ pub async fn wiki_fetch_page(host: String, page: String) -> Result<WikiPage, Str
     })
 }
 
-const IMAGE_EXTENSIONS: &[&str] = &["png", "jpg", "jpeg", "webp", "gif", "bmp"];
+const IMAGE_EXTENSIONS: &[&str] = &["webp", "png"];
 const MAX_DEPTH: usize = 3;
 
 fn collect_images(dir: &Path, base: &Path, depth: usize, out: &mut Vec<String>) {
