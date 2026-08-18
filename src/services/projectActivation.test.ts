@@ -142,7 +142,8 @@ describe("transactional package activation", () => {
     await commitPackageActivation({
       dependency,
       catalog: catalogWithIcon(),
-      localManifestPath: "C:\\dev-packages\\pack\\1.0.1-dev.1\\manifest.json",
+      localPackageSourcePath:
+        "C:\\dev-packages\\pack\\1.0.1-dev.1\\manifest.json",
     });
 
     expect(local.localPackageSources).toEqual({

@@ -24,6 +24,26 @@ const modpack = (version = "1.0.0", curseforgeId = "987274") =>
   });
 
 describe("dependency merging", () => {
+  it("stores a hash-pinned compatibility URL without a filesystem path", () => {
+    const dependency = PackageDependencySchema.parse({
+      kind: "modpack",
+      packageId: "legacy-pack",
+      version: "1.0.0",
+      integrity: "a".repeat(64),
+      locator: {
+        sourceFormat: "legacy",
+        legacyUrl: "https://example.com/legacy-pack/modpack.json",
+      },
+    });
+
+    expect(dependency.locator).toMatchObject({
+      sourceFormat: "legacy",
+      legacyUrl: "https://example.com/legacy-pack/modpack.json",
+      manifestUrl: "",
+    });
+    expect(JSON.stringify(dependency)).not.toMatch(/[A-Z]:\\\\/);
+  });
+
   it("keeps both rows when two operations each add their own", () => {
     // The shape of the old race: each caller starts from the same list and
     // writes back its own edit. Merging by identity means neither is lost.

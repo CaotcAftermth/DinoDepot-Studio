@@ -23,12 +23,15 @@ import {
   installBundledOfficialPackage,
   installDownloadedPackage,
   installLocalPackageManifest,
+  normalizeLegacyModpackPackage,
   readInstalledPackage,
   type InstalledPackage,
 } from "./packageManager";
+import { packFromFile, packFromUrl } from "./modpackSource";
 
 /**
- * Machine-local manifest paths, keyed by `<packageId>@<version>`.
+ * Machine-local package manifest or compatibility JSON paths, keyed by
+ * `<packageId>@<version>`.
  *
  * A locally built development package has no URL. Its folder is this
  * machine's business only, so it travels in local state and never in the
@@ -79,7 +82,8 @@ interface AvailableDependency {
 function locatorComplete(dependency: PackageDependency): boolean {
   const locator = dependency.locator;
   return Boolean(
-    locator.manifestUrl ||
+    locator.legacyUrl ||
+      locator.manifestUrl ||
       (locator.owner &&
         locator.repo &&
         locator.branch &&
@@ -91,7 +95,7 @@ function locatorComplete(dependency: PackageDependency): boolean {
  * Resolves one exact requirement, preferring everything local to the network.
  *
  * Order is installed library, then the bundled official package, then a
- * machine-local manifest folder, and only then GitHub. Local development and
+ * machine-local package source, and only then GitHub. Local development and
  * first use must not need a successful request; GitHub is how a *new* version
  * is distributed, not how an already-pinned one is found.
  */
@@ -144,13 +148,25 @@ async function ensureDependency(
     }
   }
 
-  const localManifest =
+  const localSource =
     localSources[
       localPackageSourceKey(dependency.packageId, dependency.version)
     ];
-  if (localManifest) {
+  if (localSource) {
     try {
-      const { downloaded } = await installLocalPackageManifest(localManifest);
+      let downloaded;
+      if (dependency.locator.sourceFormat === "legacy") {
+        const source = await packFromFile(localSource);
+        downloaded = (
+          await normalizeLegacyModpackPackage(source.pack, await source.icons())
+        ).downloaded;
+        if (!downloaded) {
+          throw new Error("legacy modpack identity cannot address managed storage");
+        }
+        await installDownloadedPackage(downloaded);
+      } else {
+        downloaded = (await installLocalPackageManifest(localSource)).downloaded;
+      }
       if (
         downloaded.manifest.kind === dependency.kind &&
         downloaded.manifest.packageId === dependency.packageId &&
@@ -170,30 +186,46 @@ async function ensureDependency(
   }
 
   const locator = dependency.locator;
-  const downloaded = locator.manifestUrl
-    ? await downloadPackageFromManifestUrl(locator.manifestUrl)
-    : await downloadRegistryPackage(
-        {
-          owner: locator.owner,
-          repo: locator.repo,
-          branch: locator.branch,
-          path: locator.path,
-        },
-        RegistryEntrySchema.parse({
-          id: dependency.packageId,
-          name: dependency.packageId,
-          version: dependency.version,
-          curseforgeId: dependency.curseforgeId,
-          versions: [
-            {
-              version: dependency.version,
-              manifest: locator.manifest,
-              integrity: dependency.integrity,
-            },
-          ],
-        }),
-        dependency.version,
-      );
+  let downloaded;
+  if (locator.sourceFormat === "legacy") {
+    const source = await packFromUrl(locator.legacyUrl, {
+      owner: locator.owner,
+      repo: locator.repo,
+      branch: locator.branch,
+      path: locator.path,
+    });
+    downloaded = (
+      await normalizeLegacyModpackPackage(source.pack, await source.icons())
+    ).downloaded;
+    if (!downloaded) {
+      throw new Error("legacy modpack identity cannot address managed storage");
+    }
+  } else {
+    downloaded = locator.manifestUrl
+      ? await downloadPackageFromManifestUrl(locator.manifestUrl)
+      : await downloadRegistryPackage(
+          {
+            owner: locator.owner,
+            repo: locator.repo,
+            branch: locator.branch,
+            path: locator.path,
+          },
+          RegistryEntrySchema.parse({
+            id: dependency.packageId,
+            name: dependency.packageId,
+            version: dependency.version,
+            curseforgeId: dependency.curseforgeId,
+            versions: [
+              {
+                version: dependency.version,
+                manifest: locator.manifest,
+                integrity: dependency.integrity,
+              },
+            ],
+          }),
+          dependency.version,
+        );
+  }
   if (
     downloaded.manifest.kind !== dependency.kind ||
     downloaded.manifest.packageId !== dependency.packageId ||

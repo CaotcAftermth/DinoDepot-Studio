@@ -1,6 +1,13 @@
 import {
   modpackFromPackage,
+  PACKAGE_CONTENT_FORMAT,
+  PACKAGE_FORMAT,
+  PACKAGE_FORMAT_VERSION,
+  packageAssetV3,
   packageContentAssetPaths,
+  packageContentFromModpack,
+  packageFile,
+  packageJson,
   PackageContentSchema,
   PackageManifestSchema,
   sha256Hex,
@@ -18,6 +25,7 @@ import {
 import { ipc, isTauri } from "./ipc";
 import type { PackIconFetchResult } from "./modpackRegistry";
 import { registryFileUrl } from "./modpackRegistry";
+import { preparePackIcons } from "./modpackInstall";
 import { studioSatisfies } from "../model/studio";
 import {
   packageBase64ToBytes,
@@ -38,6 +46,133 @@ export interface DownloadedPackage {
   manifestIntegrity: string;
   content: PackageContent;
   files: DownloadedPackageFile[];
+}
+
+export interface NormalizedLegacyModpack {
+  /** Null only when a legacy identity cannot safely address managed storage. */
+  downloaded: DownloadedPackage | null;
+  /** Pack with unavailable icon assignments removed. */
+  pack: Modpack;
+  /** Icon names that will use the normal default fallback. */
+  skipped: string[];
+}
+
+const SAFE_PACKAGE_ID = /^[a-z0-9][a-z0-9._-]*$/;
+const SAFE_PACKAGE_VERSION = /^[A-Za-z0-9][A-Za-z0-9._+-]*$/;
+
+function withoutFileIcons(pack: Modpack): Modpack {
+  return {
+    ...pack,
+    icons: Object.fromEntries(
+      Object.entries(pack.icons).filter(([, value]) => !value.startsWith("file:")),
+    ),
+  };
+}
+
+/**
+ * Converts a compatibility `modpack.json` and its optional images into an
+ * ordinary content-addressed package download.
+ *
+ * The conversion is deterministic: another machine reading the same legacy
+ * bytes produces the same manifest integrity pin. Missing or malformed images
+ * are omitted, while the mod content remains installable with default icons.
+ */
+export async function normalizeLegacyModpackPackage(
+  pack: Modpack,
+  fetched: PackIconFetchResult,
+): Promise<NormalizedLegacyModpack> {
+  const prepared = preparePackIcons(pack, fetched);
+  const skipped = new Set(prepared.skipped);
+
+  if (
+    !SAFE_PACKAGE_ID.test(prepared.pack.meta.id) ||
+    !SAFE_PACKAGE_VERSION.test(prepared.pack.meta.version)
+  ) {
+    for (const value of Object.values(prepared.pack.icons)) {
+      if (value.startsWith("file:")) skipped.add(iconBaseName(value.slice(5)));
+    }
+    return {
+      downloaded: null,
+      pack: withoutFileIcons(prepared.pack),
+      skipped: [...skipped].sort((left, right) => left.localeCompare(right)),
+    };
+  }
+
+  try {
+    const content = packageContentFromModpack(prepared.pack);
+    const contentJson = packageJson(content);
+    const contentBytes = new TextEncoder().encode(contentJson);
+    const contentRecord = await packageFile(
+      "content.json",
+      contentBytes,
+      "application/json",
+    );
+    const files: DownloadedPackageFile[] = [
+      {
+        path: contentRecord.path,
+        bytes: contentBytes,
+        contentB64: packageBytesToBase64(contentBytes),
+      },
+    ];
+    const assets: PackageAssetV3[] = [];
+    for (const icon of prepared.icons) {
+      const logicalPath = `assets/${icon.name}`;
+      const bytes = packageBase64ToBytes(icon.contentB64.replace(/\s/g, ""));
+      const mediaType = /\.webp$/i.test(icon.name) ? "image/webp" : "image/png";
+      assets.push(await packageAssetV3(logicalPath, bytes, mediaType));
+      files.push({
+        path: logicalPath,
+        bytes,
+        contentB64: packageBytesToBase64(bytes),
+      });
+    }
+
+    const {
+      id: packageId,
+      version,
+      curseforgeId,
+      updatedAt,
+      ...meta
+    } = prepared.pack.meta;
+    const manifest = PackageManifestSchema.parse({
+      format: PACKAGE_FORMAT,
+      formatVersion: PACKAGE_FORMAT_VERSION,
+      kind: "modpack",
+      packageId,
+      version,
+      curseforgeId,
+      publishedAt: updatedAt,
+      meta: { ...meta, updatedAt },
+      content: contentRecord,
+      assets,
+    });
+    const manifestJson = packageJson(manifest);
+    return {
+      downloaded: {
+        manifest,
+        manifestJson,
+        manifestIntegrity: await sha256Hex(new TextEncoder().encode(manifestJson)),
+        content: PackageContentSchema.parse({
+          ...content,
+          format: PACKAGE_CONTENT_FORMAT,
+        }),
+        files,
+      },
+      pack: prepared.pack,
+      skipped: [...skipped].sort((left, right) => left.localeCompare(right)),
+    };
+  } catch {
+    // Compatibility content that predates package identity/shape constraints
+    // must remain addable. Only its package-owned images are unavailable.
+    for (const value of Object.values(prepared.pack.icons)) {
+      if (value.startsWith("file:")) skipped.add(iconBaseName(value.slice(5)));
+    }
+    return {
+      downloaded: null,
+      pack: withoutFileIcons(prepared.pack),
+      skipped: [...skipped].sort((left, right) => left.localeCompare(right)),
+    };
+  }
 }
 
 export interface InstalledPackageInfo {

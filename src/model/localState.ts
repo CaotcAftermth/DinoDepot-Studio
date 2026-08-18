@@ -108,7 +108,7 @@ export const LocalProjectStateSchema = z.object({
    */
   sourceIconDirs: z.record(z.string(), z.string()).default({}),
   /**
-   * Manifest folders for packages installed from this machine, keyed by
+   * Package manifests or compatibility JSON installed from this machine, keyed by
    * `<packageId>@<version>`.
    *
    * A locally built development package has no published URL to re-resolve

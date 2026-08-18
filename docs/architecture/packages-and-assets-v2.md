@@ -189,8 +189,10 @@ adapter. It does not own package installation or asset paths.
   available, missing, and update states. Applying reviewed local content always
   succeeds independently; package installation is a separate optional action.
 - A pasted GitHub immutable-version folder or `manifest.json` URL creates the
-  same exact linked dependency as an indexed package. Legacy folder and
-  `modpack.json` links remain materialized compatibility imports.
+  same exact linked dependency as an indexed package. Legacy folders and
+  `modpack.json` links are deterministically normalized into local v3 packages;
+  their original URL plus generated manifest hash reconstructs and verifies the
+  exact dependency without copying assets into the project.
 - Official and modpack icon roots are derived from exact package identity and
   version. Administrators never select those folders. Project-owned overrides
   always use the project's managed `images/` location; an old `imagesDir`
@@ -198,6 +200,9 @@ adapter. It does not own package installation or asset paths.
 - WebP is preferred and PNG is the only fallback image format. Missing,
   unsupported, or malformed optional icons are omitted at import/publication;
   the entry uses its category/default glyph and the mod remains addable.
+- Existing project image files are never deleted automatically. Files copied by
+  pre-v0.4 compatibility installs remain project-owned until an administrator
+  deliberately removes them; all new imports keep package bytes in app data.
 
 ## Safety invariants
 

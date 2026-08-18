@@ -83,8 +83,12 @@ export interface LinkedPackageSource {
   manifestUrl?: string;
   /** Offline folder: exact locally, but another machine needs the same folder. */
   localOnly?: boolean;
-  /** Manifest folder on this machine. Machine-local state only. */
-  localManifestPath?: string;
+  /** Package manifest or legacy JSON on this machine. Machine-local only. */
+  localSourcePath?: string;
+  /** Compatibility JSON used to deterministically reconstruct this package. */
+  legacyUrl?: string;
+  /** True when the machine-local source is compatibility JSON, not a manifest. */
+  legacyLocal?: boolean;
 }
 
 /**
@@ -124,15 +128,17 @@ export async function linkedPackageFromUrl(
   if (downloaded.manifest.kind !== "modpack") {
     throw new Error("That manifest is an official package, not a modpack");
   }
-  return linkedSource(downloaded, { manifestUrl });
+  return linkedPackageFromDownloaded(downloaded, { manifestUrl });
 }
 
-function linkedSource(
+export function linkedPackageFromDownloaded(
   downloaded: DownloadedPackage,
   locator: {
     manifestUrl?: string;
     localOnly?: boolean;
-    localManifestPath?: string;
+    localSourcePath?: string;
+    legacyUrl?: string;
+    legacyLocal?: boolean;
   },
 ): LinkedPackageSource {
   const exact: RegistryVersion = {
@@ -177,7 +183,10 @@ export async function localPackageFromFile(
   }
   if (!PackageManifestSchema.safeParse(raw).success) return null;
   const downloaded = await readPackageManifestFile(path);
-  return linkedSource(downloaded, { localOnly: true, localManifestPath: path });
+  return linkedPackageFromDownloaded(downloaded, {
+    localOnly: true,
+    localSourcePath: path,
+  });
 }
 
 /** The modpack-only view of `localPackageFromFile`, for the modpack UI. */
