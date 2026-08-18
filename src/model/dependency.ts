@@ -27,6 +27,17 @@ export const PackageLocatorSchema = z.object({
       }),
     ])
     .default(""),
+  /** How a machine reconstructs this pin when its managed cache is absent. */
+  sourceFormat: z.enum(["package", "legacy"]).default("package"),
+  /** Original compatibility `modpack.json` URL; its bytes remain hash-pinned. */
+  legacyUrl: z
+    .union([
+      z.literal(""),
+      z.url().refine((url) => url.startsWith("https://"), {
+        message: "Legacy modpack URLs require HTTPS",
+      }),
+    ])
+    .default(""),
 });
 export type PackageLocator = z.infer<typeof PackageLocatorSchema>;
 

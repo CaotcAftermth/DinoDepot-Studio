@@ -14,10 +14,10 @@ export interface PackageActivation {
   /** Project-owned catalog after the package's content was applied. */
   catalog: CatalogFile;
   /**
-   * Manifest folder on this machine, when the package came from local disk.
+   * Manifest or compatibility JSON on this machine for a local package.
    * Recorded in local state only — never in shared project JSON.
    */
-  localManifestPath?: string;
+  localPackageSourcePath?: string;
 }
 
 /**
@@ -77,7 +77,7 @@ export async function commitPackageActivation(
     throw error;
   }
 
-  if (activation.localManifestPath) {
+  if (activation.localPackageSourcePath) {
     const local = useProjectStore.getState().local;
     if (local) {
       await useProjectStore.getState().updateLocal({
@@ -86,7 +86,7 @@ export async function commitPackageActivation(
           [localPackageSourceKey(
             activation.dependency.packageId,
             activation.dependency.version,
-          )]: activation.localManifestPath,
+          )]: activation.localPackageSourcePath,
         },
       });
     }

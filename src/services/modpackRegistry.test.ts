@@ -4,7 +4,11 @@ import {
   ModpackSchema,
   type RegistryEntry,
 } from "../model/modpack";
-import { fetchPackIcons, fetchRegistry } from "./modpackRegistry";
+import {
+  fetchPackIcons,
+  fetchRegistry,
+  registryPackUrl,
+} from "./modpackRegistry";
 
 function json(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), {
@@ -63,6 +67,20 @@ describe("unindexed registry compatibility", () => {
 });
 
 describe("legacy icon directory compatibility", () => {
+  it("exposes the exact compatibility URL used for cache reconstruction", () => {
+    const registry = defaultModpackRegistry();
+    expect(
+      registryPackUrl(registry, {
+        id: "pack",
+        name: "Pack",
+        version: "1.0.0",
+        dir: "123-Pack",
+      } as RegistryEntry),
+    ).toBe(
+      `https://raw.githubusercontent.com/${registry.owner}/${registry.repo}/${registry.branch}/${registry.path}/123-Pack/modpack.json`,
+    );
+  });
+
   it("falls back from lowercase icons to the existing uppercase directory", async () => {
     const registry = defaultModpackRegistry();
     const pack = ModpackSchema.parse({

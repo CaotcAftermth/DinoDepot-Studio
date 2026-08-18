@@ -7,7 +7,6 @@ pub mod icon_cache;
 pub mod misc;
 pub mod mod_discovery;
 pub mod package_http;
-pub mod package_files;
 pub mod package_library;
 pub mod project_io;
 pub mod project_lock;

@@ -33,23 +33,25 @@ import {
   fetchPackIcons,
   fetchRegistry,
   registryBrowseUrl,
+  registryPackUrl,
   type PackIconFetchResult,
   type RegistryListing,
 } from "../../services/modpackRegistry";
 import {
   linkedPackageFromUrl,
   linkedPackageFromFile,
+  linkedPackageFromDownloaded,
   packFromFile,
   packFromUrl,
+  type LinkedPackageSource,
 } from "../../services/modpackSource";
-import { installPackIcons } from "../../services/modpackInstall";
 import { commitPackageActivation } from "../../services/projectActivation";
 import {
   downloadRegistryPackage,
   downloadedAsLegacyInstall,
   installDownloadedPackage,
   listInstalledPackages,
-  type DownloadedPackage,
+  normalizeLegacyModpackPackage,
   type InstalledPackageInfo,
 } from "../../services/packageManager";
 import {
@@ -171,15 +173,10 @@ function RegistryTab({
   onManual: () => void;
   onTemplate: () => void;
 }) {
-  const { catalog, setCatalog, refreshImages, refreshDependencies } =
-    useDraftsStore();
-  const projectDir = useProjectStore((s) => s.dir);
+  const { catalog, setCatalog, refreshDependencies } = useDraftsStore();
   const settings = useProjectStore((s) => s.settings);
   // No `saveSettings` here on purpose: an install's settings write happens
   // inside `commitPackageActivation`, which re-reads them at commit time.
-  const imagesDirSetting = useProjectStore((s) => s.local?.imagesDir);
-  const imagesDir =
-    imagesDirSetting?.trim() || (projectDir ? `${projectDir}/images` : "");
   const [listing, setListing] = useState<RegistryListing | null>(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -233,27 +230,19 @@ function RegistryTab({
     load: () => Promise<{
       pack: Modpack;
       icons: () => Promise<PackIconFetchResult>;
-      /** Commits an already verified v2 download to the shared library. */
+      /** Commits an already verified package download to the shared library. */
       commitPackage?: () => Promise<unknown>;
-      linkedPackage?: {
-        entry: RegistryEntry;
-        exact: NonNullable<RegistryEntry["versions"]>[number];
-        downloaded: DownloadedPackage;
-        manifestUrl?: string;
-        localOnly?: boolean;
-        localManifestPath?: string;
-      };
+      linkedPackage?: LinkedPackageSource;
+      /** Reconstruction source for compatibility JSON without a manifest. */
+      legacySource?: { url?: string; localPath?: string };
     }>,
   ) {
     setInstalling(key);
     try {
-      const {
-        pack: loadedPack,
-        icons,
-        commitPackage,
-        linkedPackage,
-      } = await load();
-      let pack = loadedPack;
+      const loaded = await load();
+      const { icons, commitPackage } = loaded;
+      let linkedPackage = loaded.linkedPackage;
+      let pack = loaded.pack;
       const match = matchModpackSource(catalog, pack);
       if (match.ambiguous.length > 0) {
         throw new Error(
@@ -280,24 +269,29 @@ function RegistryTab({
         if (!ok) return;
       }
 
-      // Resolve optional icons first. Valid PNG/WebP files commit as one native
-      // batch; missing or unsupported pictures are removed from the imported
-      // assignments so their entries use the normal default icon.
-      if (commitPackage) await commitPackage();
-      // Linked packages keep their assets in the shared immutable library.
-      // Legacy packs still materialize icons so old projects stay standalone.
-      let iconsWritten = 0;
       let fallbackIcons = 0;
       if (!linkedPackage) {
-        const installedIcons = await installPackIcons(
-          imagesDir,
+        const normalized = await normalizeLegacyModpackPackage(
           pack,
           await icons(),
         );
-        pack = installedIcons.pack;
-        iconsWritten = installedIcons.written;
-        fallbackIcons = installedIcons.skipped.length;
+        pack = normalized.pack;
+        fallbackIcons = normalized.skipped.length;
+        if (normalized.downloaded) {
+          await installDownloadedPackage(normalized.downloaded);
+          linkedPackage = linkedPackageFromDownloaded(normalized.downloaded, {
+            legacyUrl: loaded.legacySource?.url,
+            localOnly: Boolean(loaded.legacySource?.localPath),
+            localSourcePath: loaded.legacySource?.localPath,
+            legacyLocal: Boolean(loaded.legacySource?.localPath),
+          });
+        }
+      } else if (commitPackage) {
+        await commitPackage();
       }
+      // Package-owned icons always stay in the shared managed library. A
+      // compatibility pack that cannot become a safe package keeps its content
+      // but drops file assignments so the UI uses default icons.
       const result = applyModpack(catalog, pack, newId);
       let nextCatalog = result.catalog;
       if (linkedPackage) {
@@ -321,7 +315,21 @@ function RegistryTab({
           linkedPackage.downloaded.manifestIntegrity,
           result.sourceId,
         );
-        if (linkedPackage.manifestUrl || linkedPackage.localOnly) {
+        if (linkedPackage.legacyUrl || linkedPackage.legacyLocal) {
+          dependency = {
+            ...dependency,
+            locator: {
+              owner: registry.owner,
+              repo: registry.repo,
+              branch: registry.branch,
+              path: registry.path,
+              manifest: "",
+              manifestUrl: "",
+              sourceFormat: "legacy",
+              legacyUrl: linkedPackage.legacyUrl ?? "",
+            },
+          };
+        } else if (linkedPackage.manifestUrl || linkedPackage.localOnly) {
           dependency = {
             ...dependency,
             locator: {
@@ -331,6 +339,8 @@ function RegistryTab({
               path: "",
               manifest: "",
               manifestUrl: linkedPackage.manifestUrl ?? "",
+              sourceFormat: "package",
+              legacyUrl: "",
             },
           };
         }
@@ -340,7 +350,7 @@ function RegistryTab({
         await commitPackageActivation({
           dependency,
           catalog: nextCatalog,
-          localManifestPath: linkedPackage.localManifestPath,
+          localPackageSourcePath: linkedPackage.localSourcePath,
         });
       } else if (settings) {
         const dependency = PackageDependencySchema.parse({
@@ -357,7 +367,6 @@ function RegistryTab({
         setCatalog(nextCatalog);
       }
       if (linkedPackage) await refreshDependencies();
-      if (iconsWritten > 0) void refreshImages();
 
       onInstalled(result.sourceId, pack.meta.name);
       toast.success(
@@ -367,7 +376,6 @@ function RegistryTab({
               ? ` · ${result.keptLocal} of your own entries kept`
               : "")
           : `${pack.meta.name} added — ${pack.creatures.length} creatures, ${pack.items.length} items`) +
-          (iconsWritten > 0 ? ` · ${iconsWritten} icons` : "") +
           (fallbackIcons > 0
             ? ` · ${fallbackIcons} default fallback${fallbackIcons === 1 ? "" : "s"}`
             : ""),
@@ -401,6 +409,7 @@ function RegistryTab({
       return {
         pack,
         icons: () => fetchPackIcons(registry, entry, pack),
+        legacySource: { url: registryPackUrl(registry, entry) },
       };
     });
   }
@@ -409,7 +418,10 @@ function RegistryTab({
   function installLink() {
     return installFrom("link", async () => {
       const linked = await linkedPackageFromUrl(link, registry);
-      if (!linked) return packFromUrl(link, registry);
+      if (!linked) {
+        const legacy = await packFromUrl(link, registry);
+        return { ...legacy, legacySource: { url: legacy.from } };
+      }
       const legacy = downloadedAsLegacyInstall(linked.downloaded);
       return {
         pack: legacy.pack,
@@ -428,13 +440,16 @@ function RegistryTab({
     if (!path) return;
     await installFrom("file", async () => {
       const linked = await linkedPackageFromFile(path);
-      if (!linked) return packFromFile(path);
+      if (!linked) {
+        const legacy = await packFromFile(path);
+        return { ...legacy, legacySource: { localPath: path } };
+      }
       const legacy = downloadedAsLegacyInstall(linked.downloaded);
       return {
         pack: legacy.pack,
         icons: async () => legacy.icons,
         commitPackage: () => installDownloadedPackage(linked.downloaded),
-        linkedPackage: { ...linked, localManifestPath: path },
+        linkedPackage: linked,
       };
     });
   }

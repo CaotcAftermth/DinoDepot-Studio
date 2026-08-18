@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { defaultModpackRegistry, RegistryEntrySchema } from "../model/modpack";
+import {
+  defaultModpackRegistry,
+  ModpackSchema,
+  RegistryEntrySchema,
+} from "../model/modpack";
 import {
   packageAssetV3,
   packageFile,
@@ -10,6 +14,7 @@ import {
 import {
   downloadRegistryPackage,
   downloadedAsLegacyInstall,
+  normalizeLegacyModpackPackage,
 } from "./packageManager";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -265,5 +270,79 @@ describe("exact package downloads", () => {
     await expect(
       downloadRegistryPackage(registry, entry, "1.0.0"),
     ).rejects.toThrow(/does not match.*PNG\/WebP/i);
+  });
+});
+
+describe("legacy modpack normalization", () => {
+  const png = "iVBORw0KGgo=";
+
+  it("converts compatibility icons into a managed v3 package", async () => {
+    const pack = ModpackSchema.parse({
+      meta: {
+        id: "legacy-pack",
+        name: "Legacy Pack",
+        version: "1.2.3",
+        updatedAt: "2026-08-17",
+      },
+      icons: { "/m/c.c": "file:Creature.png" },
+    });
+
+    const normalized = await normalizeLegacyModpackPackage(pack, {
+      icons: [{ name: "Creature.png", contentB64: png }],
+      missing: [],
+    });
+
+    expect(normalized.downloaded).not.toBeNull();
+    expect(normalized.downloaded?.manifest).toMatchObject({
+      formatVersion: 3,
+      packageId: "legacy-pack",
+      version: "1.2.3",
+      assets: [
+        expect.objectContaining({
+          path: "assets/Creature.png",
+          blob: expect.stringMatching(/^assets\/sha256\//),
+        }),
+      ],
+    });
+    expect(normalized.downloaded?.content.icons["/m/c.c"]).toBe(
+      "file:assets/Creature.png",
+    );
+    expect(normalized.downloaded?.files.map((file) => file.path)).toEqual([
+      "content.json",
+      "assets/Creature.png",
+    ]);
+  });
+
+  it("keeps missing icons non-fatal and removes their assignments", async () => {
+    const pack = ModpackSchema.parse({
+      meta: { id: "legacy-pack", name: "Legacy Pack", version: "1.0.0" },
+      icons: { "/m/c.c": "file:Missing.webp" },
+    });
+
+    const normalized = await normalizeLegacyModpackPackage(pack, {
+      icons: [],
+      missing: ["Missing.webp"],
+    });
+
+    expect(normalized.downloaded).not.toBeNull();
+    expect(normalized.pack.icons).toEqual({});
+    expect(normalized.downloaded?.manifest.assets).toEqual([]);
+    expect(normalized.skipped).toEqual(["Missing.webp"]);
+  });
+
+  it("adds unsafe historical identities without copying their file icons", async () => {
+    const pack = ModpackSchema.parse({
+      meta: { id: "Unsafe Legacy ID", name: "Legacy Pack", version: "release one" },
+      icons: { "/m/c.c": "file:Creature.png" },
+    });
+
+    const normalized = await normalizeLegacyModpackPackage(pack, {
+      icons: [{ name: "Creature.png", contentB64: png }],
+      missing: [],
+    });
+
+    expect(normalized.downloaded).toBeNull();
+    expect(normalized.pack.icons).toEqual({});
+    expect(normalized.skipped).toEqual(["Creature.png"]);
   });
 });

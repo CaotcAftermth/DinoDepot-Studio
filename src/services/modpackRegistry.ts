@@ -203,8 +203,21 @@ export function fetchPack(
   registry: ModpackRegistry,
   entry: RegistryEntry,
 ): Promise<Modpack> {
+  return fetchPackFile(registry, registryPackFile(entry));
+}
+
+/** Exact compatibility-pack file named by one registry row. */
+export function registryPackFile(entry: RegistryEntry): string {
   const dir = entry.dir?.trim();
-  return fetchPackFile(registry, dir ? `${dir}/${PACK_FILE}` : packFileName(entry));
+  return dir ? `${dir}/${PACK_FILE}` : packFileName(entry);
+}
+
+/** Stable raw URL used to reconstruct a normalized legacy dependency. */
+export function registryPackUrl(
+  registry: ModpackRegistry,
+  entry: RegistryEntry,
+): string {
+  return registryFileUrl(registry, registryPackFile(entry));
 }
 
 /** Where a pack's files live inside the registry folder. */
@@ -215,7 +228,7 @@ export function packDirFor(entry: RegistryEntry): string {
 export interface FetchedIcon {
   /** Bare file name, matching the pack's `file:` icon values. */
   name: string;
-  /** Base64 image bytes, ready to write into the project images folder. */
+  /** Base64 image bytes, ready for managed package storage. */
   contentB64: string;
 }
 

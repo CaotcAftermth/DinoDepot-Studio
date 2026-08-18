@@ -1,5 +1,4 @@
 import { iconBaseName, packIconFiles, type Modpack } from "../model/modpack";
-import { ipc, isTauri } from "./ipc";
 import type { FetchedIcon, PackIconFetchResult } from "./modpackRegistry";
 
 const MAX_ICON_BYTES = 8 * 1024 * 1024;
@@ -135,24 +134,4 @@ export function validatePackIcons(
   fetched: PackIconFetchResult,
 ): FetchedIcon[] {
   return preparePackIcons(pack, fetched).icons;
-}
-
-/** Writes a validated set as one native filesystem transaction. */
-export async function installPackIcons(
-  imagesDir: string,
-  pack: Modpack,
-  fetched: PackIconFetchResult,
-): Promise<{ written: number; pack: Modpack; skipped: string[] }> {
-  const prepared = preparePackIcons(pack, fetched);
-  if (prepared.icons.length === 0 || !isTauri) {
-    return { written: 0, pack: prepared.pack, skipped: prepared.skipped };
-  }
-  if (!imagesDir.trim()) {
-    throw new Error("This project has no images directory configured");
-  }
-  const written = await ipc<number>("write_package_icons", {
-    dir: imagesDir,
-    files: prepared.icons,
-  });
-  return { written, pack: prepared.pack, skipped: prepared.skipped };
 }

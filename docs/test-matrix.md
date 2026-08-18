@@ -552,6 +552,16 @@ offline, and only one verified image exists below `blobs/sha256/`. A filesystem
 that supports hard links does not allocate a second copy for either logical
 path. V2 package folders continue to render without conversion.
 
+### H6 — Compatibility imports do not populate project images
+
+Add the same legacy `modpack.json` through the registry, a pasted HTTPS link,
+and a local file. Test once with complete icons and once with one missing icon.
+
+**Expect** valid icons render from the managed package library and repeated
+bytes reuse `content/blobs/sha256/`. `<project>/images` is not created or
+modified. Missing icons use the default glyph, and existing custom project
+images remain untouched.
+
 ---
 
 ## What a pass means

@@ -93,6 +93,8 @@ Resolution order for an entry:
 Project-owned images go in `<project folder>/images`. **WebP is preferred and
 PNG is the only fallback** — file signatures are checked, so an image is read
 by its actual bytes rather than its extension. Anything else is ignored.
+Package-owned images never copy into that folder: immutable and legacy
+modpacks are both normalized into the shared managed package library.
 
 A missing, unreadable, or malformed icon is never fatal: the entry falls back
 to its glyph, and mods still add, export and publish normally.

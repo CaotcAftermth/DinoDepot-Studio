@@ -1,8 +1,8 @@
 mod commands;
 
 use commands::{
-    app_state, git, github, github_setup, icon_cache, misc, mod_discovery, package_files,
-    package_http, package_library, project_io, project_lock, scraper, secrets,
+    app_state, git, github, github_setup, icon_cache, misc, mod_discovery, package_http,
+    package_library, project_io, project_lock, scraper, secrets,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -93,7 +93,6 @@ pub fn run() {
             mod_discovery::list_installed_mods,
             mod_discovery::read_installed_mods,
             package_http::package_http_get,
-            package_files::write_package_icons,
             package_library::package_library_install,
             package_library::package_library_list,
             package_library::package_library_read,
