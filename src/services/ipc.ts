@@ -230,6 +230,22 @@ async function mockInvoke<T>(cmd: string, args: Args): Promise<T> {
       throw new Error("Profile files can only be handled in the desktop app");
     case "list_images":
       return [] as T;
+    case "mod_textures":
+      // A stand-in corpus shaped like a real mod's: a couple of usable icons
+      // buried among the material maps that dominate every pack. Lets the
+      // picker's searching and filtering be exercised without a game install.
+      return [
+        { path: "M/Content/Icon_Rex.uasset", name: "Icon_Rex", width: 256, height: 256 },
+        { path: "M/Content/HUD_Saddle.uasset", name: "HUD_Saddle", width: 128, height: 128 },
+        { path: "M/Content/T_Rex_BaseColor.uasset", name: "T_Rex_BaseColor", width: 4096, height: 4096 },
+        { path: "M/Content/T_Rex_Normal.uasset", name: "T_Rex_Normal", width: 4096, height: 4096 },
+        { path: "M/Content/T_Rex_Roughness.uasset", name: "T_Rex_Roughness", width: 2048, height: 2048 },
+        { path: "M/Content/T_Rex_Occlusion.uasset", name: "T_Rex_Occlusion", width: 2048, height: 2048 },
+        { path: "M/Content/T_Saddle_Metallic.uasset", name: "T_Saddle_Metallic", width: 1024, height: 1024 },
+        { path: "M/Content/Colorize_Body.uasset", name: "Colorize_Body", width: 512, height: 512 },
+      ] as T;
+    case "mod_texture_png":
+      throw new Error("Reading mod artwork is only available in the desktop app");
     case "discord_post":
       throw new Error("Discord posting is only available in the desktop app");
     case "wiki_fetch_page":

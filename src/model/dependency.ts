@@ -166,3 +166,44 @@ export function mergeDependencies(
   }
   return next;
 }
+
+export interface PackPresence {
+  label: string;
+  tone?: "ok" | "warn";
+}
+
+/**
+ * What a project can truthfully say about a mod's package.
+ *
+ * Two different facts were being reported with one word. A package lives in a
+ * machine-wide library shared by every project, and deleting a mod from *this*
+ * project never removes it from there — correctly, since immutable versions
+ * are cache. Saying "installed" for that read as "installed here", so a mod
+ * deleted a moment ago still looked present.
+ *
+ * Only a pin makes a package part of a project. Everything else is a download
+ * this machine happens to be holding.
+ */
+export function packPresence(state: {
+  /** Version this project pins, or "" when it pins none. */
+  pinnedVersion: string;
+  /** Whether that pinned version is in the machine library. */
+  pinnedInstalled: boolean;
+  /** Latest published version, or "" when nothing is published. */
+  publishedVersion: string;
+  /** Whether that published version is in the machine library. */
+  publishedInstalled: boolean;
+}): PackPresence | null {
+  if (state.pinnedVersion) {
+    return state.pinnedInstalled
+      ? { label: `Pack ${state.pinnedVersion} in project`, tone: "ok" }
+      : { label: `Pack ${state.pinnedVersion} missing`, tone: "warn" };
+  }
+  if (!state.publishedVersion) return null;
+  // Neither of these is a project state, so neither gets a project's colour.
+  return {
+    label: state.publishedInstalled
+      ? `Pack ${state.publishedVersion} downloaded, not in project`
+      : `Pack ${state.publishedVersion} available`,
+  };
+}

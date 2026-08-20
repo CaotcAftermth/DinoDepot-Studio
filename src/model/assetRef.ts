@@ -60,6 +60,15 @@ export interface LegacyAssetContext {
   origin: "project" | "package";
   packageId?: string;
   version?: string;
+  /**
+   * The official package version this project currently pins.
+   *
+   * An `official:` icon names base-game artwork without saying which release
+   * it came from, deliberately: an administrator picking the stock Rex icon
+   * means "the base game's Rex", and pinning the version into the stored value
+   * would orphan every such assignment the next time Core Content moves.
+   */
+  officialVersion?: string;
 }
 
 export type ParsedAssetValue =
@@ -83,6 +92,17 @@ export function parseAssetValue(
     // decline it, but parsing it as a URL prevents rendering the URL as text.
     return { origin: "remote", url: trimmed } as AssetRef;
   }
+  if (trimmed.startsWith("official:")) {
+    const path = normalizeAssetPath(trimmed.slice(9));
+    if (!path) return null;
+    return {
+      origin: "official",
+      // Empty when no official package is resolved yet; the resolver reports
+      // that as a missing root rather than guessing at a version.
+      packageVersion: context.officialVersion ?? "",
+      path,
+    };
+  }
   if (trimmed.startsWith("file:")) {
     const path = normalizeAssetPath(trimmed.slice(5));
     if (!path) return null;
@@ -105,9 +125,11 @@ export function legacyAssetValue(ref: AssetRef): string {
   switch (ref.origin) {
     case "remote":
       return ref.url;
+    case "official":
+      // Version-free on purpose — see `officialVersion` above.
+      return `official:${normalizeAssetPath(ref.path) ?? ref.path}`;
     case "project":
     case "package":
-    case "official":
       return `file:${normalizeAssetPath(ref.path) ?? ref.path}`;
   }
 }

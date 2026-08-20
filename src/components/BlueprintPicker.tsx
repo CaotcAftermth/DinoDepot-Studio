@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Badge, Button, Input, Modal, Toggle, cx } from "./ui";
 import { useAllSources } from "../stores/useCatalogIndex";
+import { officialVariantParents } from "../model/officialCatalog";
 import { useDraftsStore } from "../stores/draftsStore";
 import { EntityIcon } from "./EntityIcon";
 import { buildPickerRows } from "../model/pickerResults";
@@ -23,19 +24,27 @@ export function BlueprintPicker({
 }: {
   kind: "creatures" | "items";
   title: string;
-  /** Offer "Show variants" and start with variants collapsed (creatures only). */
+  /** Offer "Show variants" and start with variants collapsed. */
   variantToggle?: boolean;
   onPick: (bpPath: string) => void;
   onClose: () => void;
 }) {
   const sources = useAllSources();
-  const variantParents = useDraftsStore((s) => s.catalog.variantParents);
+  const projectVariantParents = useDraftsStore((s) => s.catalog.variantParents);
+  // Bundled links first, the project's own on top: an administrator who set a
+  // parent by hand has said something the dataset cannot know.
+  const variantParents = useMemo(
+    () => ({ ...officialVariantParents, ...projectVariantParents }),
+    [projectVariantParents],
+  );
   const [search, setSearch] = useState("");
   const [rawPath, setRawPath] = useState("");
   // Off on open: the parent is what a production rule almost always wants.
   const [showVariants, setShowVariants] = useState(false);
 
-  const collapsing = variantToggle && kind === "creatures" && !showVariants;
+  // Items collapse too now: a fertilized egg is a variant of its egg, and
+  // showing both side by side doubles the egg rows in every search.
+  const collapsing = Boolean(variantToggle) && !showVariants;
 
   const results = useMemo(
     () =>

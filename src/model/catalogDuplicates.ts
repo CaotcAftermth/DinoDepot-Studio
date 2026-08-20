@@ -235,6 +235,19 @@ export function normalizeCurseforgeId(id: string): string {
   return id.trim();
 }
 
+/**
+ * The CurseForge project ID in whatever somebody typed or pasted, or "".
+ *
+ * A `/projects/<id>` link is the ID with decoration around it, so it counts.
+ * Nothing else does: pulling the first number out of a slug URL would read
+ * `/mods/super-mod-2` as project 2 and quietly catalogue the wrong mod.
+ */
+export function curseforgeProjectId(input: string): string {
+  const text = normalizeCurseforgeId(input);
+  if (/^\d+$/.test(text)) return text;
+  return text.match(/\/projects\/(\d+)/)?.[1] ?? "";
+}
+
 /** The source already using this CurseForge project ID, ignoring `exceptId`. */
 export function findSourceByCurseforgeId(
   sources: ContentSource[],
@@ -276,9 +289,28 @@ export function findDuplicateCurseforgeIds(
  * trailing slash and any query/fragment all vary between how an admin pasted
  * it and how the scraper reports it.
  */
-export function canonicalCurseforgeUrl(url: string): string {
+/**
+ * A mod page URL pointing at CurseForge's current site.
+ *
+ * Every installed mod's `.uplugin` carries a `legacy.curseforge.com` link —
+ * verified across the local corpus — which still resolves but sends an
+ * administrator to the old site. The host is the only difference; the path is
+ * already correct, so dropping the subdomain is the whole fix.
+ */
+export function currentCurseforgeUrl(url: string): string {
   const trimmed = url.trim();
   if (!trimmed) return "";
+  return trimmed.replace(
+    /^(https?:\/\/)(?:www\.)?legacy\.curseforge\.com/i,
+    "$1www.curseforge.com",
+  );
+}
+
+export function canonicalCurseforgeUrl(url: string): string {
+  const trimmed = currentCurseforgeUrl(url);
+  if (!trimmed) return "";
+  // `legacy.` is folded in above, so the same page linked both ways compares
+  // equal and duplicate detection does not report it twice.
   let rest = trimmed.replace(/^https?:\/\//i, "").replace(/^www\./i, "");
   rest = rest.split("#")[0].split("?")[0];
   return rest.replace(/\/+$/, "").toLowerCase();

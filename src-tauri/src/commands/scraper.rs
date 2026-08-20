@@ -51,7 +51,7 @@ pub async fn scraper_start(
     mode: String,
     watch_list_json: Option<String>,
 ) -> Result<(), String> {
-    if !matches!(mode.as_str(), "cosmetics" | "watch") {
+    if !matches!(mode.as_str(), "cosmetics" | "watch" | "lookup") {
         return Err(format!("Unknown scraper mode '{mode}'"));
     }
     {
@@ -65,14 +65,20 @@ pub async fn scraper_start(
     let mut cmd = tokio::process::Command::new("node");
     cmd.arg(&script).arg(&mode);
 
-    // Both modes take an optional JSON list argument: the mods to check in
-    // watch mode, the cosmetics already recorded in cosmetics mode (which lets
-    // the sidecar skip detail pages it does not need to open). Separate temp
-    // files so a cosmetics run cannot clobber a watch run's input.
+    // Every mode takes a JSON list argument — required for watch and lookup,
+    // optional for cosmetics, where it is the cosmetics already recorded and
+    // lets the sidecar skip detail pages it does not need to open. Separate
+    // temp files so one mode's run cannot clobber another's input.
     match mode.as_str() {
         "watch" => {
             let json = watch_list_json.ok_or("watch mode requires a watch list")?;
             let tmp = std::env::temp_dir().join("ddstudio-watchlist.json");
+            std::fs::write(&tmp, json).map_err(|e| e.to_string())?;
+            cmd.arg(tmp);
+        }
+        "lookup" => {
+            let json = watch_list_json.ok_or("lookup mode requires a list of mods")?;
+            let tmp = std::env::temp_dir().join("ddstudio-lookup.json");
             std::fs::write(&tmp, json).map_err(|e| e.to_string())?;
             cmd.arg(tmp);
         }

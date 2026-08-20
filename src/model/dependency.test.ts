@@ -4,6 +4,7 @@ import {
   mergeDependencies,
   PackageDependencySchema,
   upsertDependency,
+  packPresence,
 } from "./dependency";
 
 const official = (version = "1.0.0") =>
@@ -102,5 +103,64 @@ describe("dependency merging", () => {
     mergeDependencies(before, [official()]);
 
     expect(before).toHaveLength(1);
+  });
+});
+
+describe("packPresence", () => {
+  it("calls a pinned package part of the project", () => {
+    expect(
+      packPresence({
+        pinnedVersion: "1.0.1",
+        pinnedInstalled: true,
+        publishedVersion: "1.0.1",
+        publishedInstalled: true,
+      }),
+    ).toEqual({ label: "Pack 1.0.1 in project", tone: "ok" });
+  });
+
+  it("never calls a machine download a project state", () => {
+    // Deleting a mod drops the pin but leaves the shared library alone, so
+    // the row has to stop claiming the package is here.
+    expect(
+      packPresence({
+        pinnedVersion: "",
+        pinnedInstalled: false,
+        publishedVersion: "1.0.1",
+        publishedInstalled: true,
+      }),
+    ).toEqual({ label: "Pack 1.0.1 downloaded, not in project" });
+  });
+
+  it("distinguishes published-but-absent from downloaded", () => {
+    expect(
+      packPresence({
+        pinnedVersion: "",
+        pinnedInstalled: false,
+        publishedVersion: "2.0.0",
+        publishedInstalled: false,
+      }),
+    ).toEqual({ label: "Pack 2.0.0 available" });
+  });
+
+  it("flags a pin whose bytes are not on this machine", () => {
+    expect(
+      packPresence({
+        pinnedVersion: "1.0.0",
+        pinnedInstalled: false,
+        publishedVersion: "1.0.1",
+        publishedInstalled: true,
+      }),
+    ).toEqual({ label: "Pack 1.0.0 missing", tone: "warn" });
+  });
+
+  it("says nothing when there is no package at all", () => {
+    expect(
+      packPresence({
+        pinnedVersion: "",
+        pinnedInstalled: false,
+        publishedVersion: "",
+        publishedInstalled: false,
+      }),
+    ).toBeNull();
   });
 });

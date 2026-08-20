@@ -649,6 +649,50 @@ describe("review then apply", () => {
     expect(next.sources[0].creatures).toHaveLength(0);
   });
 
+  it("records the exclusion on the source so later layers cannot undo it", () => {
+    // The lists are rebuilt from the package on every install and every
+    // dependency refresh. Without a durable record, enrichment puts back
+    // exactly what the review dropped.
+    const catalog = emptyCatalog();
+    const plan = planDiscovery(catalog, mod());
+    const { catalog: next } = applyDiscovery(catalog, plan, () => "s", {
+      exclude: new Set([normalizeBpPath(PLANK)]),
+    });
+    expect(next.sources[0].excludedPaths).toEqual([normalizeBpPath(PLANK)]);
+  });
+
+  it("writes no exclusion list when nothing was unticked", () => {
+    const catalog = emptyCatalog();
+    const plan = planDiscovery(catalog, mod());
+    const { catalog: next } = applyDiscovery(catalog, plan, () => "s");
+    expect(next.sources[0].excludedPaths).toBeUndefined();
+  });
+
+  it("re-ticking an entry clears the exclusion the project recorded", () => {
+    const catalog = catalogWithMod([]);
+    catalog.sources[0].excludedPaths = [normalizeBpPath(PLANK)];
+    const plan = planDiscovery(catalog, mod());
+    // Review shows Plank again, this time ticked: an empty exclude set.
+    const { catalog: next } = applyDiscovery(catalog, plan, () => "new", {
+      exclude: new Set(),
+    });
+    expect(next.sources[0].excludedPaths).toBeUndefined();
+    expect(next.sources[0].items.map((i) => i.name)).toEqual(["Plank"]);
+  });
+
+  it("keeps an exclusion for a path this review could not show", () => {
+    // The mod no longer ships it, so no tick could speak for it — but a
+    // package may still carry it, and the decision to drop it still stands.
+    const gone = "/M/Items/PrimalItemResource_Gone.PrimalItemResource_Gone";
+    const catalog = catalogWithMod([]);
+    catalog.sources[0].excludedPaths = [normalizeBpPath(gone)];
+    const plan = planDiscovery(catalog, mod());
+    const { catalog: next } = applyDiscovery(catalog, plan, () => "new", {
+      exclude: new Set(),
+    });
+    expect(next.sources[0].excludedPaths).toEqual([normalizeBpPath(gone)]);
+  });
+
   it("counts kept entries correctly even when others were excluded", () => {
     const catalog = catalogWithMod([
       { id: "old", name: "Rex", bpPath: REX },

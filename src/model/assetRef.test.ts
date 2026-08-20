@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   AssetRefSchema,
   normalizeAssetPath,
+  legacyAssetValue,
   parseAssetValue,
 } from "./assetRef";
 
@@ -63,5 +64,71 @@ describe("asset references", () => {
       origin: "remote",
       url: "https://example.com/Rex.webp",
     });
+  });
+});
+
+describe("official asset references", () => {
+  it("names base-game art without pinning the release it came from", () => {
+    // An administrator picking the stock Rex icon means "the base game's
+    // Rex" — pinning 1.1.0 into the value would orphan the assignment the
+    // next time Core Content moves.
+    expect(
+      parseAssetValue("official:creatures/Rex.webp", {
+        origin: "project",
+        officialVersion: "1.1.0",
+      }),
+    ).toEqual({
+      origin: "official",
+      packageVersion: "1.1.0",
+      path: "creatures/Rex.webp",
+    });
+  });
+
+  it("round-trips through the legacy string form", () => {
+    const ref = {
+      origin: "official" as const,
+      packageVersion: "1.1.0",
+      path: "creatures/Rex.webp",
+    };
+    expect(legacyAssetValue(ref)).toBe("official:creatures/Rex.webp");
+  });
+
+  it("refuses a path that would escape the package", () => {
+    expect(
+      parseAssetValue("official:../../etc/passwd", {
+        origin: "project",
+        officialVersion: "1.1.0",
+      }),
+    ).toBeNull();
+  });
+
+  it("is still a project file when written the old way", () => {
+    expect(
+      parseAssetValue("file:Rex.webp", {
+        origin: "project",
+        officialVersion: "1.1.0",
+      }),
+    ).toEqual({ origin: "project", path: "Rex.webp" });
+  });
+});
+
+describe("official package asset layout", () => {
+  it("keeps its kind in a path segment, not at the start", () => {
+    // Real value from the published package: the kind folder sits under
+    // `assets/`, so a picker filtering by prefix would show nothing at all.
+    const parsed = parseAssetValue("file:assets/creatures/Achatina.webp", {
+      origin: "package",
+      packageId: "official-asa",
+      version: "1.1.0",
+    });
+    expect(parsed).toEqual({
+      origin: "package",
+      packageId: "official-asa",
+      version: "1.1.0",
+      path: "assets/creatures/Achatina.webp",
+    });
+    const path = (parsed as { path: string }).path;
+    expect(path.startsWith("creatures/")).toBe(false);
+    expect(path.split("/")).toContain("creatures");
   });
 });

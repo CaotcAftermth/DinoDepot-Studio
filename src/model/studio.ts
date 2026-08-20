@@ -27,7 +27,7 @@ export const STUDIO_NAME = "DinoDepot Studio";
  * builds anything — a version that disagrees with the installer is how an
  * updater ships a downgrade.
  */
-export const STUDIO_VERSION = "0.4.0";
+export const STUDIO_VERSION = "0.5.0";
 
 /** `owner/repo`, the form GitHub URLs and the API both take. */
 export function studioRepoSlug(): string {

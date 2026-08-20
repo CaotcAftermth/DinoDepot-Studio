@@ -1,6 +1,6 @@
 [package]
 name = "dino-depot-studio"
-version = "0.4.0"
+version = "0.5.0"
 description = "DinoDepot Studio"
 authors = ["GG Fizz"]
 edition = "2021"
@@ -33,6 +33,7 @@ url = "2"
 sha2 = "0.10"
 tokio = { version = "1", features = ["process", "io-util"] }
 git2 = { version = "0.20", default-features = false, features = ["https", "vendored-libgit2"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "webp"] }
 
 [dev-dependencies]
 tempfile = "3"
