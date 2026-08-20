@@ -511,6 +511,9 @@ function ItemEditor({
         <BlueprintPicker
           kind="items"
           title="Pick an item"
+          // Fertilized eggs are variants of their egg; collapsing keeps the
+          // list the length it was before they existed.
+          variantToggle
           onClose={() => setPicking(false)}
           onPick={(bpPath) => {
             onChange({ ...item, bpPath });
@@ -685,6 +688,7 @@ function SubItemsSection({
         <BlueprintPicker
           kind="items"
           title={`Add to ${title.toLowerCase()}`}
+          variantToggle
           onClose={() => setPicking(false)}
           onPick={(bpPath) => {
             onSubsChange([

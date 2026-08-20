@@ -144,6 +144,20 @@ export const ContentSourceSchema = z.object({
   discovery: DiscoverySnapshotSchema.nullable().optional(),
   /** Hand-added structural rows retained above Discovery and package layers. */
   structuralOverrides: StructuralOverridesSchema.optional(),
+  /**
+   * Normalized blueprint paths this project has decided are not content.
+   *
+   * Discovery classifies by naming convention, so some of what it reads is an
+   * internal base class or a test asset rather than anything an admin wants in
+   * a picker. Unticking those during review has to mean something durable:
+   * package enrichment and every later dependency refresh rebuild the entry
+   * lists from the package, and without a record of the decision they would
+   * quietly put back exactly what was dropped.
+   *
+   * Project-owned, so it survives a package update and travels with the
+   * project rather than with the pack.
+   */
+  excludedPaths: z.array(z.string()).optional(),
   /** Whether this content is currently enabled on the server. */
   enabled: z.boolean(),
   /** Marked when the mod is being removed from the server (triggers remap warnings). */
@@ -261,12 +275,19 @@ export function emptyCatalog(): CatalogFile {
   };
 }
 
+/**
+ * The canonical link for a project ID. CurseForge redirects it to the mod's
+ * real slug page, which is why a project ID alone is enough to link a source
+ * and no page URL has to be stored to get there.
+ */
+export function curseforgeProjectUrl(curseforgeId: string): string {
+  return `https://www.curseforge.com/projects/${curseforgeId.trim()}`;
+}
+
 /** Best-known CurseForge page URL for a source (explicit URL, else project-id link). */
 export function sourceCurseforgeUrl(source: ContentSource): string | null {
   if (source.url) return source.url;
-  if (source.curseforgeId) {
-    return `https://www.curseforge.com/projects/${source.curseforgeId}`;
-  }
+  if (source.curseforgeId) return curseforgeProjectUrl(source.curseforgeId);
   return null;
 }
 

@@ -1,14 +1,15 @@
 {
   "name": "dino-depot-studio",
   "private": true,
-  "version": "0.4.0",
+  "version": "0.5.0",
   "type": "module",
   "scripts": {
     "stage:official": "node scripts/stage-bundled-official.mjs",
     "dev": "npm run stage:official && vite",
     "build": "npm run stage:official && tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "build:assets": "dotnet publish sidecar-assets -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -o sidecar-assets/publish"
   },
   "dependencies": {
     "@tauri-apps/api": "^2",

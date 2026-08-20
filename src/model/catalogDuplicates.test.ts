@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildEntryOwners,
   canonicalCurseforgeUrl,
+  curseforgeProjectId,
+  currentCurseforgeUrl,
   describeOwner,
   findCatalogDuplicates,
   findDuplicateCurseforgeIds,
@@ -341,5 +343,66 @@ describe("canonicalCurseforgeUrl", () => {
     expect(findDuplicateModUrls([a, b, c])).toEqual([
       { url: "curseforge.com/ark-survival-ascended/mods/thing", sourceNames: ["A", "B"] },
     ]);
+  });
+});
+
+describe("curseforgeProjectId", () => {
+  it("accepts a bare id and a project link", () => {
+    expect(curseforgeProjectId("  972253 ")).toBe("972253");
+    expect(
+      curseforgeProjectId("https://www.curseforge.com/projects/972253"),
+    ).toBe("972253");
+  });
+
+  it("refuses to guess an id out of a slug URL", () => {
+    // `/mods/super-mod-2` reading as project 2 would catalogue the wrong mod.
+    expect(
+      curseforgeProjectId(
+        "https://www.curseforge.com/ark-survival-ascended/mods/super-mod-2",
+      ),
+    ).toBe("");
+    expect(curseforgeProjectId("Ports of Atlas")).toBe("");
+    expect(curseforgeProjectId("")).toBe("");
+  });
+});
+
+describe("currentCurseforgeUrl", () => {
+  it("drops the legacy subdomain every installed mod ships", () => {
+    // Verbatim from a real `.uplugin` on the test machine.
+    expect(
+      currentCurseforgeUrl(
+        "https://legacy.curseforge.com/ark-survival-ascended/mods/cliffans-scifi-wardrobe",
+      ),
+    ).toBe(
+      "https://www.curseforge.com/ark-survival-ascended/mods/cliffans-scifi-wardrobe",
+    );
+  });
+
+  it("leaves a current URL and anything unrelated alone", () => {
+    const current =
+      "https://www.curseforge.com/ark-survival-ascended/mods/ports-of-atlas";
+    expect(currentCurseforgeUrl(current)).toBe(current);
+    expect(currentCurseforgeUrl("https://example.com/legacy/thing")).toBe(
+      "https://example.com/legacy/thing",
+    );
+    expect(currentCurseforgeUrl("")).toBe("");
+  });
+
+  it("does not fire on a host that merely contains the word", () => {
+    const other = "https://legacy-curseforge.example.com/mods/x";
+    expect(currentCurseforgeUrl(other)).toBe(other);
+  });
+
+  it("treats a legacy and a current link as the same page", () => {
+    // Otherwise the same mod linked both ways reads as two sources.
+    expect(
+      canonicalCurseforgeUrl(
+        "https://legacy.curseforge.com/ark-survival-ascended/mods/acro",
+      ),
+    ).toBe(
+      canonicalCurseforgeUrl(
+        "https://www.curseforge.com/ark-survival-ascended/mods/acro",
+      ),
+    );
   });
 });

@@ -204,6 +204,7 @@ async function generateSite() {
       catalog: drafts.catalog,
       packageAssets: drafts.packageAssets,
       packageRoots: drafts.packageRoots,
+      officialVersion: drafts.officialVersion,
       projectImagesDir: resolveImagesDir(
         project.dir ?? "",
         project.local?.imagesDir,

@@ -1,4 +1,5 @@
 import type { CatalogEntry, CatalogFile, ContentSource } from "./catalog";
+import { currentCurseforgeUrl } from "./catalogDuplicates";
 import { ContentSourceSchema, normalizeBpPath } from "./catalog";
 
 /**
@@ -267,7 +268,9 @@ export function parseUplugin(text: string): ModPluginMeta {
     category: str("Category"),
     versionName: str("VersionName"),
     createdBy: str("CreatedBy"),
-    marketplaceUrl: str("MarketplaceURL"),
+    // The cooked value always names the legacy site; the current one is the
+    // same page and is where an administrator should land.
+    marketplaceUrl: currentCurseforgeUrl(str("MarketplaceURL")),
     cfUgcId: ugc ? ugc[1] : "",
   };
 }
@@ -744,29 +747,45 @@ export function applyDiscovery(
   const existing = catalog.sources.find((s) => s.id === plan.existingSourceId);
   const { mod } = plan;
 
+  // What this review was actually able to decide about: the entries it put a
+  // tick beside. A path the review never showed keeps whatever the project
+  // already recorded, so enriching from a package cannot quietly widen the
+  // list, and re-ticking an entry here genuinely un-excludes it.
+  const reviewable = new Set(
+    [...mod.creatures, ...mod.items].map((entry) =>
+      normalizeBpPath(entry.bpPath),
+    ),
+  );
+  const excluded = new Set(
+    (existing?.excludedPaths ?? [])
+      .map((path) => normalizeBpPath(path))
+      .filter((path) => !reviewable.has(path)),
+  );
+  for (const path of exclude) {
+    const key = normalizeBpPath(path);
+    if (reviewable.has(key)) excluded.add(key);
+  }
+
+  const drop = (entries: CatalogEntry[]) =>
+    entries.filter((entry) => !excluded.has(normalizeBpPath(entry.bpPath)));
+
   const merge = (discovered: CatalogEntry[], unmatched: CatalogEntry[]) => {
-    const kept = discovered.filter(
-      (e) => !exclude.has(normalizeBpPath(e.bpPath)),
-    );
+    const kept = drop(discovered);
     if (!keepUnmatched || unmatched.length === 0) return kept;
     const known = new Set(kept.map((e) => normalizeBpPath(e.bpPath)));
     return [
       ...kept,
-      ...unmatched.filter((e) => !known.has(normalizeBpPath(e.bpPath))),
+      ...drop(unmatched).filter((e) => !known.has(normalizeBpPath(e.bpPath))),
     ].sort((a, b) => a.name.localeCompare(b.name));
   };
 
   const creatures = merge(mod.creatures, plan.unmatchedCreatures);
   const items = merge(mod.items, plan.unmatchedItems);
-  const discoveredCreatures = mod.creatures.filter(
-    (entry) => !exclude.has(normalizeBpPath(entry.bpPath)),
-  );
-  const discoveredItems = mod.items.filter(
-    (entry) => !exclude.has(normalizeBpPath(entry.bpPath)),
-  );
+  const discoveredCreatures = drop(mod.creatures);
+  const discoveredItems = drop(mod.items);
   const structuralOverrides = {
-    creatures: keepUnmatched ? plan.unmatchedCreatures : [],
-    items: keepUnmatched ? plan.unmatchedItems : [],
+    creatures: keepUnmatched ? drop(plan.unmatchedCreatures) : [],
+    items: keepUnmatched ? drop(plan.unmatchedItems) : [],
   };
 
   const source: ContentSource = ContentSourceSchema.parse({
@@ -786,6 +805,9 @@ export function applyDiscovery(
       items: discoveredItems,
     },
     structuralOverrides,
+    // Durable, because the entry lists are rebuilt from the package on every
+    // install and every dependency refresh — see `enrichSourceStructure`.
+    excludedPaths: excluded.size > 0 ? [...excluded].sort() : undefined,
     enabled: existing?.enabled ?? true,
     removed: existing?.removed ?? false,
     // Required by the schema with no default, so a new source must supply it.

@@ -50,6 +50,9 @@ Requires: Node 18+, Rust toolchain, Google Chrome (for the CurseForge scraper).
   a chosen time window, with cap behavior and balance warnings. Thresholds are
   configurable in Settings.
 - **Content Sources** — the catalog of creatures/items the pickers use.
+  Adding a mod by hand starts from its CurseForge project ID: the page link is
+  derived from it, and *Look up name* reads the mod's own name off that page
+  (desktop app + Chrome). The name is always yours to override.
   Bundled official ASA data (538 creatures / 1,628 items from ark.wiki.gg;
   refresh with `node scripts/build-official-catalog.mjs`) plus your own mod
   sources with bulk paste import. Mark a source *disabled* or *being removed*
@@ -89,6 +92,18 @@ Resolution order for an entry:
 3. an `images/` match by name (e.g. `Achatina.webp`), then the parent
    creature's icon for variants;
 4. the category glyph.
+
+When you catalogue a mod through **Discover installed**, each entry in the
+review list has an icon box: it opens the mod's own artwork, read straight out
+of the copy installed on this machine, and whatever you pick is saved into the
+project as a 160x160 lossless WebP. Nothing links icons to entries
+automatically — across the local mod corpus only 5.5% of items have a
+name-matching icon — so the choice is yours to make and yours to change.
+
+That reader is a .NET sidecar built from `sidecar-assets/`
+(`npm run build:assets`). It needs the ARK install Discovery already points at,
+and fetches Epic's Oodle decompression library on first use, since UE5 links
+Oodle statically into the game and there is no copy to borrow.
 
 Project-owned images go in `<project folder>/images`. **WebP is preferred and
 PNG is the only fallback** — file signatures are checked, so an image is read

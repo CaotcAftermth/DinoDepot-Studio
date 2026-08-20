@@ -10,6 +10,7 @@
  */
 
 import fs from "node:fs";
+import { withFertilizedEggs } from "./fertilized-eggs.mjs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -123,12 +124,15 @@ async function main() {
     await new Promise((r) => setTimeout(r, 300)); // be polite to the wiki
   }
 
-  const output = {
+  // The wiki lists the egg a creature lays, never the fertilized counterpart
+  // ARK also ships. Derived here so a rebuild keeps them rather than dropping
+  // 80 entries that production rules may already reference.
+  const { fertilizedEggsAdded, ...output } = withFertilizedEggs({
     source: "ark.wiki.gg Entity ID pages",
     generatedAt: new Date().toISOString(),
     creatures: dedupeByPath(creatures),
     items: dedupeByPath(items),
-  };
+  });
 
   const here = path.dirname(fileURLToPath(import.meta.url));
   const outPath = path.join(here, "..", "src", "assets", "catalog", "official-asa.json");

@@ -17,6 +17,8 @@ import { describe, expect, it } from "vitest";
  */
 
 const root = path.resolve(__dirname, "../../Public_Content");
+/** Generous on purpose: this walks every published asset, not a fixture. */
+const VERIFY_TIMEOUT_MS = 60_000;
 const sha256 = (bytes: Buffer) =>
   createHash("sha256").update(bytes).digest("hex");
 
@@ -116,6 +118,9 @@ describe("published official package", () => {
         verify(path.join(root, "Official_Icons", entry.manifest), entry.integrity),
       ).toEqual([]);
     },
+    // Hashing a few thousand files is slower than the 5s default allows once
+    // the rest of the suite is competing for the same disk.
+    VERIFY_TIMEOUT_MS,
   );
 });
 
@@ -145,11 +150,15 @@ describe("published modpack registry", () => {
     }
   });
 
-  it.each(rows)("verifies byte-for-byte as checked out: %s", (_name, entry) => {
-    expect(
-      verify(path.join(root, "ModPacks", entry.manifest), entry.integrity),
-    ).toEqual([]);
-  });
+  it.each(rows)(
+    "verifies byte-for-byte as checked out: %s",
+    (_name, entry) => {
+      expect(
+        verify(path.join(root, "ModPacks", entry.manifest), entry.integrity),
+      ).toEqual([]);
+    },
+    VERIFY_TIMEOUT_MS,
+  );
 });
 
 describe("repository configuration", () => {

@@ -161,3 +161,55 @@ describe("viewer asset vendoring", () => {
     expect(skipped).toEqual(["creatures/Gone.png|missing on disk"]);
   });
 });
+
+describe("official icon assignments in a published viewer", () => {
+  it("embeds base-game art an administrator assigned", async () => {
+    // `official:` carries no version, so the vendorer has to be told which one
+    // the project pins. Without it these resolve to nothing and the published
+    // site silently loses every base-game icon somebody chose.
+    const creature = "/Game/Mods/Test/Dino.Test_C";
+    const catalog = emptyCatalog();
+    catalog.icons[normalizeBpPath(creature)] = "official:creatures/Rex.webp";
+    const viewer = {
+      cluster: "Test",
+      creatures: [{ id: creature, img: null, icon: "🦖" }],
+      items: [],
+    } as unknown as ViewerData;
+
+    const skipped: string[] = [];
+    const result = await vendorViewerAssets(viewer, {
+      catalog,
+      packageAssets: {},
+      packageRoots: {
+        [packageRootKey("official", "official-asa", "1.1.0")]: "C:/lib/official",
+      },
+      officialVersion: "1.1.0",
+      projectImagesDir: "C:/project/images",
+      onSkipped: (path, reason) => skipped.push(`${path}: ${reason}`),
+    });
+
+    expect(skipped).toEqual([]);
+    expect(result.creatures[0].img).toContain("base64,");
+  });
+
+  it("still publishes when no official package is pinned", async () => {
+    // Nonfatal by design: the entry keeps its glyph and the cluster publishes.
+    const creature = "/Game/Mods/Test/Dino.Test_C";
+    const catalog = emptyCatalog();
+    catalog.icons[normalizeBpPath(creature)] = "official:creatures/Rex.webp";
+    const viewer = {
+      cluster: "Test",
+      creatures: [{ id: creature, img: null, icon: "🦖" }],
+      items: [],
+    } as unknown as ViewerData;
+
+    const result = await vendorViewerAssets(viewer, {
+      catalog,
+      packageAssets: {},
+      packageRoots: {},
+      projectImagesDir: "C:/project/images",
+    });
+    expect(result.creatures[0].img).toBeFalsy();
+    expect(result.creatures[0].icon).toBe("🦖");
+  });
+});

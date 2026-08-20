@@ -16,6 +16,11 @@
  *     Project ID + Updated date.
  *     Events: status, watch, metrics, done, error
  *
+ *   node scraper.mjs lookup <path-to-json>
+ *     Reads [{modId, url}] and reports what each page calls itself, so a
+ *     project ID alone is enough to catalogue a mod by its real name.
+ *     Events: status, lookup, metrics, done, error
+ *
  * Performance notes (see also the DOM fallbacks below):
  *  - A bounded pool of reusable tabs replaces open/close per mod. Opening a
  *    tab is the single most expensive thing this script does.
@@ -42,6 +47,8 @@ const USER_AGENT =
 const DETAIL_CONCURRENCY = 6;
 /** Watch-mode checks in flight. */
 const WATCH_CONCURRENCY = 6;
+/** How long a single interactive lookup waits for the Project ID row. */
+const LOOKUP_DETAIL_TIMEOUT = 8000;
 
 const LISTING_SELECTOR = 'a.name[href^="/ark-survival-ascended/mods/"]';
 const DATE_RE =
@@ -89,6 +96,32 @@ function emitMetrics() {
  * run in different processes, so the logic is duplicated deliberately and both
  * sides have tests.
  */
+/**
+ * Trailing site furniture on a page title, stripped one segment at a time.
+ *
+ * Matches only a *final* segment that is the site's own name or a category
+ * ending in "Mods" — never an interior separator. Mod names contain both
+ * hyphens and pipes ("Paleo ARK - Evolution | Apex Predators (Crossplay)"), so
+ * splitting at the first separator and keeping the head throws most of the
+ * name away.
+ */
+const SITE_SUFFIX_RE =
+  /\s+[-|\u2013\u2014]\s+(?:curseforge|[^-|\u2013\u2014]*\bmods)\s*$/i;
+
+/**
+ * The mod's own name, out of a page title.
+ *
+ * Only for the title fallback: a heading or `og:title` is already the name the
+ * author chose and is used untouched.
+ */
+function cleanModName(raw) {
+  const text = (raw || "").replace(/\s+/g, " ").trim();
+  if (!text) return "";
+  let name = text;
+  while (SITE_SUFFIX_RE.test(name)) name = name.replace(SITE_SUFFIX_RE, "");
+  return name.trim() || text;
+}
+
 function canonicalUrl(url) {
   const trimmed = (url || "").trim();
   if (!trimmed) return "";
@@ -231,7 +264,13 @@ async function mapLimit(items, limit, worker) {
 
 /** Extraction that runs inside the page. Unchanged selectors and fallbacks. */
 function extractDetails() {
-  const result = { projectId: "Not Found", updated: "Not Found" };
+  const result = {
+    projectId: "Not Found",
+    updated: "Not Found",
+    name: "",
+    /** True only when nothing but the tab title was available. */
+    nameFromTitle: false,
+  };
 
   function clean(text) {
     return (text || "").replace(/\s+/g, " ").trim();
@@ -294,6 +333,19 @@ function extractDetails() {
     if (line) result.updated = line;
   }
 
+  // Heading first, then og:title: both carry the mod's own name with no site
+  // furniture attached, so neither needs editing afterwards. The tab title is
+  // the last resort precisely because it does carry the suffix.
+  const heading = document.querySelector("h1");
+  const ogTitle = document.querySelector('meta[property="og:title"]');
+  result.name =
+    clean(heading && heading.textContent) ||
+    clean(ogTitle && ogTitle.getAttribute("content"));
+  if (!result.name) {
+    result.name = clean(document.title);
+    result.nameFromTitle = true;
+  }
+
   const absoluteDate = firstAbsoluteDate(document.body.innerText || "");
   if (
     absoluteDate &&
@@ -313,17 +365,21 @@ function extractDetails() {
  * instead of after a fixed sleep. Returns null whenever the shape is anything
  * other than what is expected, so the DOM path stays authoritative.
  */
-function extractEmbeddedProjectId() {
+function extractEmbeddedProject() {
   try {
     const nextData = document.getElementById("__NEXT_DATA__");
     if (nextData && nextData.textContent) {
       const data = JSON.parse(nextData.textContent);
       const project =
         data?.props?.pageProps?.project ?? data?.props?.pageProps?.mod ?? null;
-      const id = project?.id ?? project?.projectId;
-      if (typeof id === "number" || (typeof id === "string" && /^\d+$/.test(id))) {
-        return String(id);
-      }
+      const rawId = project?.id ?? project?.projectId;
+      const id =
+        typeof rawId === "number" ||
+        (typeof rawId === "string" && /^\d+$/.test(rawId))
+          ? String(rawId)
+          : "";
+      const name = typeof project?.name === "string" ? project.name : "";
+      if (id || name) return { id, name };
     }
   } catch {
     /* not the shape we know — fall through to the DOM */
@@ -336,7 +392,7 @@ function extractEmbeddedProjectId() {
  * hoping. Resolves as soon as either the Project ID row has rendered or the
  * embedded JSON is parseable; gives up quietly so the DOM fallbacks still run.
  */
-async function waitForDetails(page) {
+async function waitForDetails(page, timeout = 12000) {
   try {
     await page.waitForFunction(
       () => {
@@ -350,7 +406,7 @@ async function waitForDetails(page) {
         }
         return Boolean(document.getElementById("__NEXT_DATA__"));
       },
-      { timeout: 12000, polling: 100 },
+      { timeout, polling: 100 },
     );
   } catch {
     metrics.retries++;
@@ -362,13 +418,20 @@ async function scrapeModDetails(pool, mod) {
   try {
     metrics.detailPagesOpened++;
     await page.goto(mod.url, { waitUntil: "domcontentloaded", timeout: 60000 });
-    await waitForDetails(page);
+    await waitForDetails(page, mod.detailTimeout);
 
     const details = await page.evaluate(extractDetails);
-    if (details.projectId === "Not Found") {
-      const embedded = await page.evaluate(extractEmbeddedProjectId);
-      if (embedded) details.projectId = embedded;
+    const embedded = await page.evaluate(extractEmbeddedProject);
+    if (details.projectId === "Not Found" && embedded?.id) {
+      details.projectId = embedded.id;
     }
+    // The embedded record is the project's own name, so it wins over anything
+    // read off the rendered page. Nothing here is trimmed except a tab title.
+    const pageName = details.nameFromTitle
+      ? cleanModName(details.name)
+      : (details.name || "").trim();
+    details.name = (embedded?.name || "").trim() || pageName;
+    details.resolvedUrl = page.url();
 
     if (
       mod.updatedFromList &&
@@ -657,6 +720,70 @@ async function runWatch(listPath) {
 }
 
 // ---------------------------------------------------------------------------
+// Lookup mode
+// ---------------------------------------------------------------------------
+
+/**
+ * Reports what each page calls itself, given only a link to it.
+ *
+ * A CurseForge project ID redirects to the mod's real page, so an
+ * administrator who has the ID has everything needed to catalogue the mod
+ * under its actual name instead of typing one in and hoping it matches.
+ */
+async function runLookup(listPath) {
+  const list = JSON.parse(fs.readFileSync(listPath, "utf8"));
+  const browser = await launchBrowser();
+  const pool = new PagePool(browser, Math.min(WATCH_CONCURRENCY, list.length || 1));
+  try {
+    emit({
+      type: "status",
+      message: `Reading the mod page${list.length === 1 ? "" : "s"}…`,
+    });
+
+    const results = await mapLimit(list, WATCH_CONCURRENCY, async (mod) => {
+      const details = await scrapeModDetails(pool, {
+        name: "",
+        url: mod.url,
+        updatedFromList: "",
+        // Somebody is watching a form for this answer. An unknown project ID
+        // has no Project ID row to wait for, so the wait always runs to the
+        // end — shorter here than for a background watch sweep.
+        detailTimeout: LOOKUP_DETAIL_TIMEOUT,
+      });
+      return {
+        type: "lookup",
+        modId: mod.modId,
+        name: details?.name ?? "",
+        projectId: details?.projectId ?? "Not Found",
+        updated: details?.updated ?? "Not Found",
+        url: details?.resolvedUrl ?? mod.url,
+        // A Project ID row is the proof that a mod page was reached at all. An
+        // unknown ID still renders a page, and its title is the bare site name
+        // — accepting that would catalogue a mod called "CurseForge".
+        ok: Boolean(
+          details && details.name && details.projectId !== "Not Found",
+        ),
+      };
+    });
+
+    for (const result of results) {
+      if (!result.ok) {
+        emit({
+          type: "status",
+          message: `No mod found for project ID ${result.modId}`,
+        });
+      }
+      emit(result);
+    }
+    emitMetrics();
+    emit({ type: "done", count: list.length });
+  } finally {
+    await pool.closeAll();
+    await browser.close();
+  }
+}
+
+// ---------------------------------------------------------------------------
 
 // Only when run as a script — the pure helpers below are imported by tests,
 // which must not launch Chrome or call process.exit().
@@ -673,8 +800,13 @@ if (invokedDirectly) {
       } else if (mode === "watch") {
         if (!arg) throw new Error("watch mode requires a JSON list path");
         await runWatch(arg);
+      } else if (mode === "lookup") {
+        if (!arg) throw new Error("lookup mode requires a JSON list path");
+        await runLookup(arg);
       } else {
-        throw new Error(`Unknown mode '${mode}' — use 'cosmetics' or 'watch'`);
+        throw new Error(
+          `Unknown mode '${mode}' — use 'cosmetics', 'watch' or 'lookup'`,
+        );
       }
       process.exit(0);
     } catch (err) {
@@ -684,4 +816,4 @@ if (invokedDirectly) {
   })();
 }
 
-export { canonicalUrl, canReuseKnown, mapLimit, PagePool };
+export { canonicalUrl, canReuseKnown, cleanModName, mapLimit, PagePool };

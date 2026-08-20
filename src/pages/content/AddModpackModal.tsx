@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { newId } from "../../model/ids";
-import { normalizeBpPath, type CatalogEntry, type ContentSource } from "../../model/catalog";
+import {
+  curseforgeProjectUrl,
+  normalizeBpPath,
+  type CatalogEntry,
+  type ContentSource,
+} from "../../model/catalog";
 import {
   applyDiscovery,
   impactedReferences,
@@ -14,10 +20,14 @@ import {
   resolveModsRoot,
   type InstalledModSummary,
 } from "../../services/modDiscovery";
-import { normalizeCurseforgeId } from "../../model/catalogDuplicates";
+import {
+  curseforgeProjectId,
+  normalizeCurseforgeId,
+} from "../../model/catalogDuplicates";
 import { includedActiveModIds } from "../../model/cosmetics";
 import {
   applyModpack,
+  applyPackageModpack,
   compareVersions,
   matchModpackSource,
   registryVersion,
@@ -56,12 +66,23 @@ import {
 } from "../../services/packageManager";
 import {
   dependencyForRegistryPackage,
+  packPresence,
   PackageDependencySchema,
   upsertDependency,
 } from "../../model/dependency";
 import { useProjectStore } from "../../stores/projectStore";
 import { useDraftsStore } from "../../stores/draftsStore";
 import { openExternal } from "../../services/openExternal";
+import { shortClassName } from "../../services/spawnCommands";
+import { lookupModByProjectId, type ModLookup } from "../../services/scraper";
+import {
+  iconFileStem,
+  modFolderPath,
+  writeProjectIcon,
+  type ModTexture,
+} from "../../services/modAssets";
+import { TexturePickerModal } from "./TexturePickerModal";
+import { IconValue } from "../../components/EntityIcon";
 import { pickFile, pickFolder, pickSavePath } from "../../services/dialogs";
 import { ipc, isTauri } from "../../services/ipc";
 import {
@@ -81,12 +102,14 @@ type Tab = "registry" | "discover" | "manual" | "template";
 /**
  * Adding a mod, four ways.
  *
- * Search comes first because it is the one that should usually work: someone
- * has already catalogued this mod, and repeating that work is the thing the
- * registry exists to prevent. Discovery is next — for a mod nobody has
- * published, reading the installed files beats typing every blueprint path by
- * hand. Manual entry stays exactly as it was for everything else, and the
- * template turns that manual work into a pack the next admin gets for free.
+ * Discovery comes first because it is the one that works with nothing
+ * published: the installed files already list every blueprint path, and
+ * reading them beats typing them. The library is next — when somebody has
+ * catalogued this mod, repeating that work is exactly what the registry
+ * exists to prevent — with a link or a file accepted from any tab, since
+ * being sent a pack is not something that happens in one place. Manual entry
+ * covers everything else, and the template turns that work into a pack the
+ * next admin gets for free.
  */
 export function AddModpackModal({
   registry,
@@ -101,15 +124,19 @@ export function AddModpackModal({
   onInstalled: (sourceId: string, name: string) => void;
   onClose: () => void;
 }) {
-  const [tab, setTab] = useState<Tab>("registry");
+  // Discovery first: it is the route that works without anybody having
+  // published anything, and the registry index is small enough that opening on
+  // a search box over it says less than a list of the mods already installed.
+  const [tab, setTab] = useState<Tab>("discover");
+  const install = usePackageInstall({ registry, onInstalled, onClose });
 
   return (
     <Modal title="Add mod content source" onClose={onClose} wide>
       <div className="flex items-center gap-4 border-b border-ink-700 mb-4">
         {(
           [
-            ["registry", "Search modpacks"],
             ["discover", "Discover installed"],
+            ["registry", "Modpack library"],
             ["manual", "Add manually"],
             ["template", "Build a modpack"],
           ] as [Tab, string][]
@@ -129,11 +156,17 @@ export function AddModpackModal({
         ))}
       </div>
 
+      {/* Being sent a pack is not something that happens on one tab. */}
+      {tab !== "template" && (
+        <div className="mb-4">
+          <PackLinkInstall registry={registry} install={install} />
+        </div>
+      )}
+
       {tab === "registry" && (
         <RegistryTab
           registry={registry}
-          onInstalled={onInstalled}
-          onClose={onClose}
+          install={install}
           onManual={() => setTab("manual")}
           onTemplate={() => setTab("template")}
         />
@@ -160,63 +193,28 @@ export function AddModpackModal({
 
 // ---------------------------------------------------------------------------
 
-function RegistryTab({
+/**
+ * The one install path, shared by every route that leads to a pack.
+ *
+ * The search list, a pasted link and a file on disk all land the same way,
+ * including icons and the "keep what you wrote" rule, so a pack picked up from
+ * a pull request is not a second-class install. Held above the tabs because
+ * the link and file routes are useful wherever you happen to be.
+ */
+function usePackageInstall({
   registry,
   onInstalled,
   onClose,
-  onManual,
-  onTemplate,
 }: {
   registry: ModpackRegistry;
   onInstalled: (sourceId: string, name: string) => void;
   onClose: () => void;
-  onManual: () => void;
-  onTemplate: () => void;
 }) {
   const { catalog, setCatalog, refreshDependencies } = useDraftsStore();
   const settings = useProjectStore((s) => s.settings);
   // No `saveSettings` here on purpose: an install's settings write happens
   // inside `commitPackageActivation`, which re-reads them at commit time.
-  const [listing, setListing] = useState<RegistryListing | null>(null);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [query, setQuery] = useState("");
   const [installing, setInstalling] = useState("");
-  /** A pasted link to a pack that the index does not list. */
-  const [link, setLink] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
-    setError("");
-    fetchRegistry(registry)
-      .then((result) => {
-        if (!cancelled) setListing(result);
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [registry]);
-
-  const results = useMemo(
-    () => searchRegistry(listing?.packs ?? [], query),
-    [listing, query],
-  );
-
-  /** What this project already has installed, by pack id. */
-  const installed = useMemo(() => {
-    const map = new Map<string, ContentSource>();
-    for (const source of catalog.sources) {
-      if (source.modpackId) map.set(source.modpackId, source);
-    }
-    return map;
-  }, [catalog.sources]);
 
   /**
    * Installs a pack, however it was found.
@@ -292,20 +290,13 @@ function RegistryTab({
       // Package-owned icons always stay in the shared managed library. A
       // compatibility pack that cannot become a safe package keeps its content
       // but drops file assignments so the UI uses default icons.
-      const result = applyModpack(catalog, pack, newId);
-      let nextCatalog = result.catalog;
+      // A package-owned file ref is resolved from the library rather than
+      // copied into the project's icon map.
+      const result = linkedPackage
+        ? applyPackageModpack(catalog, pack, newId)
+        : applyModpack(catalog, pack, newId);
+      const nextCatalog = result.catalog;
       if (linkedPackage) {
-        // A package-owned file ref is resolved from the library. Keep an
-        // existing project assignment, but do not turn the package default
-        // into a copied project icon.
-        const nextIcons = { ...nextCatalog.icons };
-        for (const [path, value] of Object.entries(pack.icons)) {
-          const key = normalizeBpPath(path);
-          if (value.startsWith("file:") && catalog.icons[key] === undefined) {
-            delete nextIcons[key];
-          }
-        }
-        nextCatalog = { ...nextCatalog, icons: nextIcons };
         if (!settings) throw new Error("No project is open");
         let dependency = dependencyForRegistryPackage(
           registry,
@@ -388,31 +379,28 @@ function RegistryTab({
     }
   }
 
-  function install(entry: RegistryEntry) {
-    return installFrom(entry.id, async () => {
-      const exact = registryVersion(entry, entry.version);
-      if (exact) {
-        const downloaded = await downloadRegistryPackage(
-          registry,
-          entry,
-          entry.version,
-        );
-        const legacy = downloadedAsLegacyInstall(downloaded);
-        return {
-          pack: legacy.pack,
-          icons: async () => legacy.icons,
-          commitPackage: () => installDownloadedPackage(downloaded),
-          linkedPackage: { entry, exact, downloaded },
-        };
-      }
-      const pack = await fetchPack(registry, entry);
-      return {
-        pack,
-        icons: () => fetchPackIcons(registry, entry, pack),
-        legacySource: { url: registryPackUrl(registry, entry) },
-      };
-    });
-  }
+  return { installing, installFrom };
+}
+
+type PackageInstall = ReturnType<typeof usePackageInstall>;
+
+/**
+ * Installing a pack somebody linked or sent, rather than one the index lists.
+ *
+ * Browsing the registry opens GitHub, and that used to be a dead end: whatever
+ * you found there could not be installed unless the index happened to list it.
+ * A link or a file is what you come back with, so both install.
+ */
+function PackLinkInstall({
+  registry,
+  install,
+}: {
+  registry: ModpackRegistry;
+  install: PackageInstall;
+}) {
+  /** A pasted link to a pack that the index does not list. */
+  const [link, setLink] = useState("");
+  const { installing, installFrom } = install;
 
   /** A pack someone linked — a registry folder, a fork, a pull request. */
   function installLink() {
@@ -455,6 +443,122 @@ function RegistryTab({
   }
 
   return (
+    <div className="border border-ink-700 rounded-lg p-3 flex flex-col gap-2">
+      <p className="text-xs text-ink-400">
+        Found one while browsing, or been sent a pack? Paste the link to its
+        folder, <span className="mono">modpack.json</span>, or an immutable
+        <span className="mono"> manifest.json</span> — a pull request or fork
+        works too — or open one saved on this machine.
+      </p>
+      <div className="flex items-center gap-2">
+        <Input
+          value={link}
+          onChange={(e) => setLink(e.target.value)}
+          placeholder="https://github.com/…/ModPacks/972253-Ports_of_Atlas"
+        />
+        <Button
+          variant="primary"
+          className="shrink-0"
+          disabled={!link.trim() || Boolean(installing)}
+          onClick={() => void installLink()}
+        >
+          {installing === "link" ? "Adding…" : "Add from link"}
+        </Button>
+        <Button
+          className="shrink-0"
+          disabled={!isTauri || Boolean(installing)}
+          title={
+            isTauri
+              ? "Open a modpack.json saved on this machine"
+              : "Reading files only works in the desktop app"
+          }
+          onClick={() => void installFile()}
+        >
+          {installing === "file" ? "Adding…" : "Add from file…"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function RegistryTab({
+  registry,
+  install,
+  onManual,
+  onTemplate,
+}: {
+  registry: ModpackRegistry;
+  install: PackageInstall;
+  onManual: () => void;
+  onTemplate: () => void;
+}) {
+  const { installing, installFrom } = install;
+  const { catalog } = useDraftsStore();
+  const [listing, setListing] = useState<RegistryListing | null>(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError("");
+    fetchRegistry(registry)
+      .then((result) => {
+        if (!cancelled) setListing(result);
+      })
+      .catch((e: unknown) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [registry]);
+
+  const results = useMemo(
+    () => searchRegistry(listing?.packs ?? [], query),
+    [listing, query],
+  );
+
+  /** What this project already has installed, by pack id. */
+  const installed = useMemo(() => {
+    const map = new Map<string, ContentSource>();
+    for (const source of catalog.sources) {
+      if (source.modpackId) map.set(source.modpackId, source);
+    }
+    return map;
+  }, [catalog.sources]);
+
+  function installEntry(entry: RegistryEntry) {
+    return installFrom(entry.id, async () => {
+      const exact = registryVersion(entry, entry.version);
+      if (exact) {
+        const downloaded = await downloadRegistryPackage(
+          registry,
+          entry,
+          entry.version,
+        );
+        const legacy = downloadedAsLegacyInstall(downloaded);
+        return {
+          pack: legacy.pack,
+          icons: async () => legacy.icons,
+          commitPackage: () => installDownloadedPackage(downloaded),
+          linkedPackage: { entry, exact, downloaded },
+        };
+      }
+      const pack = await fetchPack(registry, entry);
+      return {
+        pack,
+        icons: () => fetchPackIcons(registry, entry, pack),
+        legacySource: { url: registryPackUrl(registry, entry) },
+      };
+    });
+  }
+
+  return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
         <Input
@@ -470,47 +574,6 @@ function RegistryTab({
         >
           Browse ↗
         </Button>
-      </div>
-
-      {/*
-        Browsing opens GitHub, and until now that was a dead end: whatever you
-        found there could not be installed unless the index happened to list
-        it. A link or a file is what you come back with, so both install.
-      */}
-      <div className="border border-ink-700 rounded-lg p-3 flex flex-col gap-2">
-        <p className="text-xs text-ink-400">
-          Found one while browsing, or been sent a pack? Paste the link to its
-          folder, <span className="mono">modpack.json</span>, or an immutable
-          <span className="mono"> manifest.json</span> — a pull request or fork
-          works too — or open one saved on this machine.
-        </p>
-        <div className="flex items-center gap-2">
-          <Input
-            value={link}
-            onChange={(e) => setLink(e.target.value)}
-            placeholder="https://github.com/…/ModPacks/972253-Ports_of_Atlas"
-          />
-          <Button
-            variant="primary"
-            className="shrink-0"
-            disabled={!link.trim() || Boolean(installing)}
-            onClick={() => void installLink()}
-          >
-            {installing === "link" ? "Adding…" : "Add from link"}
-          </Button>
-          <Button
-            className="shrink-0"
-            disabled={!isTauri || Boolean(installing)}
-            title={
-              isTauri
-                ? "Open a modpack.json saved on this machine"
-                : "Reading files only works in the desktop app"
-            }
-            onClick={() => void installFile()}
-          >
-            {installing === "file" ? "Adding…" : "Add from file…"}
-          </Button>
-        </div>
       </div>
 
       {loading && (
@@ -605,7 +668,7 @@ function RegistryTab({
                       disabled={
                         installing === entry.id || Boolean(already && !outdated)
                       }
-                      onClick={() => void install(entry)}
+                      onClick={() => void installEntry(entry)}
                     >
                       {installing === entry.id
                         ? "Adding…"
@@ -660,6 +723,7 @@ function DiscoverTab({
   const settings = useProjectStore((s) => s.settings);
   const saveSettings = useProjectStore((s) => s.saveSettings);
   const root = useProjectStore((s) => s.local?.modsDir)?.trim() ?? "";
+  const navigate = useNavigate();
 
   const [listing, setListing] = useState<InstalledModSummary[] | null>(null);
   const [loading, setLoading] = useState(false);
@@ -681,6 +745,17 @@ function DiscoverTab({
     InstalledPackageInfo[]
   >([]);
   const [packageNotice, setPackageNotice] = useState("");
+  const projectDir = useProjectStore((s) => s.dir);
+  const imagesDirOverride = useProjectStore((s) => s.local?.imagesDir) ?? "";
+  /** Icons chosen during review, by normalized blueprint path. */
+  const [chosenIcons, setChosenIcons] = useState<Record<string, string>>({});
+  /** The entry a picker is open for, if any. */
+  const [picker, setPicker] = useState<{
+    entry: CatalogEntry;
+    modDir: string;
+    modName: string;
+    shortName: string;
+  } | null>(null);
 
   const setExclusion = useCallback((paths: string[], drop: boolean) => {
     setExcluded((prev) => {
@@ -833,6 +908,15 @@ function DiscoverTab({
   }, [listing, query, showCosmetics]);
 
   const hiddenCosmetics = (listing ?? []).filter((m) => m.cosmetic).length;
+  /**
+   * Whether this project has ever collected the cosmetics list.
+   *
+   * Discovery marks a mod as cosmetic by checking it against that list, so
+   * until the collector has run every cosmetic mod on the machine sits in this
+   * list looking like content worth cataloguing. On a big install that is most
+   * of what you scroll past.
+   */
+  const cosmeticsUncollected = cosmetics.entries.length === 0;
 
   function toggle(folderName: string) {
     setSelected((prev) => {
@@ -849,9 +933,41 @@ function DiscoverTab({
     setError("");
     try {
       const discovered = await discoverInstalledMods(root, [...selected], newId);
-      setPlans(discovered.map((mod) => planDiscovery(catalog, mod)));
-      setExcluded(new Set());
+      const next = discovered.map((mod) => planDiscovery(catalog, mod));
+      setPlans(next);
+      // Seed from what this project already decided, so an entry dropped on a
+      // previous scan comes back unticked instead of having to be found and
+      // dropped again on every rescan.
+      const seeded = new Set<string>();
+      for (const plan of next) {
+        const source = catalog.sources.find(
+          (candidate) => candidate.id === plan.existingSourceId,
+        );
+        if (!source) continue;
+        const present = new Set(
+          [...plan.mod.creatures, ...plan.mod.items].map((entry) =>
+            normalizeBpPath(entry.bpPath),
+          ),
+        );
+        for (const path of source.excludedPaths ?? []) {
+          const key = normalizeBpPath(path);
+          if (present.has(key)) seeded.add(key);
+        }
+      }
+      setExcluded(seeded);
       setExpanded(new Set());
+      // Icons this project already assigned to these paths. Without this a
+      // rescan showed every entry as though it had never been given one, and
+      // the work looked lost.
+      const assigned: Record<string, string> = {};
+      for (const plan of next) {
+        for (const entry of [...plan.mod.creatures, ...plan.mod.items]) {
+          const key = normalizeBpPath(entry.bpPath);
+          const icon = catalog.icons[key];
+          if (icon) assigned[key] = icon;
+        }
+      }
+      setChosenIcons(assigned);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -886,6 +1002,12 @@ function DiscoverTab({
       if (!firstSource) firstSource = { id: result.sourceId, name: plan.mod.name };
     }
 
+    // Icons picked during review are project-owned overrides, so they land in
+    // the catalog beside the entries they were chosen for.
+    if (Object.keys(chosenIcons).length > 0) {
+      next = { ...next, icons: { ...next.icons, ...chosenIcons } };
+    }
+
     const discoveredCatalog = next;
     setCatalog(next);
     const failures: string[] = [];
@@ -904,16 +1026,8 @@ function DiscoverTab({
           );
           await installDownloadedPackage(downloaded);
           const { pack } = downloadedAsLegacyInstall(downloaded);
-          const projectIcons = next.icons;
-          const enriched = applyModpack(next, pack, newId);
-          const icons = { ...enriched.catalog.icons };
-          for (const [path, value] of Object.entries(pack.icons)) {
-            const key = normalizeBpPath(path);
-            if (value.startsWith("file:") && projectIcons[key] === undefined) {
-              delete icons[key];
-            }
-          }
-          next = { ...enriched.catalog, icons };
+          const enriched = applyPackageModpack(next, pack, newId);
+          next = enriched.catalog;
           dependencies = upsertDependency(
             dependencies,
             dependencyForRegistryPackage(
@@ -973,6 +1087,54 @@ function DiscoverTab({
     }
     setBusy(false);
     onClose();
+  }
+
+  /**
+   * Takes one mod straight to the published package version.
+   *
+   * Reviewing exists for what Discovery *guessed* off disk. A newer published
+   * package is not a guess — it is curated content pinned by hash — so an
+   * update is a decision about one mod, not a pass over every entry in it. The
+   * review route still works for anyone who wants to look first.
+   */
+  async function updatePack(mod: InstalledModSummary) {
+    const available = exactPackageFor(mod.projectId);
+    if (!available) return;
+    if (!settings) {
+      setError("No project is open");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      const downloaded = await downloadRegistryPackage(
+        registry,
+        available.entry,
+        available.entry.version,
+      );
+      await installDownloadedPackage(downloaded);
+      const { pack } = downloadedAsLegacyInstall(downloaded);
+      const applied = applyPackageModpack(catalog, pack, newId);
+      // One unit: the catalog and the pin either both land or neither does.
+      await commitPackageActivation({
+        dependency: dependencyForRegistryPackage(
+          registry,
+          available.entry,
+          available.exact,
+          downloaded.manifest,
+          downloaded.manifestIntegrity,
+          applied.sourceId,
+        ),
+        catalog: applied.catalog,
+      });
+      await refreshDependencies();
+      setInstalledPackages(await listInstalledPackages());
+      toast.success(`${pack.meta.name} updated to ${pack.meta.version}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
   }
 
   // --- no install configured yet -------------------------------------------
@@ -1198,6 +1360,22 @@ function DiscoverTab({
                       entries={entries}
                       excluded={excluded}
                       onSetExclusion={setExclusion}
+                      icons={chosenIcons}
+                      onPickIcon={
+                        root && projectDir
+                          ? (entry) =>
+                              setPicker({
+                                entry,
+                                modDir: modFolderPath(
+                                  root,
+                                  mod.projectId,
+                                  mod.fileId,
+                                ),
+                                modName: mod.name,
+                                shortName: mod.shortName,
+                              })
+                          : null
+                      }
                     />
                   ) : null,
                 )}
@@ -1213,6 +1391,33 @@ function DiscoverTab({
             checked={keepUnmatched}
             onChange={setKeepUnmatched}
             label="Keep entries discovery didn't find"
+          />
+        )}
+
+        {picker && projectDir && (
+          <TexturePickerModal
+            modDir={picker.modDir}
+            modName={picker.modName}
+            entryName={picker.entry.name}
+            onClose={() => setPicker(null)}
+            onPick={async (
+              texture: ModTexture,
+              pngB64: string,
+              invert: boolean,
+            ) => {
+              const name = await writeProjectIcon(
+                projectDir,
+                imagesDirOverride,
+                iconFileStem(picker.shortName, picker.entry.name),
+                pngB64,
+                invert,
+              );
+              setChosenIcons((prev) => ({
+                ...prev,
+                [normalizeBpPath(picker.entry.bpPath)]: `file:${name}`,
+              }));
+              toast.success(`${texture.name} saved as ${name}`);
+            }}
           />
         )}
 
@@ -1293,6 +1498,26 @@ function DiscoverTab({
         <p className="text-xs text-ink-400">{packageNotice}</p>
       )}
 
+      {cosmeticsUncollected && (listing?.length ?? 0) > 0 && (
+        <div className="border border-ink-700 rounded-lg p-3 flex items-start justify-between gap-3">
+          <p className="text-xs text-ink-400 min-w-0">
+            Custom cosmetic mods are not being filtered out of this list —
+            nothing has collected them yet. The CurseForge collector sweeps the
+            cosmetics category once, after which Discovery can tell them apart
+            from content mods.
+          </p>
+          <Button
+            className="shrink-0"
+            onClick={() => {
+              onClose();
+              navigate("/curseforge");
+            }}
+          >
+            Open the collector
+          </Button>
+        </div>
+      )}
+
       {hiddenCosmetics > 0 && (
         <Toggle
           checked={showCosmetics}
@@ -1335,6 +1560,12 @@ function DiscoverTab({
                   `modpack:${packageOption.entry.id}:${packageOption.entry.version}`,
                 )
               : false;
+            const presence = packPresence({
+              pinnedVersion: dependency?.version ?? "",
+              pinnedInstalled: dependencyInstalled,
+              publishedVersion: packageOption?.entry.version ?? "",
+              publishedInstalled: latestInstalled,
+            });
             return (
               <label
                 key={mod.folderName}
@@ -1353,45 +1584,59 @@ function DiscoverTab({
                   checked={selected.has(mod.folderName)}
                   onChange={() => toggle(mod.folderName)}
                 />
+                {/* Name and folder on the left, status on the right: the
+                    badges used to sit between the two and pushed the folder
+                    line away from the name it belongs to. */}
                 <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-sm text-ink-100">{mod.name}</span>
-                    {already && <Badge tone="ok">Added</Badge>}
-                    {dependency && (
-                      <Badge tone={dependencyInstalled ? "ok" : "warn"}>
-                        Pack {dependency.version}
-                        {dependencyInstalled ? " in project" : " missing"}
-                      </Badge>
-                    )}
-                    {!dependency && packageOption && (
-                      <Badge tone={latestInstalled ? "ok" : "warn"}>
-                        Pack {packageOption.entry.version}{" "}
-                        {latestInstalled ? "installed" : "available"}
-                      </Badge>
-                    )}
-                    {dependency &&
-                      packageOption &&
-                      compareVersions(
-                        packageOption.entry.version,
-                        dependency.version,
-                      ) > 0 && <Badge tone="warn">Pack update available</Badge>}
-                    {packageMatches.length > 1 && (
-                      <Badge tone="warn">Package identity conflict</Badge>
-                    )}
-                    {!packageOption &&
-                      packageMatches.length === 1 &&
-                      !dependency && <Badge>Legacy pack available</Badge>}
-                    {packageListing &&
-                      mod.projectId &&
-                      packageMatches.length === 0 &&
-                      !dependency && <Badge>No DD-S pack</Badge>}
-                    {mod.cosmetic && <Badge>Cosmetic</Badge>}
-                    {!mod.hasManifest && <Badge tone="warn">No manifest</Badge>}
+                  <div className="text-sm text-ink-100 truncate">
+                    {mod.name}
                   </div>
                   <div className="text-xs text-ink-500 truncate">
                     <span className="mono">/{mod.shortName}/</span>
                     {mod.projectId && ` · CF ${mod.projectId}`}
                   </div>
+                </div>
+
+                <div className="flex items-center gap-2 justify-end flex-wrap shrink-0 max-w-[55%]">
+                  {already && <Badge tone="ok">Added</Badge>}
+                  {presence && (
+                    <Badge tone={presence.tone}>{presence.label}</Badge>
+                  )}
+                  {packageMatches.length > 1 && (
+                    <Badge tone="warn">Package identity conflict</Badge>
+                  )}
+                  {!packageOption &&
+                    packageMatches.length === 1 &&
+                    !dependency && <Badge>Legacy pack available</Badge>}
+                  {packageListing &&
+                    mod.projectId &&
+                    packageMatches.length === 0 &&
+                    !dependency && <Badge>No DD-S pack</Badge>}
+                  {mod.cosmetic && <Badge>Cosmetic</Badge>}
+                  {!mod.hasManifest && <Badge tone="warn">No manifest</Badge>}
+                  {dependency &&
+                    packageOption &&
+                    compareVersions(
+                      packageOption.entry.version,
+                      dependency.version,
+                    ) > 0 && (
+                      <Button
+                        variant="primary"
+                        className="shrink-0 py-0.5"
+                        disabled={busy}
+                        // Inside the row's label, so a click would otherwise
+                        // tick the checkbox on its way through.
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          void updatePack(mod);
+                        }}
+                      >
+                        {busy
+                          ? "Updating…"
+                          : `Update pack to ${packageOption.entry.version}`}
+                      </Button>
+                    )}
                 </div>
               </label>
             );
@@ -1431,10 +1676,16 @@ function EntryReviewList({
   entries,
   excluded,
   onSetExclusion,
+  icons,
+  onPickIcon,
 }: {
   entries: CatalogEntry[];
   excluded: Set<string>;
   onSetExclusion: (paths: string[], drop: boolean) => void;
+  /** Icons chosen during this review, by normalized blueprint path. */
+  icons: Record<string, string>;
+  /** Null when this mod's artwork cannot be read on this machine. */
+  onPickIcon: ((entry: CatalogEntry) => void) | null;
 }) {
   const [filter, setFilter] = useState("");
 
@@ -1492,10 +1743,42 @@ function EntryReviewList({
                 checked={!dropped}
                 onChange={() => onSetExclusion([entry.bpPath], !dropped)}
               />
+              {onPickIcon && (
+                <button
+                  type="button"
+                  title="Choose this entry's icon from the mod's own artwork"
+                  className="shrink-0 w-7 h-7 rounded border border-ink-700 hover:border-accent-500 flex items-center justify-center overflow-hidden cursor-pointer"
+                  onClick={(event) => {
+                    // Inside the row's label, so a click would otherwise tick
+                    // the checkbox on its way through.
+                    event.preventDefault();
+                    event.stopPropagation();
+                    onPickIcon(entry);
+                  }}
+                >
+                  {icons[normalizeBpPath(entry.bpPath)] ? (
+                    <IconValue
+                      icon={icons[normalizeBpPath(entry.bpPath)]}
+                      size={22}
+                      fallback="🖼"
+                    />
+                  ) : (
+                    <span className="text-xs text-ink-600">+</span>
+                  )}
+                </button>
+              )}
+              {/* Same shape as the Content Sources entry list: the name is
+                  what is being decided about, the class is context, and the
+                  full blueprint path is a hover away rather than in the way. */}
               <span className="min-w-0">
-                <span className="text-xs text-ink-200">{entry.name}</span>
-                <span className="text-xs text-ink-500 mono block truncate">
-                  {entry.bpPath}
+                <span className="text-sm text-ink-100 block truncate">
+                  {entry.name}
+                </span>
+                <span
+                  className="text-xs text-ink-500 mono block truncate"
+                  title={entry.bpPath}
+                >
+                  {shortClassName(entry.bpPath)}
                 </span>
               </span>
             </label>
@@ -1521,7 +1804,15 @@ function EntryReviewList({
 
 // ---------------------------------------------------------------------------
 
-/** The original hand-entry form, unchanged in behaviour. */
+/**
+ * Hand entry, starting from the one thing that identifies the mod.
+ *
+ * The project ID comes first because everything else follows from it:
+ * CurseForge redirects `/projects/<id>` to the mod's real page, so the URL is
+ * derived rather than asked for, and the name is a label this cluster owns and
+ * can change at any time. Asking for all three up front made the two fields
+ * that can be wrong mandatory and the one that cannot optional.
+ */
 function ManualTab({
   findIdConflict,
   onAdd,
@@ -1531,10 +1822,50 @@ function ManualTab({
   onAdd: (source: ContentSource) => void;
   onClose: () => void;
 }) {
-  const [name, setName] = useState("");
   const [cfId, setCfId] = useState("");
+  const [name, setName] = useState("");
   const [url, setUrl] = useState("");
-  const idConflict = findIdConflict(cfId);
+  const [looking, setLooking] = useState(false);
+  const [progress, setProgress] = useState("");
+  /** What the lookup matched, so the ID can be checked without leaving here. */
+  const [found, setFound] = useState<ModLookup | null>(null);
+  const [lookupError, setLookupError] = useState("");
+
+  const typed = normalizeCurseforgeId(cfId);
+  const projectId = curseforgeProjectId(typed);
+  const malformed = Boolean(typed) && !projectId;
+  const pastedPage = malformed && /^https?:\/\//i.test(typed);
+  const idConflict = findIdConflict(projectId);
+  const derivedUrl = projectId ? curseforgeProjectUrl(projectId) : "";
+  const finalName = name.trim() || (projectId ? `Mod ${projectId}` : "");
+
+  /**
+   * Asks CurseForge what this project is called.
+   *
+   * Behind a button rather than behind typing: it launches Chrome and loads a
+   * page, which is far too much to do on every keystroke. The name it returns
+   * is a starting point, not a decision — this cluster's label stays editable
+   * here and on the source afterwards.
+   */
+  async function lookUp() {
+    if (!projectId) return;
+    setLooking(true);
+    setLookupError("");
+    setFound(null);
+    setProgress("Starting…");
+    try {
+      const result = await lookupModByProjectId(projectId, {
+        onStatus: setProgress,
+      });
+      setFound(result);
+      setName(result.name);
+    } catch (error) {
+      setLookupError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setLooking(false);
+      setProgress("");
+    }
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -1543,41 +1874,117 @@ function ManualTab({
         creatures and items here as usual — and can export the result as a
         modpack afterwards.
       </p>
-      <Field label="Mod name">
-        <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Ports of Atlas"
-          autoFocus
-        />
-      </Field>
+
       <Field
         label="CurseForge project ID"
-        hint="Shown on the mod page under 'Project ID'"
+        hint="Shown on the mod page under 'Project ID'. The page link follows from it."
       >
         <Input
           value={cfId}
-          onChange={(e) => setCfId(e.target.value)}
-          placeholder="e.g. 972253"
+          onChange={(e) => {
+            setCfId(e.target.value);
+            setFound(null);
+            setLookupError("");
+          }}
+          placeholder="e.g. 972253 — or paste the mod page link"
+          autoFocus
+          onKeyDown={(event) => {
+            // Type an ID, press Enter, get the name — the whole point of
+            // asking for the ID first.
+            if (event.key !== "Enter" || !projectId || looking) return;
+            event.preventDefault();
+            void lookUp();
+          }}
         />
       </Field>
-      {idConflict && (
-        <p className="text-xs rounded-lg border border-danger/30 bg-danger/5 text-red-300 px-3 py-2 -mt-2">
-          "{idConflict.name}" already uses project ID{" "}
-          {normalizeCurseforgeId(cfId)}. Two sources sharing an ID repeat it in
-          the enabled-mod list and give the watcher an ambiguous entry.
+
+      {malformed && (
+        <p className="text-xs text-amber-400 -mt-2">
+          {pastedPage
+            ? "That is the mod page, not its project ID. Put it in Mod page URL below, or copy the number shown under “Project ID” on that page."
+            : "No project ID in that. Paste the number shown under “Project ID” on the mod page."}
         </p>
       )}
+
+      {derivedUrl && !idConflict && (
+        <div className="flex items-center gap-2 -mt-2">
+          <p className="text-xs text-ink-400 min-w-0 truncate">
+            Links to <span className="mono">{derivedUrl}</span>
+          </p>
+          <Button
+            variant="ghost"
+            className="shrink-0"
+            disabled={!isTauri || looking}
+            title={
+              isTauri
+                ? "Read this mod's name off its CurseForge page"
+                : "Reading the mod page only works in the desktop app"
+            }
+            onClick={() => void lookUp()}
+          >
+            {looking ? progress || "Looking up…" : "Look up name"}
+          </Button>
+          <Button
+            variant="ghost"
+            className="shrink-0"
+            onClick={() => void openExternal(derivedUrl)}
+            title="Check this is the right mod before adding it"
+          >
+            Open ↗
+          </Button>
+        </div>
+      )}
+
+      {found && (
+        <p className="text-xs text-ink-400 -mt-2 min-w-0 truncate">
+          CurseForge calls this <span className="text-ink-200">{found.name}</span>
+          {found.updated && ` · updated ${found.updated}`} —{" "}
+          <span className="mono">{found.url}</span>
+        </p>
+      )}
+
+      {lookupError && (
+        <p className="text-xs text-amber-400 -mt-2">
+          {lookupError}. You can still name it yourself.
+        </p>
+      )}
+
+      {idConflict && (
+        <p className="text-xs rounded-lg border border-danger/30 bg-danger/5 text-red-300 px-3 py-2 -mt-2">
+          "{idConflict.name}" already uses project ID {projectId}. Two sources
+          sharing an ID repeat it in the enabled-mod list and give the watcher
+          an ambiguous entry.
+        </p>
+      )}
+
       <Field
-        label="CurseForge mod page URL"
-        hint="Used for the link and the Mod Update Watcher"
+        label="Mod name"
+        hint="Optional — this cluster's own label, changeable here or on the source afterwards"
+      >
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={projectId ? `Mod ${projectId}` : "e.g. Ports of Atlas"}
+        />
+      </Field>
+
+      <Field
+        label="Mod page URL"
+        hint={
+          derivedUrl
+            ? "Only needed to point somewhere other than the project link above"
+            : "Used for the link and the Mod Update Watcher"
+        }
       >
         <Input
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          placeholder="https://www.curseforge.com/ark-survival-ascended/mods/…"
+          placeholder={
+            derivedUrl || "https://www.curseforge.com/ark-survival-ascended/mods/…"
+          }
         />
       </Field>
+
       {/* No watch switch: an enabled mod with a CurseForge id is watched, and
           a newly added mod is enabled. */}
       <div className="flex justify-end gap-2">
@@ -1586,13 +1993,16 @@ function ManualTab({
         </Button>
         <Button
           variant="primary"
-          disabled={!name.trim() || Boolean(idConflict)}
+          disabled={!finalName || Boolean(idConflict)}
           onClick={() =>
             onAdd({
               id: newId(),
-              name: name.trim(),
+              name: finalName,
               kind: "mod",
-              curseforgeId: normalizeCurseforgeId(cfId),
+              curseforgeId: projectId,
+              // Left empty on purpose when it would only repeat the project
+              // link: `sourceCurseforgeUrl` derives that, and a stored copy is
+              // one more thing to be wrong later.
               url: url.trim(),
               docsUrl: "",
               discordUrl: "",

@@ -1,6 +1,23 @@
-import type { ReactElement } from "react";
+import { lazy, type ReactElement } from "react";
 import type { ProjectSettings } from "../model/project";
-import { PlayerDataPage } from "../pages/PlayerDataPage";
+
+/**
+ * Optional pages load on demand, like the core sections.
+ *
+ * The sidebar reads this list on every render, so a static import here put
+ * every optional page — and everything it touches, the official catalog
+ * included — into the first script the window has to evaluate, whether or not
+ * the module was even switched on.
+ */
+const loadPlayerData = () => import("../pages/PlayerDataPage");
+const PlayerDataPage = lazy(async () => ({
+  default: (await loadPlayerData()).PlayerDataPage,
+}));
+
+/** Warms the optional pages once the window is up. See `prefetchSections`. */
+export function prefetchModules(): void {
+  void loadPlayerData();
+}
 
 /**
  * Optional pages that sit below the separator in the sidebar — functionality

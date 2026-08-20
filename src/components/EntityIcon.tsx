@@ -1,12 +1,19 @@
+import missingCreatureIcon from "../assets/icons/Missing_Creature_Icon.webp";
+import missingItemIcon from "../assets/icons/Missing_Item_Icon.webp";
 import { ReactNode, useMemo, useState } from "react";
 import { useDraftsStore, resolveImagesDir } from "../stores/draftsStore";
 import { useProjectStore } from "../stores/projectStore";
 import { normalizeBpPath } from "../model/catalog";
-import { fallbackIcon, officialMapAssetPath } from "../model/officialCatalog";
+import {
+  fallbackIcon,
+  officialMapAssetPath,
+  officialVariantParents,
+} from "../model/officialCatalog";
 import { resolveCreatureBase } from "../model/creatureBase";
 import { buildImageIndex, matchImage } from "../model/imageMatch";
 import { useCatalogIndex, useCreatureNameMap } from "../stores/useCatalogIndex";
 import { isTauri } from "../services/ipc";
+import { IconImportPanel } from "./IconImportPanel";
 import { Button, cx, Field, Input, Modal } from "./ui";
 import { useRemoteIcon } from "./useRemoteIcon";
 import {
@@ -91,7 +98,14 @@ export function useResolvedIcon(
   // resolves the assignment for *this* entry through the on-disk cache.
   const assignedUrl = remoteUrlOf(icons[normalizeBpPath(bpPath)]);
   const cachedRemote = useRemoteIcon(assignedUrl);
-  const variantParents = useDraftsStore((s) => s.catalog.variantParents);
+  const projectVariantParents = useDraftsStore((s) => s.catalog.variantParents);
+  // Same precedence as the picker: a fertilized egg inherits its egg's icon
+  // without anyone assigning one, and a project override still wins.
+  const variantParents = useMemo(
+    () => ({ ...officialVariantParents, ...projectVariantParents }),
+    [projectVariantParents],
+  );
+  const officialVersion = useDraftsStore((s) => s.officialVersion);
   const imagesDir = useImagesDir();
   const imageIndex = useImageIndex();
   const catalogIndex = useCatalogIndex();
@@ -104,6 +118,9 @@ export function useResolvedIcon(
     if (!assigned) return null;
     const resolved = resolveAsset(assigned, {
       projectImagesDir: imagesDir,
+      // Lets an `official:` assignment name base-game art without pinning the
+      // release it came from.
+      legacy: { origin: "project", officialVersion },
       packageRoot: (packageId, version) =>
         packageRoots[packageRootKey("modpack", packageId, version)] ?? null,
       officialRoot: (version) =>
@@ -191,6 +208,11 @@ export function useResolvedIcon(
   return { src: null, emoji };
 }
 
+/** The placeholder shown when an entry has no icon anywhere. */
+export function missingIconFor(kind: "creatures" | "items"): string {
+  return kind === "creatures" ? missingCreatureIcon : missingItemIcon;
+}
+
 export function EntityIcon({
   bpPath,
   kind,
@@ -206,32 +228,31 @@ export function EntityIcon({
   className?: string;
 }) {
   const { src, emoji } = useResolvedIcon(bpPath, kind, name);
-  if (src) {
-    return (
-      <img
-        src={src}
-        alt=""
-        width={size}
-        height={size}
-        loading="lazy"
-        decoding="async"
-        className={cx("inline-block rounded-sm object-contain shrink-0", className)}
-        style={{ width: size, height: size }}
-        onError={(e) => {
-          // Broken image (file removed) — swap to the emoji fallback.
-          const el = e.currentTarget;
-          el.outerHTML = `<span style="font-size:${size - 2}px;width:${size}px" class="inline-block text-center shrink-0 leading-none">${emoji}</span>`;
-        }}
-      />
-    );
-  }
+  // Nothing resolved: the placeholder art, not a glyph. It ships with the app
+  // rather than inside a package, because the case it exists for is precisely
+  // the one where no package resolved.
+  const placeholder = missingIconFor(kind);
   return (
-    <span
-      className={cx("inline-block text-center shrink-0 leading-none", className)}
-      style={{ fontSize: size - 2, width: size }}
-    >
-      {emoji}
-    </span>
+    <img
+      src={src ?? placeholder}
+      alt=""
+      width={size}
+      height={size}
+      loading="lazy"
+      decoding="async"
+      className={cx("inline-block rounded-sm object-contain shrink-0", className)}
+      style={{ width: size, height: size }}
+      onError={(e) => {
+        // A resolved file that has since been removed. The placeholder is
+        // bundled, so this can only fire once.
+        const el = e.currentTarget;
+        if (el.src.endsWith(placeholder)) {
+          el.outerHTML = `<span style="font-size:${size - 2}px;width:${size}px" class="inline-block text-center shrink-0 leading-none">${emoji}</span>`;
+          return;
+        }
+        el.src = placeholder;
+      }}
+    />
   );
 }
 
@@ -246,6 +267,9 @@ export function useAssignIcon() {
     setCatalog({ ...catalog, icons });
   };
 }
+
+/** How many base-game icons render at once before the search has to narrow it. */
+const OFFICIAL_GRID_CAP = 300;
 
 const EMOJI_PALETTE = [
   "🦖", "🦕", "🐉", "🦅", "🐻", "🐟", "🦎", "🐸", "🦂", "🐌", "🐢", "🦇",
@@ -267,8 +291,16 @@ const MAP_EMOJI_PALETTE = [
  */
 export function useIconSrc(): (icon: string) => string | null {
   const imagesDir = useImagesDir();
+  const packageRoots = useDraftsStore((s) => s.packageRoots);
+  const officialVersion = useDraftsStore((s) => s.officialVersion);
   return (icon: string) => {
-    const resolved = resolveAsset(icon, { projectImagesDir: imagesDir });
+    const resolved = resolveAsset(icon, {
+      projectImagesDir: imagesDir,
+      legacy: { origin: "project", officialVersion },
+      officialRoot: (version) =>
+        packageRoots[packageRootKey("official", OFFICIAL_PACKAGE_ID, version)] ??
+        null,
+    });
     if (resolved.kind === "local" && isTauri) {
       try {
         return convertFileSrc(resolved.absolutePath);
@@ -372,6 +404,9 @@ export function IconChooserModal({
   title,
   current,
   palette = EMOJI_PALETTE,
+  officialArtwork = false,
+  officialKind,
+  iconGroup,
   imageSearchSeed = "",
   fallbackNote,
   onPick,
@@ -380,6 +415,23 @@ export function IconChooserModal({
   title: string;
   current: string;
   palette?: string[];
+  /**
+   * Offer the base game's artwork instead of an emoji palette.
+   *
+   * True for creatures and items, where the official package holds a picture
+   * of nearly everything and a glyph is a poor second. False for maps, which
+   * have no such library — an emoji is the only thing there is to pick.
+   */
+  officialArtwork?: boolean;
+  /**
+   * Restricts the base game list to one folder of the package.
+   *
+   * Creature art and item art are both in there, and searching "Rex" while
+   * assigning an item icon should not turn up the animal.
+   */
+  officialKind?: "creatures" | "items";
+  /** Folder the import panel files a new icon under, usually the mod's name. */
+  iconGroup?: string;
   /** Pre-fills the image search — usually the thing being given an icon. */
   imageSearchSeed?: string;
   /** Shown bottom-left, e.g. what happens with no assignment. */
@@ -389,11 +441,63 @@ export function IconChooserModal({
 }) {
   const imageFiles = useDraftsStore((s) => s.imageFiles);
   const refreshImages = useDraftsStore((s) => s.refreshImages);
+  const packageAssets = useDraftsStore((s) => s.packageAssets);
+  const packageRoots = useDraftsStore((s) => s.packageRoots);
+  const officialVersion = useDraftsStore((s) => s.officialVersion);
   const imagesDir = useImagesDir();
   const [custom, setCustom] = useState(
-    current.startsWith("file:") ? "" : current,
+    current.startsWith("file:") || current.startsWith("official:")
+      ? ""
+      : current,
   );
   const [imageSearch, setImageSearch] = useState(imageSearchSeed);
+  const [officialSearch, setOfficialSearch] = useState(imageSearchSeed);
+
+  /**
+   * Base-game artwork, offered for anything — a mod's creature included.
+   *
+   * A modpack entry could only ever be given a project image or an emoji, so
+   * an unillustrated mod creature could not borrow the stock icon for the
+   * animal it is a variant of. The official package is already installed and
+   * already resolved; there was no reason to withhold it.
+   */
+  const officialArt = useMemo(() => {
+    const seen = new Map<string, string>();
+    // Matched on a path segment, not a prefix: the package stores these as
+    // `assets/creatures/Rex.webp`, so anchoring at the start finds nothing.
+    for (const ref of Object.values(packageAssets)) {
+      if (ref.origin !== "official") continue;
+      if (
+        officialKind &&
+        !ref.path.toLowerCase().split("/").includes(officialKind)
+      ) {
+        continue;
+      }
+      const label = ref.path.replace(/^.*\//, "").replace(/\.[^.]+$/, "");
+      if (!seen.has(ref.path)) seen.set(ref.path, label);
+    }
+    return [...seen].map(([path, label]) => ({ path, label }));
+  }, [packageAssets, officialKind]);
+
+  const officialRoot =
+    packageRoots[
+      packageRootKey("official", OFFICIAL_PACKAGE_ID, officialVersion)
+    ] ?? "";
+
+  const officialMatches = useMemo(() => {
+    const q = officialSearch.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (!q) return officialArt;
+    return officialArt.filter((art) =>
+      art.label.toLowerCase().replace(/[^a-z0-9]/g, "").includes(q),
+    );
+  }, [officialArt, officialSearch]);
+  // Capped rather than virtualized: the official package runs to well over a
+  // thousand icons, and mounting every one of them as an <img> to scroll past
+  // costs more than it shows. Searching is the way through a list this long.
+  const matchingOfficial = useMemo(
+    () => officialMatches.slice(0, OFFICIAL_GRID_CAP),
+    [officialMatches],
+  );
 
   const matchingImages = useMemo(() => {
     const q = imageSearch.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -412,6 +516,8 @@ export function IconChooserModal({
 
   return (
     <Modal title={title} onClose={onClose} wide>
+      <div className="flex gap-4 items-start">
+        <div className="min-w-0 flex-1">
       {isTauri && (
         <div className="mb-4">
           <div className="flex items-center justify-between mb-1">
@@ -467,24 +573,82 @@ export function IconChooserModal({
         </div>
       )}
 
-      <div className="border-t border-ink-700 pt-3">
-        <span className="block text-xs font-semibold text-ink-300 uppercase tracking-wide mb-2">
-          Emoji
-        </span>
-        <div className="grid grid-cols-12 gap-1 mb-4">
-          {palette.map((emoji) => (
-            <button
-              key={emoji}
-              onClick={() => pick(emoji)}
-              className={cx(
-                "text-xl p-1 rounded-md hover:bg-ink-700 cursor-pointer",
-                current === emoji && "bg-ink-700 ring-1 ring-accent-500",
-              )}
-            >
-              {emoji}
-            </button>
-          ))}
+      {isTauri && officialArtwork && officialArt.length > 0 && officialRoot && (
+        <div className="mb-4">
+          <span className="text-xs font-semibold text-ink-300 uppercase tracking-wide">
+            Base game {officialKind === "items" ? "item" : "creature"} artwork
+            ({officialArt.length} icons)
+          </span>
+          <p className="text-xs text-ink-400 mb-2 mt-1">
+            From the managed Official ASA package. Usable on any entry,
+            including a mod's — an assignment follows the package rather than
+            naming the version it came from.
+          </p>
+          <Input
+            value={officialSearch}
+            onChange={(e) => setOfficialSearch(e.target.value)}
+            placeholder="Search base game icons…"
+            className="mb-2"
+          />
+          {matchingOfficial.length > 0 ? (
+            <div className="grid grid-cols-8 gap-2 max-h-72 overflow-y-auto pr-1">
+              {matchingOfficial.map((art) => (
+                <button
+                  key={art.path}
+                  onClick={() => pick(`official:${art.path}`)}
+                  title={art.path}
+                  className={cx(
+                    "flex flex-col items-center gap-1 p-1.5 rounded-md hover:bg-ink-700 cursor-pointer border",
+                    current === `official:${art.path}`
+                      ? "border-accent-500"
+                      : "border-transparent",
+                  )}
+                >
+                  <img
+                    src={convertFileSrc(`${officialRoot}/${art.path}`)}
+                    alt={art.label}
+                    className="w-10 h-10 object-contain"
+                  />
+                  <span className="text-[10px] text-ink-400 truncate w-full">
+                    {art.label}
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-ink-400">No matches.</p>
+          )}
+          {officialMatches.length > matchingOfficial.length && (
+            <p className="text-xs text-ink-500 mt-2">
+              Showing {matchingOfficial.length} of {officialMatches.length} —
+              search to narrow it down.
+            </p>
+          )}
         </div>
+      )}
+
+      <div className="border-t border-ink-700 pt-3">
+        {!officialArtwork && (
+          <>
+            <span className="block text-xs font-semibold text-ink-300 uppercase tracking-wide mb-2">
+              Emoji
+            </span>
+            <div className="grid grid-cols-12 gap-1 mb-4">
+              {palette.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => pick(emoji)}
+                  className={cx(
+                    "text-xl p-1 rounded-md hover:bg-ink-700 cursor-pointer",
+                    current === emoji && "bg-ink-700 ring-1 ring-accent-500",
+                  )}
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
         <Field
           label="Custom emoji or image URL"
           hint="Paste any emoji, or an https:// image URL (e.g. a wiki icon)"
@@ -514,6 +678,16 @@ export function IconChooserModal({
           </Button>
         )}
       </div>
+        </div>
+
+        {officialArtwork && (
+          <IconImportPanel
+            group={iconGroup ?? ""}
+            entryName={imageSearchSeed}
+            onSaved={(icon: string) => pick(icon)}
+          />
+        )}
+      </div>
     </Modal>
   );
 }
@@ -534,13 +708,20 @@ export function IconPickerModal({
 }) {
   const assign = useAssignIcon();
   const icons = useDraftsStore((s) => s.catalog.icons);
+  const catalogIndex = useCatalogIndex();
   const current = icons[normalizeBpPath(bpPath)] ?? "";
-  const fallback = useMemo(() => fallbackIcon(bpPath, kind), [bpPath, kind]);
+  // An imported icon is filed under the source that owns the entry, so the
+  // images folder groups the same way the catalog does.
+  const owner =
+    catalogIndex[kind].get(normalizeBpPath(bpPath))?.source.name ?? "";
 
   return (
     <IconChooserModal
       title={`Icon for ${name}`}
       current={current}
+      officialArtwork
+      officialKind={kind}
+      iconGroup={owner}
       imageSearchSeed={name}
       onPick={(icon) => assign(bpPath, icon)}
       onClose={onClose}
@@ -548,8 +729,8 @@ export function IconPickerModal({
         <>
           Files named after the creature/item (e.g.{" "}
           <span className="mono">creatures\Achatina.png</span>) are used
-          automatically — variants inherit their parent's icon. Default:{" "}
-          <span className="text-base">{fallback}</span>
+          automatically — variants inherit their parent's icon. With nothing
+          assigned, the entry shows the placeholder artwork.
         </>
       }
     />

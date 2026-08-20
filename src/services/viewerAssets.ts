@@ -79,6 +79,14 @@ export async function vendorViewerAssets(
     packageAssets: Record<string, AssetRef>;
     packageRoots: Record<string, string>;
     projectImagesDir: string;
+    /**
+     * Official package version this project pins.
+     *
+     * An `official:` icon carries no version of its own, so without this every
+     * base-game icon an administrator assigned would resolve to nothing and be
+     * quietly dropped from the published viewer.
+     */
+    officialVersion?: string;
     /** Called once per image that could not be embedded. Publication continues. */
     onSkipped?: (logicalPath: string, reason: string) => void;
   },
@@ -145,6 +153,10 @@ export async function vendorViewerAssets(
     if (assigned) {
       const resolved = resolveAsset(assigned, {
         projectImagesDir: options.projectImagesDir,
+        legacy: {
+          origin: "project",
+          officialVersion: options.officialVersion,
+        },
         packageRoot,
         officialRoot,
       });

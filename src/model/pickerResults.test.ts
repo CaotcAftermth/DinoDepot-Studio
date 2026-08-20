@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildPickerRows } from "./pickerResults";
+import { normalizeBpPath } from "./catalog";
 import type { CatalogEntry, ContentSource } from "./catalog";
 import { officialSource } from "./officialCatalog";
 
@@ -273,5 +274,77 @@ describe("parent-first mode", () => {
         collapseVariants: true,
       }),
     ).toEqual([]);
+  });
+});
+
+describe("item variant collapsing", () => {
+  const itemSource = (items: CatalogEntry[]) =>
+    source({ id: "official-asa", name: "Official ASA", items });
+
+  const EGG = "/Game/PrimalEarth/Items/PrimalItemConsumable_Egg_Allo.PrimalItemConsumable_Egg_Allo";
+  const FERT =
+    "/Game/PrimalEarth/Items/PrimalItemConsumable_Egg_Allo_Fertilized.PrimalItemConsumable_Egg_Allo_Fertilized";
+
+  const sources = [
+    itemSource([
+      { id: "i1", name: "Allosaurus Egg", bpPath: EGG },
+      { id: "i2", name: "Fertilized Allosaurus Egg", bpPath: FERT },
+    ]),
+  ];
+  const parents = { [normalizeBpPath(FERT)]: EGG };
+
+  it("folds a fertilized egg onto the egg it comes from", () => {
+    const rows = buildPickerRows({
+      sources,
+      kind: "items",
+      search: "",
+      collapseVariants: true,
+      variantParents: parents,
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].entry.name).toBe("Allosaurus Egg");
+    expect(rows[0].hiddenVariants).toBe(1);
+  });
+
+  it("shows both when the toggle is off", () => {
+    const rows = buildPickerRows({
+      sources,
+      kind: "items",
+      search: "",
+      collapseVariants: false,
+      variantParents: parents,
+    });
+    expect(rows).toHaveLength(2);
+  });
+
+  it("still finds a variant by name while collapsed", () => {
+    const rows = buildPickerRows({
+      sources,
+      kind: "items",
+      search: "fertilized",
+      collapseVariants: true,
+      variantParents: parents,
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0].matchedVia).toContain("Fertilized Allosaurus Egg");
+  });
+
+  it("never groups two items that share no declared parent", () => {
+    // Items have no naming convention worth guessing at: only an explicit
+    // parent groups them, or every similarly named item would fold together.
+    const unrelated = [
+      itemSource([
+        { id: "a", name: "Raw Meat", bpPath: "/G/PrimalItemConsumable_RawMeat.X" },
+        { id: "b", name: "Raw Prime Meat", bpPath: "/G/PrimalItemConsumable_RawPrimeMeat.Y" },
+      ]),
+    ];
+    const rows = buildPickerRows({
+      sources: unrelated,
+      kind: "items",
+      search: "",
+      collapseVariants: true,
+      variantParents: {},
+    });
+    expect(rows).toHaveLength(2);
   });
 });
