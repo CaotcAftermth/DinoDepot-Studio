@@ -379,6 +379,30 @@ export interface ApplyModpackResult {
 }
 
 /**
+ * `applyModpack`, without letting package art become project art.
+ *
+ * A `file:` icon in a package is resolved from the managed library; copying it
+ * into the project's own icon map would pin this project to a filename the
+ * package owns and is free to change in its next version. An assignment the
+ * project already made is left alone — that one is the admin's.
+ */
+export function applyPackageModpack(
+  catalog: CatalogFile,
+  pack: Modpack,
+  newId: () => string,
+): ApplyModpackResult {
+  const result = applyModpack(catalog, pack, newId);
+  const icons = { ...result.catalog.icons };
+  for (const [path, value] of Object.entries(pack.icons)) {
+    const key = normalizeBpPath(path);
+    if (value.startsWith("file:") && catalog.icons[key] === undefined) {
+      delete icons[key];
+    }
+  }
+  return { ...result, catalog: { ...result.catalog, icons } };
+}
+
+/**
  * Combines local structural discovery with curated package membership.
  *
  * Blueprint path is identity. A package may improve the display name or add
@@ -409,20 +433,35 @@ export function mergeStructuralEntries(
   return merged.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-/** Resolves Discovery, package enrichment, then hand-added structural rows. */
+/**
+ * Resolves Discovery, package enrichment, then hand-added structural rows.
+ *
+ * Everything this returns passes through the source's `excludedPaths` last.
+ * The entry lists are rebuilt from the package on every install and on every
+ * dependency refresh, so a path an admin dropped during review has to be
+ * subtracted here rather than at the point it was dropped — otherwise the
+ * next refresh silently restores it.
+ */
 export function enrichSourceStructure(
   current: ContentSource | undefined,
   packaged: CatalogEntry[],
   kind: "creatures" | "items",
 ): CatalogEntry[] {
+  const excluded = new Set(
+    (current?.excludedPaths ?? []).map((path) => normalizeBpPath(path)),
+  );
+  const keep = (entries: CatalogEntry[]) =>
+    excluded.size === 0
+      ? entries
+      : entries.filter((entry) => !excluded.has(normalizeBpPath(entry.bpPath)));
+
   if (!current?.discovery) {
-    if (current?.modpackId) return [...packaged];
-    return mergeStructuralEntries(current?.[kind] ?? [], packaged);
+    if (current?.modpackId) return keep([...packaged]);
+    return keep(mergeStructuralEntries(current?.[kind] ?? [], packaged));
   }
   const enriched = mergeStructuralEntries(current.discovery[kind], packaged);
-  return mergeStructuralEntries(
-    enriched,
-    current.structuralOverrides?.[kind] ?? [],
+  return keep(
+    mergeStructuralEntries(enriched, current.structuralOverrides?.[kind] ?? []),
   );
 }
 
@@ -510,7 +549,9 @@ export function applyModpack(
   const source: ContentSource = ContentSourceSchema.parse({
     ...(existing ?? {}),
     id: existing?.id ?? newId(),
-    name: pack.meta.name,
+    // An upstream rename should show, but an admin who renamed this source
+    // locally chose that on purpose — the same rule Discovery applies.
+    name: existing?.name?.trim() || pack.meta.name,
     kind: "mod",
     curseforgeId: pack.meta.curseforgeId,
     url: pack.meta.url,

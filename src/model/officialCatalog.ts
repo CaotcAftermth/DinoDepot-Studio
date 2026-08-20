@@ -54,6 +54,21 @@ function toEntries(raw: RawEntry[], prefix: string): CatalogEntry[] {
   }));
 }
 
+/**
+ * Variant links the bundled dataset knows about, by normalized path.
+ *
+ * Currently the fertilized eggs, which are generated from their plain egg
+ * rather than listed by the wiki. Kept beside the dataset instead of in a
+ * project's own `variantParents`, because it is a fact about ARK rather than
+ * a decision an administrator made — a project's assignments still win.
+ */
+export const officialVariantParents: Record<string, string> = Object.fromEntries(
+  Object.entries(
+    (officialData as { variantParents?: Record<string, string> })
+      .variantParents ?? {},
+  ).map(([path, parent]) => [normalizeBpPath(path), parent]),
+);
+
 export const officialSource: ContentSource = {
   id: OFFICIAL_SOURCE_ID,
   name: "Official ASA",

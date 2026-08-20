@@ -578,18 +578,20 @@ export async function installBundledOfficialPackage(
   version: string,
 ): Promise<InstalledPackage | null> {
   if (!isTauri) return null;
-  const manifestPath = await ipc<string | null>("package_bundled_manifest", {
-    version,
-  });
-  if (!manifestPath) return null;
-  const { downloaded } = await installLocalPackageManifest(manifestPath);
-  if (
-    downloaded.manifest.kind !== "official" ||
-    downloaded.manifest.version !== version
-  ) {
+  // Installed natively: the files are already on this disk, and carrying a
+  // few thousand of them through IPC as base64 — once out to be hashed, once
+  // back to be written — was seconds of first-launch delay for no gain. Every
+  // file is still verified against the manifest, and the manifest against the
+  // project's pin, by whoever reads the installed copy back.
+  const info = await ipc<InstalledPackageInfo | null>(
+    "package_library_install_bundled",
+    { version },
+  );
+  if (!info) return null;
+  if (info.kind !== "official" || info.version !== version) {
     throw new Error("The bundled official package does not match its index");
   }
-  return readInstalledPackage("official", downloaded.manifest.packageId, version);
+  return readInstalledPackage("official", info.packageId, version);
 }
 
 export async function listInstalledPackages(): Promise<InstalledPackageInfo[]> {

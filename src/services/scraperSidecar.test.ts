@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 // helpers, imported directly so the incremental-collection rules can be tested
 // without launching Chrome.
 // @ts-expect-error — plain .mjs sidecar, no type declarations
-import { canonicalUrl, canReuseKnown, mapLimit, PagePool } from "../../sidecar/scraper.mjs";
+import { canonicalUrl, canReuseKnown, cleanModName, mapLimit, PagePool } from "../../sidecar/scraper.mjs";
 import { canonicalCurseforgeUrl } from "../model/catalogDuplicates";
 
 const BASE = "https://www.curseforge.com/ark-survival-ascended/mods/cool-hats";
@@ -168,5 +168,46 @@ describe("PagePool", () => {
     pool.release(page);
     await pool.closeAll();
     expect(pool.idle).toEqual([]);
+  });
+});
+
+describe("cleanModName", () => {
+  it("strips the site furniture off a tab title", () => {
+    expect(
+      cleanModName(
+        "Additions Ascended: Anomalocaris - Ark Survival Ascended Mods - CurseForge",
+      ),
+    ).toBe("Additions Ascended: Anomalocaris");
+    expect(cleanModName("  Ports of Atlas  -  CurseForge ")).toBe(
+      "Ports of Atlas",
+    );
+  });
+
+  it("keeps separators that belong to the mod's own name", () => {
+    // Real title for project 970540. Splitting at the first separator and
+    // keeping the head returned "Paleo ARK" and threw the rest away.
+    expect(
+      cleanModName(
+        "Paleo ARK - Evolution | Apex Predators (Crossplay) - Ark Survival Ascended Mods - CurseForge",
+      ),
+    ).toBe("Paleo ARK - Evolution | Apex Predators (Crossplay)");
+  });
+
+  it("handles the separators CurseForge actually uses", () => {
+    expect(cleanModName("Foo – CurseForge")).toBe("Foo");
+    expect(cleanModName("Foo — CurseForge")).toBe("Foo");
+    expect(cleanModName("Foo | CurseForge")).toBe("Foo");
+  });
+
+  it("only strips a trailing segment, never an interior one", () => {
+    expect(cleanModName("Prime-Time")).toBe("Prime-Time");
+    expect(cleanModName("Mods of Doom - Apex Edition")).toBe(
+      "Mods of Doom - Apex Edition",
+    );
+    expect(cleanModName("")).toBe("");
+  });
+
+  it("never returns nothing for a name that is all furniture", () => {
+    expect(cleanModName("CurseForge")).toBe("CurseForge");
   });
 });

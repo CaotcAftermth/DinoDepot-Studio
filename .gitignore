@@ -39,3 +39,12 @@ dev-packages/
 # Generated from the exact official version in index.json before dev/build.
 /src-tauri/resources/official-package/*
 !/src-tauri/resources/official-package/.gitkeep
+
+# Asset sidecar build output. The Oodle library it caches beside itself is
+# Epic's redistributable, not ours to commit.
+sidecar-assets/bin/
+sidecar-assets/obj/
+# The publish folder is a bundle resource, so the path has to exist for the
+# Rust build script even on a checkout that has not run `npm run build:assets`.
+sidecar-assets/publish/*
+!sidecar-assets/publish/.gitkeep

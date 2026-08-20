@@ -6259,6 +6259,426 @@
       "stack": 1
     },
     {
+      "name": "Fertilized Allosaurus Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Allo_Fertilized.PrimalItemConsumable_Egg_Allo_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Ankylo Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Ankylo_Fertilized.PrimalItemConsumable_Egg_Ankylo_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Araneo Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Spider_Fertilized.PrimalItemConsumable_Egg_Spider_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Archaeopteryx Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Archa_Fertilized.PrimalItemConsumable_Egg_Archa_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Argentavis Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Argent_Fertilized.PrimalItemConsumable_Egg_Argent_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Arthropluera Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Arthro_Fertilized.PrimalItemConsumable_Egg_Arthro_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Baryonyx Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Baryonyx_Fertilized.PrimalItemConsumable_Egg_Baryonyx_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Basic Maewing Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/Genesis2/Dinos/MilkGlider/Eggs/PrimalItemConsumable_Egg_MilkGlider_XSmall_Fertilized.PrimalItemConsumable_Egg_MilkGlider_XSmall_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Basilisk Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/Aberration/CoreBlueprints/Items/Consumables/PrimalItemConsumable_Egg_Basilisk_Fertilized.PrimalItemConsumable_Egg_Basilisk_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Bloodstalker Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/Genesis/Dinos/BogSpider/PrimalItemConsumable_Egg_BogSpider_Fertilized.PrimalItemConsumable_Egg_BogSpider_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Bronto Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Bronto_Fertilized.PrimalItemConsumable_Egg_Bronto_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Camelsaurus Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/ScorchedEarth/Dinos/Camelsaurus/PrimalItemConsumable_Egg_Camelsaurus_Fertilized.PrimalItemConsumable_Egg_Camelsaurus_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Carno Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Carno_Fertilized.PrimalItemConsumable_Egg_Carno_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Compy Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Compy_Fertilized.PrimalItemConsumable_Egg_Compy_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Crystal Wyvern Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Dinos/CrystalWyvern/Eggs/PrimalItemConsumable_Egg_CrystalWyvern_Fertilized.PrimalItemConsumable_Egg_CrystalWyvern_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Dilo Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Dilo_Fertilized.PrimalItemConsumable_Egg_Dilo_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Dimetrodon Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Dimetrodon_Fertilized.PrimalItemConsumable_Egg_Dimetrodon_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Dimorph Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Dimorph_Fertilized.PrimalItemConsumable_Egg_Dimorph_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Diplo Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Diplo_Fertilized.PrimalItemConsumable_Egg_Diplo_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Dodo Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Dodo_Fertilized.PrimalItemConsumable_Egg_Dodo_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Featherlight Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/Aberration/CoreBlueprints/Items/Consumables/PrimalItemConsumable_Egg_LanternBird_Fertilized.PrimalItemConsumable_Egg_LanternBird_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Gallimimus Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Galli_Fertilized.PrimalItemConsumable_Egg_Galli_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Giganotosaurus Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Gigant_Fertilized.PrimalItemConsumable_Egg_Gigant_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Glowtail Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/Aberration/CoreBlueprints/Items/Consumables/PrimalItemConsumable_Egg_LanternLizard_Fertilized.PrimalItemConsumable_Egg_LanternLizard_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Hesperornis Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Hesperonis_Fertilized.PrimalItemConsumable_Egg_Hesperonis_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Ichthyornis Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Ichthyornis_Fertilized.PrimalItemConsumable_Egg_Ichthyornis_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Iguanodon Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Iguanodon_Fertilized.PrimalItemConsumable_Egg_Iguanodon_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Kairuku Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Kairuku_Fertilized.PrimalItemConsumable_Egg_Kairuku_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Kaprosuchus Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Kaprosuchus_Fertilized.PrimalItemConsumable_Egg_Kaprosuchus_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Kentro Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Kentro_Fertilized.PrimalItemConsumable_Egg_Kentro_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Lystro Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Lystro_Fertilized.PrimalItemConsumable_Egg_Lystro_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Magmasaur Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/Genesis/Dinos/Cherufe/PrimalItemConsumable_Egg_Cherufe_Fertilized.PrimalItemConsumable_Egg_Cherufe_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Mantis Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/ScorchedEarth/Dinos/Mantis/PrimalItemConsumable_Egg_Mantis_Fertilized.PrimalItemConsumable_Egg_Mantis_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Megachelon Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/Genesis/Dinos/GiantTurtle/PrimalItemConsumable_Egg_GiantTurtle_Fertilized.PrimalItemConsumable_Egg_GiantTurtle_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Megalania Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Megalania_Fertilized.PrimalItemConsumable_Egg_Megalania_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Megalosaurus Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Megalosaurus_Fertilized.PrimalItemConsumable_Egg_Megalosaurus_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Microraptor Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_MicroRaptor_Fertilized.PrimalItemConsumable_Egg_MicroRaptor_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Moschops Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Moschops_Fertilized.PrimalItemConsumable_Egg_Moschops_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Moth Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/ScorchedEarth/Dinos/Moth/PrimalItemConsumable_Egg_Moth_Fertilized.PrimalItemConsumable_Egg_Moth_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Oviraptor Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Oviraptor_Fertilized.PrimalItemConsumable_Egg_Oviraptor_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Pachycephalosaurus Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Pachy_Fertilized.PrimalItemConsumable_Egg_Pachy_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Parasaur Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Para_Fertilized.PrimalItemConsumable_Egg_Para_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Pegomastax Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Pegomastax_Fertilized.PrimalItemConsumable_Egg_Pegomastax_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Pelagornis Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Pela_Fertilized.PrimalItemConsumable_Egg_Pela_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Pteranodon Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Ptero_Fertilized.PrimalItemConsumable_Egg_Ptero_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Pulmonoscorpius Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Scorpion_Fertilized.PrimalItemConsumable_Egg_Scorpion_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Quetzal Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Quetz_Fertilized.PrimalItemConsumable_Egg_Quetz_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Raptor Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Raptor_Fertilized.PrimalItemConsumable_Egg_Raptor_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Rex Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Rex_Fertilized.PrimalItemConsumable_Egg_Rex_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Sarco Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Sarco_Fertilized.PrimalItemConsumable_Egg_Sarco_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Snow Owl Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/Extinction/Dinos/Owl/PrimalItemConsumable_Egg_Owl_Fertilized.PrimalItemConsumable_Egg_Owl_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Spino Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Spino_Fertilized.PrimalItemConsumable_Egg_Spino_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Stego Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Stego_Fertilized.PrimalItemConsumable_Egg_Stego_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Superior Maewing Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/Genesis2/Dinos/MilkGlider/Eggs/PrimalItemConsumable_Egg_MilkGlider_Large_Fertilized.PrimalItemConsumable_Egg_MilkGlider_Large_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Tapejara Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Tapejara_Fertilized.PrimalItemConsumable_Egg_Tapejara_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Tek Parasaur Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Para_Fertilized_Bionic.PrimalItemConsumable_Egg_Para_Fertilized_Bionic",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Tek Quetzal Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Quetz_Fertilized_Bionic.PrimalItemConsumable_Egg_Quetz_Fertilized_Bionic",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Tek Raptor Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Raptor_Fertilized_Bionic.PrimalItemConsumable_Egg_Raptor_Fertilized_Bionic",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Tek Rex Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Rex_Fertilized_Bionic.PrimalItemConsumable_Egg_Rex_Fertilized_Bionic",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Tek Stego Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Stego_Fertilized_Bionic.PrimalItemConsumable_Egg_Stego_Fertilized_Bionic",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Tek Trike Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Trike_Fertilized_Bionic.PrimalItemConsumable_Egg_Trike_Fertilized_Bionic",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Therizino Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Therizino_Fertilized.PrimalItemConsumable_Egg_Therizino_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Thorny Dragon Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/ScorchedEarth/Dinos/SpineyLizard/PrimalItemConsumable_Egg_SpineyLizard_Fertilized.PrimalItemConsumable_Egg_SpineyLizard_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Trike Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Trike_Fertilized.PrimalItemConsumable_Egg_Trike_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Troodon Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Troodon_Fertilized.PrimalItemConsumable_Egg_Troodon_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Tropeognathus Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Tropeognathus_Fertilized.PrimalItemConsumable_Egg_Tropeognathus_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Turtle Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Turtle_Fertilized.PrimalItemConsumable_Egg_Turtle_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Velonasaur Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/Extinction/Dinos/Spindles/PrimalItemConsumable_Egg_Spindles_Fertilized.PrimalItemConsumable_Egg_Spindles_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Vulture Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/ScorchedEarth/Dinos/Vulture/PrimalItemConsumable_Egg_Vulture_Fertilized.PrimalItemConsumable_Egg_Vulture_Fertilized",
+      "stack": 1
+    },
+    {
+      "name": "Fertilized Yutyrannus Egg",
+      "category": "Eggs",
+      "bpPath": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Yuty_Fertilized.PrimalItemConsumable_Egg_Yuty_Fertilized",
+      "stack": 1
+    },
+    {
       "name": "Fertilizer",
       "category": "Resources",
       "bpPath": "/Game/PrimalEarth/CoreBlueprints/Items/Consumables/PrimalItemConsumable_Fertilizer_Compost.PrimalItemConsumable_Fertilizer_Compost",
@@ -12462,5 +12882,77 @@
       "bpPath": "/Game/PrimalEarth/CoreBlueprints/Items/Armor/Skin/PrimalItemSkin_HawaiianShirt_ZombieWyvern.PrimalItemSkin_HawaiianShirt_ZombieWyvern",
       "stack": 1
     }
-  ]
+  ],
+  "variantParents": {
+    "/game/primalearth/test/primalitemconsumable_egg_allo_fertilized.primalitemconsumable_egg_allo_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Allo.PrimalItemConsumable_Egg_Allo",
+    "/game/primalearth/test/primalitemconsumable_egg_ankylo_fertilized.primalitemconsumable_egg_ankylo_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Ankylo.PrimalItemConsumable_Egg_Ankylo",
+    "/game/primalearth/test/primalitemconsumable_egg_spider_fertilized.primalitemconsumable_egg_spider_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Spider.PrimalItemConsumable_Egg_Spider",
+    "/game/primalearth/test/primalitemconsumable_egg_archa_fertilized.primalitemconsumable_egg_archa_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Archa.PrimalItemConsumable_Egg_Archa",
+    "/game/primalearth/test/primalitemconsumable_egg_argent_fertilized.primalitemconsumable_egg_argent_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Argent.PrimalItemConsumable_Egg_Argent",
+    "/game/primalearth/test/primalitemconsumable_egg_arthro_fertilized.primalitemconsumable_egg_arthro_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Arthro.PrimalItemConsumable_Egg_Arthro",
+    "/game/primalearth/test/primalitemconsumable_egg_baryonyx_fertilized.primalitemconsumable_egg_baryonyx_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Baryonyx.PrimalItemConsumable_Egg_Baryonyx",
+    "/game/genesis2/dinos/milkglider/eggs/primalitemconsumable_egg_milkglider_xsmall_fertilized.primalitemconsumable_egg_milkglider_xsmall_fertilized": "/Game/Genesis2/Dinos/MilkGlider/Eggs/PrimalItemConsumable_Egg_MilkGlider_XSmall.PrimalItemConsumable_Egg_MilkGlider_XSmall",
+    "/game/aberration/coreblueprints/items/consumables/primalitemconsumable_egg_basilisk_fertilized.primalitemconsumable_egg_basilisk_fertilized": "/Game/Aberration/CoreBlueprints/Items/Consumables/PrimalItemConsumable_Egg_Basilisk.PrimalItemConsumable_Egg_Basilisk",
+    "/game/genesis/dinos/bogspider/primalitemconsumable_egg_bogspider_fertilized.primalitemconsumable_egg_bogspider_fertilized": "/Game/Genesis/Dinos/BogSpider/PrimalItemConsumable_Egg_BogSpider.PrimalItemConsumable_Egg_BogSpider",
+    "/game/primalearth/test/primalitemconsumable_egg_bronto_fertilized.primalitemconsumable_egg_bronto_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Bronto.PrimalItemConsumable_Egg_Bronto",
+    "/game/scorchedearth/dinos/camelsaurus/primalitemconsumable_egg_camelsaurus_fertilized.primalitemconsumable_egg_camelsaurus_fertilized": "/Game/ScorchedEarth/Dinos/Camelsaurus/PrimalItemConsumable_Egg_Camelsaurus.PrimalItemConsumable_Egg_Camelsaurus",
+    "/game/primalearth/test/primalitemconsumable_egg_carno_fertilized.primalitemconsumable_egg_carno_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Carno.PrimalItemConsumable_Egg_Carno",
+    "/game/primalearth/test/primalitemconsumable_egg_compy_fertilized.primalitemconsumable_egg_compy_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Compy.PrimalItemConsumable_Egg_Compy",
+    "/game/primalearth/dinos/crystalwyvern/eggs/primalitemconsumable_egg_crystalwyvern_fertilized.primalitemconsumable_egg_crystalwyvern_fertilized": "/Game/PrimalEarth/Dinos/CrystalWyvern/Eggs/PrimalItemConsumable_Egg_CrystalWyvern.PrimalItemConsumable_Egg_CrystalWyvern",
+    "/game/primalearth/test/primalitemconsumable_egg_dilo_fertilized.primalitemconsumable_egg_dilo_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Dilo.PrimalItemConsumable_Egg_Dilo",
+    "/game/primalearth/test/primalitemconsumable_egg_dimetrodon_fertilized.primalitemconsumable_egg_dimetrodon_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Dimetrodon.PrimalItemConsumable_Egg_Dimetrodon",
+    "/game/primalearth/test/primalitemconsumable_egg_dimorph_fertilized.primalitemconsumable_egg_dimorph_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Dimorph.PrimalItemConsumable_Egg_Dimorph",
+    "/game/primalearth/test/primalitemconsumable_egg_diplo_fertilized.primalitemconsumable_egg_diplo_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Diplo.PrimalItemConsumable_Egg_Diplo",
+    "/game/primalearth/test/primalitemconsumable_egg_dodo_fertilized.primalitemconsumable_egg_dodo_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Dodo.PrimalItemConsumable_Egg_Dodo",
+    "/game/aberration/coreblueprints/items/consumables/primalitemconsumable_egg_lanternbird_fertilized.primalitemconsumable_egg_lanternbird_fertilized": "/Game/Aberration/CoreBlueprints/Items/Consumables/PrimalItemConsumable_Egg_LanternBird.PrimalItemConsumable_Egg_LanternBird",
+    "/game/primalearth/test/primalitemconsumable_egg_galli_fertilized.primalitemconsumable_egg_galli_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Galli.PrimalItemConsumable_Egg_Galli",
+    "/game/primalearth/test/primalitemconsumable_egg_gigant_fertilized.primalitemconsumable_egg_gigant_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Gigant.PrimalItemConsumable_Egg_Gigant",
+    "/game/aberration/coreblueprints/items/consumables/primalitemconsumable_egg_lanternlizard_fertilized.primalitemconsumable_egg_lanternlizard_fertilized": "/Game/Aberration/CoreBlueprints/Items/Consumables/PrimalItemConsumable_Egg_LanternLizard.PrimalItemConsumable_Egg_LanternLizard",
+    "/game/primalearth/test/primalitemconsumable_egg_hesperonis_fertilized.primalitemconsumable_egg_hesperonis_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Hesperonis.PrimalItemConsumable_Egg_Hesperonis",
+    "/game/primalearth/test/primalitemconsumable_egg_ichthyornis_fertilized.primalitemconsumable_egg_ichthyornis_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Ichthyornis.PrimalItemConsumable_Egg_Ichthyornis",
+    "/game/primalearth/test/primalitemconsumable_egg_iguanodon_fertilized.primalitemconsumable_egg_iguanodon_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Iguanodon.PrimalItemConsumable_Egg_Iguanodon",
+    "/game/primalearth/test/primalitemconsumable_egg_kairuku_fertilized.primalitemconsumable_egg_kairuku_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Kairuku.PrimalItemConsumable_Egg_Kairuku",
+    "/game/primalearth/test/primalitemconsumable_egg_kaprosuchus_fertilized.primalitemconsumable_egg_kaprosuchus_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Kaprosuchus.PrimalItemConsumable_Egg_Kaprosuchus",
+    "/game/primalearth/test/primalitemconsumable_egg_kentro_fertilized.primalitemconsumable_egg_kentro_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Kentro.PrimalItemConsumable_Egg_Kentro",
+    "/game/primalearth/test/primalitemconsumable_egg_lystro_fertilized.primalitemconsumable_egg_lystro_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Lystro.PrimalItemConsumable_Egg_Lystro",
+    "/game/genesis/dinos/cherufe/primalitemconsumable_egg_cherufe_fertilized.primalitemconsumable_egg_cherufe_fertilized": "/Game/Genesis/Dinos/Cherufe/PrimalItemConsumable_Egg_Cherufe.PrimalItemConsumable_Egg_Cherufe",
+    "/game/scorchedearth/dinos/mantis/primalitemconsumable_egg_mantis_fertilized.primalitemconsumable_egg_mantis_fertilized": "/Game/ScorchedEarth/Dinos/Mantis/PrimalItemConsumable_Egg_Mantis.PrimalItemConsumable_Egg_Mantis",
+    "/game/genesis/dinos/giantturtle/primalitemconsumable_egg_giantturtle_fertilized.primalitemconsumable_egg_giantturtle_fertilized": "/Game/Genesis/Dinos/GiantTurtle/PrimalItemConsumable_Egg_GiantTurtle.PrimalItemConsumable_Egg_GiantTurtle",
+    "/game/primalearth/test/primalitemconsumable_egg_megalania_fertilized.primalitemconsumable_egg_megalania_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Megalania.PrimalItemConsumable_Egg_Megalania",
+    "/game/primalearth/test/primalitemconsumable_egg_megalosaurus_fertilized.primalitemconsumable_egg_megalosaurus_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Megalosaurus.PrimalItemConsumable_Egg_Megalosaurus",
+    "/game/primalearth/test/primalitemconsumable_egg_microraptor_fertilized.primalitemconsumable_egg_microraptor_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_MicroRaptor.PrimalItemConsumable_Egg_MicroRaptor",
+    "/game/primalearth/test/primalitemconsumable_egg_moschops_fertilized.primalitemconsumable_egg_moschops_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Moschops.PrimalItemConsumable_Egg_Moschops",
+    "/game/scorchedearth/dinos/moth/primalitemconsumable_egg_moth_fertilized.primalitemconsumable_egg_moth_fertilized": "/Game/ScorchedEarth/Dinos/Moth/PrimalItemConsumable_Egg_Moth.PrimalItemConsumable_Egg_Moth",
+    "/game/primalearth/test/primalitemconsumable_egg_oviraptor_fertilized.primalitemconsumable_egg_oviraptor_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Oviraptor.PrimalItemConsumable_Egg_Oviraptor",
+    "/game/primalearth/test/primalitemconsumable_egg_pachy_fertilized.primalitemconsumable_egg_pachy_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Pachy.PrimalItemConsumable_Egg_Pachy",
+    "/game/primalearth/test/primalitemconsumable_egg_para_fertilized.primalitemconsumable_egg_para_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Para.PrimalItemConsumable_Egg_Para",
+    "/game/primalearth/test/primalitemconsumable_egg_pegomastax_fertilized.primalitemconsumable_egg_pegomastax_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Pegomastax.PrimalItemConsumable_Egg_Pegomastax",
+    "/game/primalearth/test/primalitemconsumable_egg_pela_fertilized.primalitemconsumable_egg_pela_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Pela.PrimalItemConsumable_Egg_Pela",
+    "/game/primalearth/test/primalitemconsumable_egg_ptero_fertilized.primalitemconsumable_egg_ptero_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Ptero.PrimalItemConsumable_Egg_Ptero",
+    "/game/primalearth/test/primalitemconsumable_egg_scorpion_fertilized.primalitemconsumable_egg_scorpion_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Scorpion.PrimalItemConsumable_Egg_Scorpion",
+    "/game/primalearth/test/primalitemconsumable_egg_quetz_fertilized.primalitemconsumable_egg_quetz_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Quetz.PrimalItemConsumable_Egg_Quetz",
+    "/game/primalearth/test/primalitemconsumable_egg_raptor_fertilized.primalitemconsumable_egg_raptor_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Raptor.PrimalItemConsumable_Egg_Raptor",
+    "/game/primalearth/test/primalitemconsumable_egg_rex_fertilized.primalitemconsumable_egg_rex_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Rex.PrimalItemConsumable_Egg_Rex",
+    "/game/primalearth/test/primalitemconsumable_egg_sarco_fertilized.primalitemconsumable_egg_sarco_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Sarco.PrimalItemConsumable_Egg_Sarco",
+    "/game/extinction/dinos/owl/primalitemconsumable_egg_owl_fertilized.primalitemconsumable_egg_owl_fertilized": "/Game/Extinction/Dinos/Owl/PrimalItemConsumable_Egg_Owl.PrimalItemConsumable_Egg_Owl",
+    "/game/primalearth/test/primalitemconsumable_egg_spino_fertilized.primalitemconsumable_egg_spino_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Spino.PrimalItemConsumable_Egg_Spino",
+    "/game/primalearth/test/primalitemconsumable_egg_stego_fertilized.primalitemconsumable_egg_stego_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Stego.PrimalItemConsumable_Egg_Stego",
+    "/game/genesis2/dinos/milkglider/eggs/primalitemconsumable_egg_milkglider_large_fertilized.primalitemconsumable_egg_milkglider_large_fertilized": "/Game/Genesis2/Dinos/MilkGlider/Eggs/PrimalItemConsumable_Egg_MilkGlider_Large.PrimalItemConsumable_Egg_MilkGlider_Large",
+    "/game/primalearth/test/primalitemconsumable_egg_tapejara_fertilized.primalitemconsumable_egg_tapejara_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Tapejara.PrimalItemConsumable_Egg_Tapejara",
+    "/game/primalearth/test/primalitemconsumable_egg_para_fertilized_bionic.primalitemconsumable_egg_para_fertilized_bionic": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Para_Bionic.PrimalItemConsumable_Egg_Para_Bionic",
+    "/game/primalearth/test/primalitemconsumable_egg_quetz_fertilized_bionic.primalitemconsumable_egg_quetz_fertilized_bionic": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Quetz_Bionic.PrimalItemConsumable_Egg_Quetz_Bionic",
+    "/game/primalearth/test/primalitemconsumable_egg_raptor_fertilized_bionic.primalitemconsumable_egg_raptor_fertilized_bionic": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Raptor_Bionic.PrimalItemConsumable_Egg_Raptor_Bionic",
+    "/game/primalearth/test/primalitemconsumable_egg_rex_fertilized_bionic.primalitemconsumable_egg_rex_fertilized_bionic": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Rex_Bionic.PrimalItemConsumable_Egg_Rex_Bionic",
+    "/game/primalearth/test/primalitemconsumable_egg_stego_fertilized_bionic.primalitemconsumable_egg_stego_fertilized_bionic": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Stego_Bionic.PrimalItemConsumable_Egg_Stego_Bionic",
+    "/game/primalearth/test/primalitemconsumable_egg_trike_fertilized_bionic.primalitemconsumable_egg_trike_fertilized_bionic": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Trike_Bionic.PrimalItemConsumable_Egg_Trike_Bionic",
+    "/game/primalearth/test/primalitemconsumable_egg_therizino_fertilized.primalitemconsumable_egg_therizino_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Therizino.PrimalItemConsumable_Egg_Therizino",
+    "/game/scorchedearth/dinos/spineylizard/primalitemconsumable_egg_spineylizard_fertilized.primalitemconsumable_egg_spineylizard_fertilized": "/Game/ScorchedEarth/Dinos/SpineyLizard/PrimalItemConsumable_Egg_SpineyLizard.PrimalItemConsumable_Egg_SpineyLizard",
+    "/game/primalearth/test/primalitemconsumable_egg_trike_fertilized.primalitemconsumable_egg_trike_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Trike.PrimalItemConsumable_Egg_Trike",
+    "/game/primalearth/test/primalitemconsumable_egg_troodon_fertilized.primalitemconsumable_egg_troodon_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Troodon.PrimalItemConsumable_Egg_Troodon",
+    "/game/primalearth/test/primalitemconsumable_egg_tropeognathus_fertilized.primalitemconsumable_egg_tropeognathus_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Tropeognathus.PrimalItemConsumable_Egg_Tropeognathus",
+    "/game/primalearth/test/primalitemconsumable_egg_turtle_fertilized.primalitemconsumable_egg_turtle_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Turtle.PrimalItemConsumable_Egg_Turtle",
+    "/game/extinction/dinos/spindles/primalitemconsumable_egg_spindles_fertilized.primalitemconsumable_egg_spindles_fertilized": "/Game/Extinction/Dinos/Spindles/PrimalItemConsumable_Egg_Spindles.PrimalItemConsumable_Egg_Spindles",
+    "/game/scorchedearth/dinos/vulture/primalitemconsumable_egg_vulture_fertilized.primalitemconsumable_egg_vulture_fertilized": "/Game/ScorchedEarth/Dinos/Vulture/PrimalItemConsumable_Egg_Vulture.PrimalItemConsumable_Egg_Vulture",
+    "/game/primalearth/test/primalitemconsumable_egg_yuty_fertilized.primalitemconsumable_egg_yuty_fertilized": "/Game/PrimalEarth/Test/PrimalItemConsumable_Egg_Yuty.PrimalItemConsumable_Egg_Yuty"
+  }
 }

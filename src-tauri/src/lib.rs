@@ -1,8 +1,8 @@
 mod commands;
 
 use commands::{
-    app_state, git, github, github_setup, icon_cache, misc, mod_discovery, package_http,
-    package_library, project_io, project_lock, scraper, secrets,
+    app_state, git, github, github_setup, icon_cache, icon_import, misc, mod_assets, mod_discovery,
+    package_http, package_library, project_io, project_lock, scraper, secrets,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -96,7 +96,11 @@ pub fn run() {
             package_library::package_library_install,
             package_library::package_library_list,
             package_library::package_library_read,
+            icon_import::project_icon_write,
+            mod_assets::mod_textures,
+            mod_assets::mod_texture_png,
             package_library::package_bundled_manifest,
+            package_library::package_library_install_bundled,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

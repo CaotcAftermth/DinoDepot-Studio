@@ -264,6 +264,32 @@ describe("applyModpack", () => {
     );
   });
 
+  it("cannot restore an entry the project excluded", () => {
+    // Reviewing Discovery and unticking an entry is a decision about this
+    // project. Enrichment from the published pack ran straight over it.
+    const catalog = emptyCatalog();
+    catalog.sources = [
+      source({
+        modpackId: "test-mod",
+        modpackVersion: "1.0.0",
+        creatures: [],
+        excludedPaths: [normalizeBpPath(CREATURE)],
+      }),
+    ];
+    const result = applyModpack(catalog, pack(), ids);
+    expect(result.catalog.sources[0].creatures).toHaveLength(0);
+    expect(result.catalog.sources[0].items).toHaveLength(1);
+  });
+
+  it("keeps a local rename of the source across an update", () => {
+    const catalog = emptyCatalog();
+    catalog.sources = [
+      source({ name: "Our Renamed Mod", modpackId: "test-mod" }),
+    ];
+    const result = applyModpack(catalog, pack(), ids);
+    expect(result.catalog.sources[0].name).toBe("Our Renamed Mod");
+  });
+
   it("updates in place rather than adding a duplicate", () => {
     const first = applyModpack(emptyCatalog(), pack(), ids);
     const next = { ...pack(), meta: { ...pack().meta, version: "2.0.0" } };

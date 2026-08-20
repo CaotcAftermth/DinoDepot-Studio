@@ -34,8 +34,11 @@ export interface PickerRowOptions {
   kind: "creatures" | "items";
   search: string;
   /**
-   * Collapse variants onto their parent. Creatures only — items have no
-   * variant relationships, so this is ignored for them.
+   * Collapse variants onto their parent.
+   *
+   * Creatures group by naming convention as well as by explicit parent; items
+   * group only by an explicit parent, because item names carry no such
+   * convention and guessing at one would fold unrelated things together.
    */
   collapseVariants: boolean;
   /** Admin-assigned parents from the catalog; always wins over heuristics. */
@@ -64,7 +67,7 @@ export function buildPickerRows(opts: PickerRowOptions): PickerRow[] {
   const limit = opts.limit ?? DEFAULT_LIMIT;
   const q = opts.search.trim().toLowerCase();
 
-  if (opts.kind !== "creatures" || !opts.collapseVariants) {
+  if (!opts.collapseVariants) {
     const out: PickerRow[] = [];
     for (const source of opts.sources) {
       for (const entry of source[opts.kind]) {
@@ -76,7 +79,13 @@ export function buildPickerRows(opts: PickerRowOptions): PickerRow[] {
     return out;
   }
 
-  return collapseCreatureRows(opts.sources, q, opts.variantParents ?? {}, limit);
+  return collapseRows(
+    opts.sources,
+    opts.kind,
+    q,
+    opts.variantParents ?? {},
+    limit,
+  );
 }
 
 interface Group {
@@ -92,17 +101,18 @@ interface Group {
   order: number;
 }
 
-function collapseCreatureRows(
+function collapseRows(
   sources: ContentSource[],
+  kind: "creatures" | "items",
   q: string,
   variantParents: Record<string, string>,
   limit: number,
 ): PickerRow[] {
-  // Every creature in the effective catalog, so a parent living in a different
+  // Every entry in the effective catalog, so a parent living in a different
   // source than its variant is still found.
   const byPath = new Map<string, { entry: CatalogEntry; source: ContentSource }>();
   for (const source of sources) {
-    for (const entry of source.creatures) {
+    for (const entry of source[kind]) {
       const key = normalizeBpPath(entry.bpPath);
       if (!byPath.has(key)) byPath.set(key, { entry, source });
     }
@@ -112,18 +122,31 @@ function collapseCreatureRows(
   let order = 0;
 
   for (const source of sources) {
-    for (const entry of source.creatures) {
+    for (const entry of source[kind]) {
       const position = order++;
       const entryKey = normalizeBpPath(entry.bpPath);
       const parentPath = variantParents[entryKey] ?? null;
-      const base = resolveCreatureBase(entry, {
-        parentPath,
-        parentName: parentPath
-          ? (byPath.get(normalizeBpPath(parentPath))?.entry.name ??
-            shortClassName(parentPath))
-          : undefined,
-        variantTag: source.variantTag,
-      });
+      // Items take the explicit parent and nothing else. The creature
+      // heuristics read variant tags and official class stems, which say
+      // nothing useful about an item name.
+      const base =
+        kind === "items"
+          ? {
+              key: normalizeBpPath(parentPath ?? entry.bpPath),
+              label:
+                (parentPath
+                  ? byPath.get(normalizeBpPath(parentPath))?.entry.name
+                  : undefined) ?? entry.name,
+              bpPath: parentPath ?? "",
+            }
+          : resolveCreatureBase(entry, {
+              parentPath,
+              parentName: parentPath
+                ? (byPath.get(normalizeBpPath(parentPath))?.entry.name ??
+                  shortClassName(parentPath))
+                : undefined,
+              variantTag: source.variantTag,
+            });
 
       // A parent that isn't in the catalog can't be offered in its place, so
       // the entry stands on its own rather than disappearing. It still keys on

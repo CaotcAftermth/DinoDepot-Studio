@@ -275,6 +275,28 @@ fn install_at(
     manifest_integrity: &str,
     files: Vec<PackageLibraryFile>,
 ) -> Result<PackageInstallInfo, String> {
+    let mut decoded = Vec::with_capacity(files.len());
+    for file in files {
+        let bytes = STANDARD
+            .decode(&file.content_b64)
+            .map_err(|_| format!("Package file '{}' is not valid base64", file.path))?;
+        decoded.push((file.path, bytes));
+    }
+    install_bytes(root, manifest_json, manifest_integrity, decoded)
+}
+
+/// The install itself, once the bytes are in hand however they arrived.
+///
+/// Downloads reach this through base64 over IPC; the bundled package reaches
+/// it straight off disk. Both verify identically — every file is checked
+/// against the size and SHA-256 its manifest pins, and images against their
+/// own signature — so "it shipped with us" buys no trust at all.
+fn install_bytes(
+    root: &Path,
+    manifest_json: &str,
+    manifest_integrity: &str,
+    files: Vec<(String, Vec<u8>)>,
+) -> Result<PackageInstallInfo, String> {
     let manifest = parse_manifest(manifest_json)?;
     if !manifest_integrity.is_empty()
         && !sha256_hex(manifest_json.as_bytes()).eq_ignore_ascii_case(manifest_integrity)
@@ -284,34 +306,24 @@ fn install_at(
     let expected = expected_files(&manifest);
     let mut supplied = HashMap::new();
     let mut total = 0usize;
-    for file in files {
-        if !expected.contains_key(&file.path) || supplied.contains_key(&file.path) {
-            return Err(format!(
-                "Unexpected or duplicate package file '{}'",
-                file.path
-            ));
+    for (path, bytes) in files {
+        if !expected.contains_key(&path) || supplied.contains_key(&path) {
+            return Err(format!("Unexpected or duplicate package file '{path}'"));
         }
-        let bytes = STANDARD
-            .decode(file.content_b64)
-            .map_err(|_| format!("Package file '{}' is not valid base64", file.path))?;
-        let record = &expected[&file.path];
+        let record = &expected[&path];
         if bytes.len() != record.size || !sha256_hex(&bytes).eq_ignore_ascii_case(&record.sha256) {
-            return Err(format!(
-                "Package file '{}' failed its integrity check",
-                file.path
-            ));
+            return Err(format!("Package file '{path}' failed its integrity check"));
         }
-        if file.path.starts_with("assets/") && !image_signature_matches(&file.path, &bytes) {
+        if path.starts_with("assets/") && !image_signature_matches(&path, &bytes) {
             return Err(format!(
-                "Package image '{}' does not match its PNG/WebP extension",
-                file.path
+                "Package image '{path}' does not match its PNG/WebP extension"
             ));
         }
         total = total.saturating_add(bytes.len());
         if total > MAX_PACKAGE_BYTES {
             return Err("Package is larger than 256 MB".into());
         }
-        supplied.insert(file.path, bytes);
+        supplied.insert(path, bytes);
     }
     let missing: Vec<_> = expected
         .keys()
@@ -390,6 +402,83 @@ fn install_at(
         path: target.to_string_lossy().to_string(),
         installed_at: chrono::Utc::now().to_rfc3339(),
     })
+}
+
+/// Reads a package straight from a folder on disk, verifying as it goes.
+///
+/// The bundled official package is thousands of files. Carrying them through
+/// IPC meant one round trip per file, base64 in both directions, and the whole
+/// library held in the webview's memory before a single byte was written —
+/// seconds of it on first launch, for files that were already on this disk.
+fn install_from_disk(root: &Path, manifest_path: &Path) -> Result<PackageInstallInfo, String> {
+    let manifest_json = fs::read_to_string(manifest_path)
+        .map_err(|e| format!("Could not read the bundled package manifest: {e}"))?;
+    let manifest = parse_manifest(&manifest_json)?;
+    let dir = manifest_path
+        .parent()
+        .ok_or("The bundled package manifest has no folder")?;
+    // Format 3 addresses its assets by content hash from the package root,
+    // which is two levels above `versions/<exact-version>/`.
+    let package_root = dir
+        .parent()
+        .and_then(Path::parent)
+        .ok_or("The bundled package is not laid out below versions/<version>/")?;
+
+    let mut files: Vec<(String, Vec<u8>)> = Vec::new();
+    let mut total = 0usize;
+    let records = std::iter::once((&manifest.content, false))
+        .chain(manifest.assets.iter().map(|asset| (asset, true)));
+    for (record, is_asset) in records {
+        let v3_asset = is_asset && manifest.format_version == 3;
+        let stored = if v3_asset {
+            record
+                .blob
+                .as_deref()
+                .ok_or_else(|| format!("Package asset '{}' has no blob path", record.path))?
+        } else {
+            record.path.as_str()
+        };
+        if !safe_relative(stored) {
+            return Err(format!(
+                "Package file '{stored}' is not a safe relative path"
+            ));
+        }
+        let base = if v3_asset { package_root } else { dir };
+        let bytes = fs::read(base.join(stored))
+            .map_err(|e| format!("Could not read package file '{stored}': {e}"))?;
+        total = total.saturating_add(bytes.len());
+        if total > MAX_PACKAGE_BYTES {
+            return Err("Package is larger than 256 MB".into());
+        }
+        files.push((record.path.clone(), bytes));
+    }
+
+    // Integrity is checked per file by `install_bytes`, and the manifest
+    // itself is checked against the project's pin once the caller reads the
+    // installed copy back.
+    install_bytes(root, &manifest_json, "", files)
+}
+
+/// Installs the official package this build shipped with, without moving a
+/// single byte through IPC. `None` when the build carries no such resource.
+#[tauri::command]
+pub fn package_library_install_bundled(
+    app: tauri::AppHandle,
+    version: String,
+) -> Result<Option<PackageInstallInfo>, String> {
+    if !safe_segment(&version) {
+        return Err("Package version is not safe for storage".into());
+    }
+    let Ok(resources) = app.path().resource_dir() else {
+        return Ok(None);
+    };
+    let Some(manifest_path) = bundled_manifest_in(&resources, &version) else {
+        return Ok(None);
+    };
+    let root = library_root(&app)?;
+    let info = install_from_disk(&root, &manifest_path)?;
+    update_registry(&root, info.clone())?;
+    Ok(Some(info))
 }
 
 fn registry_path(root: &Path) -> PathBuf {
@@ -570,6 +659,82 @@ mod tests {
                 content_b64: STANDARD.encode(content),
             }],
         )
+    }
+
+    /// A package laid out on disk the way a published one is, for the
+    /// bundled-resource install path.
+    fn on_disk_fixture(dir: &Path, format_version: u32) -> PathBuf {
+        // 1x1 WebP, so the image-signature check has something real to accept.
+        let webp = {
+            let mut bytes = b"RIFF".to_vec();
+            bytes.extend_from_slice(&[0, 0, 0, 0]);
+            bytes.extend_from_slice(b"WEBP");
+            bytes.extend_from_slice(b"VP8 padding");
+            bytes
+        };
+        let content = br#"{"format":"dinodepot.package-content","schemaVersion":1}"#;
+        let asset_hash = sha256_hex(&webp);
+        let blob = format!("assets/sha256/{}/{asset_hash}.webp", &asset_hash[..2]);
+        let stored = if format_version == 3 {
+            blob.clone()
+        } else {
+            "assets/creatures/Rex.webp".to_string()
+        };
+        // A v2 manifest may not declare a blob path at all, so the two shapes
+        // differ by more than where the bytes sit.
+        let blob_field = if format_version == 3 {
+            format!(r#""blob":"{blob}","#)
+        } else {
+            String::new()
+        };
+        let manifest = format!(
+            r#"{{"format":"dinodepot.package","formatVersion":{format_version},"kind":"official","packageId":"official-asa","version":"1.1.0","meta":{{"name":"Official"}},"content":{{"path":"content.json","sha256":"{}","size":{},"mediaType":"application/json"}},"assets":[{{"path":"assets/creatures/Rex.webp",{blob_field}"sha256":"{asset_hash}","size":{},"mediaType":"image/webp"}}]}}"#,
+            sha256_hex(content),
+            content.len(),
+            webp.len()
+        );
+
+        let version_dir = dir.join("versions").join("1.1.0");
+        fs::create_dir_all(&version_dir).unwrap();
+        fs::write(version_dir.join("manifest.json"), &manifest).unwrap();
+        fs::write(version_dir.join("content.json"), content).unwrap();
+        let asset_path = if format_version == 3 {
+            dir.join(&stored)
+        } else {
+            version_dir.join(&stored)
+        };
+        fs::create_dir_all(asset_path.parent().unwrap()).unwrap();
+        fs::write(&asset_path, &webp).unwrap();
+        version_dir.join("manifest.json")
+    }
+
+    #[test]
+    fn installs_a_bundled_package_from_disk_in_both_formats() {
+        for format_version in [2, 3] {
+            let source = tempfile::tempdir().unwrap();
+            let library = tempfile::tempdir().unwrap();
+            let manifest_path = on_disk_fixture(source.path(), format_version);
+            let info = install_from_disk(library.path(), &manifest_path).unwrap();
+            let installed = Path::new(&info.path);
+            assert!(installed.join("content.json").is_file());
+            assert!(installed.join("assets/creatures/Rex.webp").is_file());
+            assert_eq!(info.package_id, "official-asa");
+        }
+    }
+
+    #[test]
+    fn refuses_a_bundled_file_whose_bytes_changed() {
+        // "It shipped with us" buys no trust: a tampered resource has to fail
+        // the same integrity check a download would.
+        let source = tempfile::tempdir().unwrap();
+        let library = tempfile::tempdir().unwrap();
+        let manifest_path = on_disk_fixture(source.path(), 3);
+        fs::write(
+            manifest_path.parent().unwrap().join("content.json"),
+            b"tampered",
+        )
+        .unwrap();
+        assert!(install_from_disk(library.path(), &manifest_path).is_err());
     }
 
     #[test]
