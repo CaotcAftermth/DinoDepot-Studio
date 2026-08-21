@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
-import { Badge, Button, Card, Field, Input, cx } from "../../components/ui";
+import {
+  Badge,
+  Button,
+  Card,
+  CollapsibleCard,
+  Field,
+  Input,
+  cx,
+} from "../../components/ui";
 import { SecretInput } from "../../components/SecretInput";
 import { toast } from "../../components/toast";
 import { openExternal } from "../../services/openExternal";
@@ -19,6 +27,7 @@ import {
   UNNECESSARY_TOKEN_ACCESS,
   type RepoRole,
   type SetupIssue,
+  type SetupStep,
 } from "../../model/repoSetup";
 
 /**
@@ -33,6 +42,12 @@ import {
  * browser**. DinoDepot never asks for the Administration permission, so it
  * could not create one even if it wanted to — and the administrator sees
  * exactly what they are agreeing to.
+ *
+ * The cards are in the order of the checklist above them, and a step that is
+ * done folds itself away: once a token is stored there is nothing to read in
+ * the card explaining which permissions to give it. Its header keeps the badge,
+ * so what was decided is still legible at a glance, and it reopens on a click
+ * or by itself if the connection later breaks.
  */
 export function GitHubSetup() {
   const local = useProjectStore((s) => s.local);
@@ -42,18 +57,30 @@ export function GitHubSetup() {
   const [token, setToken] = useState("");
   const [busy, setBusy] = useState("");
   const [status, setStatus] = useState<github.AccountStatus | null>(null);
+  /**
+   * Whether the account has been asked about yet.
+   *
+   * A failed check leaves `status` null, which is the same value it holds
+   * while the check is still running — so without this the card cannot tell a
+   * broken sign-in from one it has not looked at, and folds away over an
+   * "Access expired" badge with the explanation hidden inside it.
+   */
+  const [checked, setChecked] = useState(false);
 
   const accountId = local?.githubAccountId ?? "";
 
   const refreshStatus = useCallback(() => {
+    setChecked(false);
     if (!accountId) {
       setStatus(null);
+      setChecked(true);
       return;
     }
     github
       .accountStatus(accountId)
       .then(setStatus)
-      .catch(() => setStatus(null));
+      .catch(() => setStatus(null))
+      .finally(() => setChecked(true));
   }, [accountId]);
 
   useEffect(refreshStatus, [refreshStatus]);
@@ -118,8 +145,22 @@ export function GitHubSetup() {
 
   return (
     <>
-      <Card
+      <SetupChecklist
+        steps={steps}
+        step={step}
+        canCheck={Boolean(local?.source?.githubId)}
+        busy={busy === "check"}
+        onCheck={() => void handleRecheck()}
+      />
+
+      <CollapsibleCard
         title="GitHub account"
+        prefKey="github:account"
+        // Folded once a token is stored, and open again the moment that token
+        // stops working — the reason is inside the card, so it must not be
+        // the thing that is hidden. Stays folded until the check comes back,
+        // rather than flashing open on every visit.
+        defaultOpen={!accountId || (checked && !status?.connected)}
         actions={
           status?.connected ? (
             <Badge tone="ok">Signed in as {status.login}</Badge>
@@ -192,45 +233,7 @@ export function GitHubSetup() {
             </div>
           </>
         )}
-      </Card>
-
-      <Card
-        title="Setup"
-        actions={
-          local?.source?.githubId ? (
-            <Button onClick={() => void handleRecheck()} disabled={busy === "check"}>
-              {busy === "check" ? "Checking…" : "Check connection"}
-            </Button>
-          ) : null
-        }
-      >
-        <ol className="flex flex-col gap-2">
-          {steps.map((s) => (
-            <li
-              key={s.id}
-              className={cx(
-                "flex items-start gap-2 text-sm",
-                s.blocked && !s.done && "opacity-40",
-              )}
-            >
-              <span
-                className={cx(
-                  "mt-0.5 w-4 shrink-0 text-center",
-                  s.done ? "text-accent-400" : "text-ink-600",
-                )}
-              >
-                {s.done ? "✓" : "○"}
-              </span>
-              <span>
-                <span className={cx(s.id === step?.id && "font-medium")}>{s.title}</span>
-                {s.detail && (
-                  <span className="block text-xs text-ink-500">{s.detail}</span>
-                )}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </Card>
+      </CollapsibleCard>
 
       <RepositoryCard
         role="source"
@@ -240,6 +243,10 @@ export function GitHubSetup() {
         busyKey={busy}
         setBusy={setBusy}
       />
+
+      {/* Before the public repository, not after it: this choice decides
+          whether there is a public repository to connect at all. */}
+      <TopologyCard hasSource={Boolean(local?.source?.githubId)} />
 
       {local?.topology === "source-and-delivery" && (
         <RepositoryCard
@@ -251,8 +258,6 @@ export function GitHubSetup() {
           setBusy={setBusy}
         />
       )}
-
-      <TopologyCard />
 
       {dir && local?.source?.githubId && (
         <Card title="Other administrators">
@@ -266,6 +271,84 @@ export function GitHubSetup() {
         </Card>
       )}
     </>
+  );
+}
+
+/**
+ * The five things, in order, with the cards below in the same order.
+ *
+ * Folds itself once every step is done: a finished checklist is a list of
+ * ticks, and the header alone carries that. The Check connection button stays
+ * in the header, since re-checking is the one thing still worth doing here.
+ */
+function SetupChecklist({
+  steps,
+  step,
+  canCheck,
+  busy,
+  onCheck,
+}: {
+  steps: SetupStep[];
+  /** The step to look at, or null when there is nothing left. */
+  step: SetupStep | null;
+  canCheck: boolean;
+  busy: boolean;
+  onCheck(): void;
+}) {
+  const done = steps.filter((entry) => entry.done).length;
+
+  return (
+    <CollapsibleCard
+      title="Setup"
+      prefKey="github:setup"
+      defaultOpen={Boolean(step)}
+      // Only while folded: open, the ticks below say the same thing.
+      collapsedSummary={
+        step ? (
+          <span className="text-xs text-ink-400">
+            {done} of {steps.length}
+          </span>
+        ) : (
+          <Badge tone="ok">All {steps.length} steps done</Badge>
+        )
+      }
+      actions={
+        canCheck && (
+          <Button onClick={onCheck} disabled={busy}>
+            {busy ? "Checking…" : "Check connection"}
+          </Button>
+        )
+      }
+    >
+      <ol className="flex flex-col gap-2">
+        {steps.map((entry) => (
+          <li
+            key={entry.id}
+            className={cx(
+              "flex items-start gap-2 text-sm",
+              entry.blocked && !entry.done && "opacity-40",
+            )}
+          >
+            <span
+              className={cx(
+                "mt-0.5 w-4 shrink-0 text-center",
+                entry.done ? "text-accent-400" : "text-ink-600",
+              )}
+            >
+              {entry.done ? "✓" : "○"}
+            </span>
+            <span>
+              <span className={cx(entry.id === step?.id && "font-medium")}>
+                {entry.title}
+              </span>
+              {entry.detail && (
+                <span className="block text-xs text-ink-500">{entry.detail}</span>
+              )}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </CollapsibleCard>
   );
 }
 
@@ -315,8 +398,13 @@ function RepositoryCard({
   }
 
   return (
-    <Card
+    <CollapsibleCard
       title={title}
+      prefKey={`github:repo:${role}`}
+      // Chosen means settled: the header badge names it, and the body is a
+      // form for choosing one. It reopens on a click, or on a failed connect
+      // below, which is when the form matters again.
+      defaultOpen={!bound?.githubId || issues.length > 0}
       actions={
         bound?.githubId ? (
           <Badge tone="ok">{bindingSlug(bound)}</Badge>
@@ -416,20 +504,33 @@ function RepositoryCard({
           ))}
         </ul>
       )}
-    </Card>
+    </CollapsibleCard>
   );
 }
 
 /** How the public site is published. Two options, and the trade-off is money. */
-function TopologyCard() {
+function TopologyCard({ hasSource }: { hasSource: boolean }) {
   const local = useProjectStore((s) => s.local);
   const updateLocal = useProjectStore((s) => s.updateLocal);
   const topology = local?.topology ?? "source-and-delivery";
+  const single = topology === "single-private";
 
   const choose = (value: PublishTopology) => void updateLocal({ topology: value });
 
   return (
-    <Card title="How the public site is published">
+    <CollapsibleCard
+      title="How the public site is published"
+      prefKey="github:topology"
+      // Every project has a topology from the moment it is made, so this is
+      // never unanswered — only unconsidered. It stays open until there is a
+      // repository for it to apply to, and folds after that.
+      defaultOpen={!hasSource}
+      actions={
+        <Badge tone="neutral">
+          {single ? "One private repository" : "Separate public site"}
+        </Badge>
+      }
+    >
       <div className="flex flex-col gap-2">
         <TopologyChoice
           selected={topology === "source-and-delivery"}
@@ -444,7 +545,7 @@ function TopologyCard() {
           detail="Needs a paid GitHub plan — Pages cannot serve a private repository for free. You install a small publishing workflow yourself; DinoDepot never edits workflows."
         />
       </div>
-    </Card>
+    </CollapsibleCard>
   );
 }
 
