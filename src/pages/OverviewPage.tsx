@@ -274,14 +274,14 @@ function OutputRow({ output }: { output: OutputState }) {
 function GithubTarget({ github }: { github: GithubReadiness }) {
   if (!github.destinationConfigured) {
     return (
-      <Link to="/settings" className="text-xs text-amber-400 hover:underline">
+      <Link to="/settings/github" className="text-xs text-amber-400 hover:underline">
         No destination set
       </Link>
     );
   }
   return (
     <Link
-      to="/settings"
+      to="/settings/github"
       className="flex items-center gap-1.5 text-xs text-ink-300 hover:text-white"
       title={
         github.ready

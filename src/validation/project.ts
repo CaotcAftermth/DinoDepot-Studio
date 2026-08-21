@@ -4,7 +4,9 @@ import { countIssues, type ValidationIssue } from "./types";
 import { validateCosmeticsText, serializeCosmetics } from "../serializers/cosmetics";
 import { activeEntries } from "../model/cosmetics";
 import { CURRENT_PROJECT_SCHEMA } from "../model/manifest";
+import { normalizeBpPath } from "../model/catalog";
 import type { CatalogFile, CatalogIndex } from "../model/catalog";
+import { knownPaths } from "../model/officialCatalog";
 import type { CosmeticsDraft } from "../model/cosmetics";
 import type { PlayersFile } from "../model/players";
 import type { ProductionDraft } from "../model/production";
@@ -267,9 +269,15 @@ function playerIssues(input: ValidationInput): ProjectIssue[] {
 function assetIssues(input: ValidationInput): ProjectIssue[] {
   const issues: ProjectIssue[] = [];
   const available = new Set(input.imageFiles.map((f) => f.toLowerCase()));
+  // Icon rows outlived their entries in builds before deletion pruned them, so
+  // a mod removed from the project could go on reporting missing artwork for
+  // classes nothing catalogues. An assignment no entry can ask for is not a
+  // problem to fix — it is a row to ignore.
+  const known = knownPaths(input.catalog);
 
   for (const [path, icon] of Object.entries(input.catalog.icons ?? {})) {
     if (!icon.startsWith("file:")) continue;
+    if (!known.has(normalizeBpPath(path))) continue;
     const file = icon.slice(5);
     if (!available.has(file.toLowerCase())) {
       issues.push(

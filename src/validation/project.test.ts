@@ -180,13 +180,24 @@ describe("the roster", () => {
 });
 
 describe("icons", () => {
+  /** A catalog where `/Game/A` is a real entry, so its icon row is checked. */
+  const catalogWith = (icon: string) =>
+    ({
+      ...emptyCatalog(),
+      sources: [
+        {
+          id: "s1",
+          name: "A mod",
+          kind: "mod" as const,
+          creatures: [{ id: "c1", name: "A", bpPath: "/Game/A" }],
+          items: [],
+        },
+      ],
+      icons: { "/Game/A": icon },
+    }) as unknown as CatalogFile;
+
   const withIcon = (icon: string, imageFiles: string[] = []) =>
-    validateProject(
-      input({
-        catalog: { ...emptyCatalog(), icons: { "/Game/A": icon } } as CatalogFile,
-        imageFiles,
-      }),
-    );
+    validateProject(input({ catalog: catalogWith(icon), imageFiles }));
 
   /** The viewer falls back to an emoji, so the site is plainer, not wrong. */
   it("warns about an icon that is not in the images folder", () => {
@@ -208,6 +219,22 @@ describe("icons", () => {
 
   it("is happy with a WebP that is present", () => {
     expect(withIcon("file:rex.webp", ["rex.webp"]).warnings).toBe(0);
+  });
+
+  /**
+   * Deleting a mod used to leave its icon rows behind, and every one of them
+   * reported artwork missing for a class the project no longer catalogues.
+   */
+  it("ignores an icon assigned to a path nothing catalogues", () => {
+    const report = validateProject(
+      input({
+        catalog: {
+          ...emptyCatalog(),
+          icons: { "/Game/DeletedMod/Thing": "file:Anomalo_Entry.webp" },
+        } as unknown as CatalogFile,
+      }),
+    );
+    expect(report.warnings).toBe(0);
   });
 
   it("matches the file name whatever the casing", () => {
@@ -241,7 +268,19 @@ describe("the report", () => {
   it("is publishable when only warnings remain", () => {
     const report = validateProject(
       input({
-        catalog: { ...emptyCatalog(), icons: { "/Game/A": "file:missing.webp" } } as CatalogFile,
+        catalog: {
+          ...emptyCatalog(),
+          sources: [
+            {
+              id: "s1",
+              name: "A mod",
+              kind: "mod" as const,
+              creatures: [{ id: "c1", name: "A", bpPath: "/Game/A" }],
+              items: [],
+            },
+          ],
+          icons: { "/Game/A": "file:missing.webp" },
+        } as unknown as CatalogFile,
       }),
     );
     expect(report.publishable).toBe(true);
