@@ -355,6 +355,34 @@ describe("applyModpack", () => {
     );
   });
 
+  /**
+   * A pack's own artwork is never copied into the project, so a `file:` row
+   * pointing at it would name bytes the project does not hold — and publishing
+   * reports every one of those as missing artwork.
+   */
+  it("does not take a pack's file: icons as project icons", () => {
+    const withIcon = pack();
+    withIcon.icons = {
+      [normalizeBpPath(CREATURE)]: "file:Anomalo_Entry.webp",
+      [normalizeBpPath(ITEM)]: "🍖",
+    };
+    const result = applyModpack(emptyCatalog(), withIcon, ids);
+    expect(result.catalog.icons[normalizeBpPath(CREATURE)]).toBeUndefined();
+    // Anything that resolves without a project file still arrives.
+    expect(result.catalog.icons[normalizeBpPath(ITEM)]).toBe("🍖");
+  });
+
+  it("keeps the project's own icon when a pack ships one for the same entry", () => {
+    const catalog = emptyCatalog();
+    catalog.icons[normalizeBpPath(CREATURE)] = "file:mine.webp";
+    const withIcon = pack();
+    withIcon.icons = { [normalizeBpPath(CREATURE)]: "file:theirs.webp" };
+    const result = applyModpack(catalog, withIcon, ids, {
+      keepLocalEdits: false,
+    });
+    expect(result.catalog.icons[normalizeBpPath(CREATURE)]).toBe("file:mine.webp");
+  });
+
   it("leaves other sources and unrelated entries untouched", () => {
     const catalog = emptyCatalog();
     catalog.notes[normalizeBpPath(OFFICIAL)] = "our own Rex note";

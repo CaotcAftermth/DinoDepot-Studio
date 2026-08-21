@@ -27,7 +27,6 @@ import {
 import { includedActiveModIds } from "../../model/cosmetics";
 import {
   applyModpack,
-  applyPackageModpack,
   compareVersions,
   matchModpackSource,
   registryVersion,
@@ -287,14 +286,11 @@ function usePackageInstall({
       } else if (commitPackage) {
         await commitPackage();
       }
-      // Package-owned icons always stay in the shared managed library. A
+      // Pack-owned icons stay in the shared managed library either way: a
       // compatibility pack that cannot become a safe package keeps its content
-      // but drops file assignments so the UI uses default icons.
-      // A package-owned file ref is resolved from the library rather than
-      // copied into the project's icon map.
-      const result = linkedPackage
-        ? applyPackageModpack(catalog, pack, newId)
-        : applyModpack(catalog, pack, newId);
+      // but drops its file assignments, so the UI falls back to default icons
+      // rather than pointing at bytes this project does not hold.
+      const result = applyModpack(catalog, pack, newId);
       const nextCatalog = result.catalog;
       if (linkedPackage) {
         if (!settings) throw new Error("No project is open");
@@ -1003,9 +999,17 @@ function DiscoverTab({
     }
 
     // Icons picked during review are project-owned overrides, so they land in
-    // the catalog beside the entries they were chosen for.
-    if (Object.keys(chosenIcons).length > 0) {
-      next = { ...next, icons: { ...next.icons, ...chosenIcons } };
+    // the catalog beside the entries they were chosen for — but only for the
+    // entries actually being catalogued. An icon chosen and then unticked
+    // would otherwise leave a row keyed by a path no source claims, which
+    // publishing reports as missing artwork forever after.
+    const keptIcons = Object.fromEntries(
+      Object.entries(chosenIcons).filter(
+        ([path]) => !excluded.has(normalizeBpPath(path)),
+      ),
+    );
+    if (Object.keys(keptIcons).length > 0) {
+      next = { ...next, icons: { ...next.icons, ...keptIcons } };
     }
 
     const discoveredCatalog = next;
@@ -1026,7 +1030,7 @@ function DiscoverTab({
           );
           await installDownloadedPackage(downloaded);
           const { pack } = downloadedAsLegacyInstall(downloaded);
-          const enriched = applyPackageModpack(next, pack, newId);
+          const enriched = applyModpack(next, pack, newId);
           next = enriched.catalog;
           dependencies = upsertDependency(
             dependencies,
@@ -1114,7 +1118,7 @@ function DiscoverTab({
       );
       await installDownloadedPackage(downloaded);
       const { pack } = downloadedAsLegacyInstall(downloaded);
-      const applied = applyPackageModpack(catalog, pack, newId);
+      const applied = applyModpack(catalog, pack, newId);
       // One unit: the catalog and the pin either both land or neither does.
       await commitPackageActivation({
         dependency: dependencyForRegistryPackage(

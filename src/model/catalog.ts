@@ -317,3 +317,56 @@ export function buildCatalogIndex(catalog: {
   }
   return { creatures, items };
 }
+
+/**
+ * Every blueprint path a set of sources catalogues, normalized.
+ *
+ * Membership, not identity: the same class may appear under two sources, so a
+ * path is only gone once no source claims it.
+ */
+export function pathsOf(sources: readonly ContentSource[]): Set<string> {
+  const paths = new Set<string>();
+  for (const source of sources) {
+    // Tolerant of a source missing its lists: validation runs over whatever is
+    // on disk, and a hand-edited catalog must produce findings rather than an
+    // exception that takes the whole report with it.
+    for (const entry of source?.creatures ?? []) {
+      paths.add(normalizeBpPath(entry.bpPath));
+    }
+    for (const entry of source?.items ?? []) {
+      paths.add(normalizeBpPath(entry.bpPath));
+    }
+  }
+  return paths;
+}
+
+/**
+ * Removes the per-entry data held for paths that are no longer catalogued.
+ *
+ * Icons, notes, maps, variant parents and the two info maps are keyed by
+ * blueprint path rather than by source, so deleting a mod used to leave all six
+ * behind. The rows are invisible — nothing lists them — but publishing
+ * validates every icon assignment, so a deleted mod went on producing "not in
+ * the images folder" warnings for artwork no entry could ever ask for.
+ *
+ * Pure: takes a catalog, returns a new one.
+ */
+export function forgetPaths(
+  catalog: CatalogFile,
+  paths: ReadonlySet<string>,
+): CatalogFile {
+  if (paths.size === 0) return catalog;
+  const without = <T,>(map: Record<string, T>): Record<string, T> =>
+    Object.fromEntries(
+      Object.entries(map).filter(([key]) => !paths.has(normalizeBpPath(key))),
+    );
+  return {
+    ...catalog,
+    icons: without(catalog.icons),
+    notes: without(catalog.notes),
+    maps: without(catalog.maps),
+    variantParents: without(catalog.variantParents),
+    itemInfo: without(catalog.itemInfo),
+    creatureInfo: without(catalog.creatureInfo),
+  };
+}

@@ -379,30 +379,6 @@ export interface ApplyModpackResult {
 }
 
 /**
- * `applyModpack`, without letting package art become project art.
- *
- * A `file:` icon in a package is resolved from the managed library; copying it
- * into the project's own icon map would pin this project to a filename the
- * package owns and is free to change in its next version. An assignment the
- * project already made is left alone — that one is the admin's.
- */
-export function applyPackageModpack(
-  catalog: CatalogFile,
-  pack: Modpack,
-  newId: () => string,
-): ApplyModpackResult {
-  const result = applyModpack(catalog, pack, newId);
-  const icons = { ...result.catalog.icons };
-  for (const [path, value] of Object.entries(pack.icons)) {
-    const key = normalizeBpPath(path);
-    if (value.startsWith("file:") && catalog.icons[key] === undefined) {
-      delete icons[key];
-    }
-  }
-  return { ...result, catalog: { ...result.catalog, icons } };
-}
-
-/**
  * Combines local structural discovery with curated package membership.
  *
  * Blueprint path is identity. A package may improve the display name or add
@@ -596,7 +572,24 @@ export function applyModpack(
       sources: existing
         ? catalog.sources.map((s) => (s.id === existing.id ? source : s))
         : [...catalog.sources, source],
-      icons: merge(catalog.icons, pack.icons),
+      // A pack's own `file:` icons never become project icons. Their bytes
+      // live in the package, resolved from the managed library, and none of
+      // them is ever copied into the project's images folder — so writing the
+      // reference into the project's icon map would leave a row pointing at a
+      // file that is not there, which publishing then reports as missing
+      // artwork for as long as the row survives. An assignment the project
+      // made itself is left alone: that one is the administrator's.
+      // Dropped outright rather than conditionally: with `keepLocalEdits`
+      // off, an incoming row would otherwise replace the administrator's own
+      // assignment with a file reference the project cannot resolve.
+      icons: merge(
+        catalog.icons,
+        Object.fromEntries(
+          Object.entries(pack.icons).filter(
+            ([, value]) => !value.startsWith("file:"),
+          ),
+        ),
+      ),
       notes: merge(catalog.notes, pack.notes),
       maps: merge(catalog.maps, pack.maps),
       variantParents: merge(catalog.variantParents, pack.variantParents),

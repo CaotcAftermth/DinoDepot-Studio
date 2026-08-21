@@ -1,8 +1,16 @@
-import { Fragment, useEffect, useRef, useState } from "react";
-import { useBlocker } from "react-router-dom";
+import {
+  Fragment,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
+import { useBlocker, useParams } from "react-router-dom";
 import { useProjectStore } from "../stores/projectStore";
 import { SecretInput } from "../components/SecretInput";
 import { GitHubSetup } from "./settings/GitHubSetup";
+import { SettingsNav } from "./settings/SettingsNav";
+import { categoryFor, dirtyCategories } from "./settings/categories";
 import { ipc } from "../services/ipc";
 import {
   Badge,
@@ -71,6 +79,7 @@ export function SettingsPage() {
   return (
     <SettingsContent
       draft={draft}
+      saved={settings}
       update={update}
       handleSave={handleSave}
       dirty={dirty}
@@ -86,7 +95,12 @@ export function SettingsPage() {
  * written until Save, so a stray sidebar click quietly threw the work away.
  */
 function useUnsavedChangesPrompt(dirty: boolean, save: () => Promise<boolean>) {
-  const blocker = useBlocker(dirty);
+  // Moving between categories stays on this page and keeps the draft, so only
+  // a navigation that leaves Settings is worth interrupting.
+  const blocker = useBlocker(
+    ({ nextLocation }) =>
+      dirty && !nextLocation.pathname.startsWith("/settings"),
+  );
   // `save` closes over the draft, so it changes every render — a ref keeps the
   // effect from re-running (and re-prompting) underneath an open dialog.
   const saveRef = useRef(save);
@@ -201,103 +215,199 @@ function DiscordWebhookCard() {
 
 function SettingsContent({
   draft,
+  saved,
   update,
   handleSave,
   dirty,
 }: {
   draft: ProjectSettings;
+  saved: ProjectSettings | null;
   update: (patch: Partial<ProjectSettings>) => void;
   handleSave: () => void;
   dirty: boolean;
 }) {
+  const { tab } = useParams();
+  const category = categoryFor(tab);
+  const active = category.slug;
+
   return (
     <div>
-      <PageHeader
-        title="Settings"
-        subtitle="Project configuration, GitHub publishing, and defaults"
-        actions={
-          <>
-            {dirty && <Badge tone="warn">Unsaved changes</Badge>}
-            <Button variant="primary" onClick={handleSave} disabled={!dirty}>
-              Save settings
-            </Button>
-          </>
-        }
-      />
+      {/* Pinned so Save is reachable from anywhere in a long category. The
+          negative margins let the bar span the page padding rather than
+          leaving a strip of scrolling content either side of it. */}
+      <div className="sticky top-0 z-10 -mx-6 -mt-6 px-6 pt-6 bg-ink-950 border-b border-ink-800">
+        <PageHeader
+          title="Settings"
+          subtitle="Project configuration, GitHub publishing, and defaults"
+          actions={
+            <>
+              {dirty && <Badge tone="warn">Unsaved changes</Badge>}
+              <Button variant="primary" onClick={handleSave} disabled={!dirty}>
+                Save settings
+              </Button>
+            </>
+          }
+        />
+      </div>
 
-      {/* Paired by subject, two to a row. items-start keeps a short card from
-          being stretched to match a tall neighbour. */}
-      <div className="grid grid-cols-2 gap-5 items-start">
-        <Card title="Project">
-          <div className="flex flex-col gap-4">
-            <Field label="Project name">
-              <Input
-                value={draft.name}
-                onChange={(e) => update({ name: e.target.value })}
-              />
-            </Field>
-            <Field label="Cluster name">
-              <Input
-                value={draft.cluster}
-                onChange={(e) => update({ cluster: e.target.value })}
-              />
-            </Field>
-            <p className="text-xs text-ink-400">
-              Official and modpack icons are resolved automatically from their
-              managed packages. Project-owned overrides live in the project's
-              <span className="mono"> images</span> folder; WebP is preferred
-              and PNG is also accepted.
-            </p>
-          </div>
-        </Card>
+      <div className="flex gap-6 mt-5">
+        <SettingsNav active={active} dirty={dirtyCategories(draft, saved)} />
 
-        <GitHubSetup />
-
-        <ProductionDefaultsCard draft={draft} update={update} />
-
-        <Card title="Where published files go">
-          {/* Repository-relative, and genuinely shared: every administrator
-              publishes to the same layout. Which repository that layout lives
-              in is machine-local — see the GitHub cards above. */}
-          <div className="grid grid-cols-2 gap-3">
-            {(
-              [
-                ["production", "Passive production"],
-                ["remaps", "Creature remaps"],
-                ["cosmetics", "Custom cosmetics"],
-                ["viewerData", "Cluster viewer data"],
-                ["viewerPage", "Cluster viewer page"],
-                ["players", "Player roster"],
-                ["profiles", "Player profile backups (folder)"],
-              ] as const
-            ).map(([key, label]) => (
-              <Field key={key} label={label}>
-                <Input
-                  className="mono"
-                  value={draft.outputPaths[key]}
-                  onChange={(e) =>
-                    update({
-                      outputPaths: {
-                        ...draft.outputPaths,
-                        [key]: e.target.value,
-                      },
-                    })
-                  }
-                />
-              </Field>
-            ))}
-          </div>
-        </Card>
-
-        <SimulatorDefaultsCard draft={draft} update={update} />
-        <DiscordWebhookCard />
-
-        <CcmPostFormatCard draft={draft} update={update} />
-
-        <MapsCard draft={draft} update={update} />
-        <AdditionalPagesCard draft={draft} update={update} />
+        {/* Paired by subject, two to a row. items-start keeps a short card
+            from being stretched to match a tall neighbour. */}
+        <div
+          className={cx(
+            "flex-1 min-w-0 grid gap-5 items-start",
+            category.columns === 2 ? "grid-cols-2" : "grid-cols-1 max-w-4xl",
+          )}
+        >
+          {active === "project" && (
+            <ProjectCategory draft={draft} update={update} />
+          )}
+          {active === "github" && <GitHubCategory />}
+          {active === "publishing" && (
+            <PublishingCategory draft={draft} update={update} />
+          )}
+          {active === "defaults" && (
+            <DefaultsCategory draft={draft} update={update} />
+          )}
+          {active === "discord" && (
+            <DiscordCategory draft={draft} update={update} />
+          )}
+        </div>
       </div>
     </div>
+  );
+}
+
+/** Shared by every category: the cards all edit the one draft. */
+interface CategoryProps {
+  draft: ProjectSettings;
+  update: (patch: Partial<ProjectSettings>) => void;
+}
+
+/**
+ * A line explaining that a card writes immediately and ignores Save.
+ *
+ * Two save contracts share this page — the draft written by Save, and the
+ * machine-local cards that store a credential the moment they are used. Saying
+ * so beside them is cheaper than making them behave alike, since a credential
+ * has no business sitting in an unsaved draft.
+ */
+function MachineLocalNote({ children }: { children: ReactNode }) {
+  return (
+    <p className="col-span-full -mb-2 text-xs text-ink-400">
+      <span className="text-ink-300">This computer only:</span> {children}
+    </p>
+  );
+}
+
+function ProjectCategory({ draft, update }: CategoryProps) {
+  return (
+    <>
+      <Card title="Project">
+        <div className="flex flex-col gap-4">
+          <Field label="Project name">
+            <Input
+              value={draft.name}
+              onChange={(e) => update({ name: e.target.value })}
+            />
+          </Field>
+          <Field label="Cluster name">
+            <Input
+              value={draft.cluster}
+              onChange={(e) => update({ cluster: e.target.value })}
+            />
+          </Field>
+          <p className="text-xs text-ink-400">
+            Official and modpack icons are resolved automatically from their
+            managed packages. Project-owned overrides live in the project's
+            <span className="mono"> images</span> folder; WebP is preferred and
+            PNG is also accepted.
+          </p>
+        </div>
+      </Card>
+
+      <AdditionalPagesCard draft={draft} update={update} />
+      <MapsCard draft={draft} update={update} />
+    </>
+  );
+}
+
+function GitHubCategory() {
+  return (
+    <>
+      <MachineLocalNote>
+        the account and repository below are stored on this computer and saved
+        as you set them, so the Save button does not apply here. Two people
+        editing one cluster each sign in as themselves.
+      </MachineLocalNote>
+
+      <GitHubSetup />
+    </>
+  );
+}
+
+function PublishingCategory({ draft, update }: CategoryProps) {
+  return (
+    <>
+      <Card title="Where published files go">
+        {/* Repository-relative, and genuinely shared: every administrator
+            publishes to the same layout. Which repository that layout lives
+            in is machine-local — see the GitHub section. */}
+        <div className="grid grid-cols-2 gap-3">
+          {(
+            [
+              ["production", "Passive production"],
+              ["remaps", "Creature remaps"],
+              ["cosmetics", "Custom cosmetics"],
+              ["viewerData", "Cluster viewer data"],
+              ["viewerPage", "Cluster viewer page"],
+              ["players", "Player roster"],
+              ["profiles", "Player profile backups (folder)"],
+            ] as const
+          ).map(([key, label]) => (
+            <Field key={key} label={label}>
+              <Input
+                className="mono"
+                value={draft.outputPaths[key]}
+                onChange={(e) =>
+                  update({
+                    outputPaths: {
+                      ...draft.outputPaths,
+                      [key]: e.target.value,
+                    },
+                  })
+                }
+              />
+            </Field>
+          ))}
+        </div>
+      </Card>
+    </>
+  );
+}
+
+function DefaultsCategory({ draft, update }: CategoryProps) {
+  return (
+    <>
+      <ProductionDefaultsCard draft={draft} update={update} />
+      <SimulatorDefaultsCard draft={draft} update={update} />
+    </>
+  );
+}
+
+function DiscordCategory({ draft, update }: CategoryProps) {
+  return (
+    <>
+      <MachineLocalNote>
+        the webhook below is kept in Windows Credential Manager and stored the
+        moment you press Store. The post format waits for Save.
+      </MachineLocalNote>
+
+      <DiscordWebhookCard />
+      <CcmPostFormatCard draft={draft} update={update} />
+    </>
   );
 }
 
@@ -450,7 +560,11 @@ function CcmPostFormatCard({
     <Card
       // Full width with its own two columns — stacked, this was by far the
       // tallest card and left a hole beside its neighbour.
-      className="col-span-2"
+      //
+      // `col-span-full`, not `col-span-2`: a two-column span inside a
+      // single-column category creates an implicit second track, which
+      // collapses the real one to zero width and overlaps whatever is in it.
+      className="col-span-full"
       title="CCM Discord post format"
       actions={
         <Button

@@ -4,6 +4,7 @@ import { useProjectStore } from "../stores/projectStore";
 import {
   effectiveOfficialSource,
   isBundledOfficialId,
+  knownPaths,
   officialCategories,
   officialWithAbsent,
   OFFICIAL_SOURCE_ID,
@@ -13,8 +14,10 @@ import {
   CatalogEntry,
   ContentSource,
   emptyItemInfo,
+  forgetPaths,
   ItemInfo,
   normalizeBpPath,
+  pathsOf,
   sourceCurseforgeUrl,
 } from "../model/catalog";
 import {
@@ -316,10 +319,16 @@ export function ContentSourcesPage() {
         ),
       });
     }
-    setCatalog({
-      ...catalog,
-      sources: catalog.sources.filter((s) => s.id !== selected.id),
-    });
+    // Everything catalogued under the mod goes with it: the entries, and the
+    // per-path data hanging off them. Only paths nothing else claims — two
+    // mods can ship the same class, and an official path stays official.
+    const remaining = catalog.sources.filter((s) => s.id !== selected.id);
+    const pruned = { ...catalog, sources: remaining };
+    const stillKnown = knownPaths(pruned);
+    const orphaned = new Set(
+      [...pathsOf([selected])].filter((path) => !stillKnown.has(path)),
+    );
+    setCatalog(forgetPaths(pruned, orphaned));
     if (dependency) void refreshDependencies();
     setSelectedId(OFFICIAL_SOURCE_ID);
     recordActivity({

@@ -1,5 +1,5 @@
 import officialData from "../assets/catalog/official-asa.json";
-import { normalizeBpPath } from "./catalog";
+import { normalizeBpPath, pathsOf } from "./catalog";
 import type { CatalogEntry, CatalogFile, ContentSource } from "./catalog";
 
 /**
@@ -159,6 +159,19 @@ function absentPaths(catalog: CatalogFile): Set<string> {
  * admin-added creatures/items and reference links from the catalog overlay,
  * minus anything reviewed as not being in ASA.
  */
+/**
+ * Every blueprint path this project knows about: its own sources, plus the
+ * official catalog as this project sees it.
+ *
+ * What "catalogued" means for per-entry data. Icon assignments and notes are
+ * keyed by path and are legitimate for official content too, so a check that
+ * only consulted `catalog.sources` would treat every official assignment as
+ * an orphan.
+ */
+export function knownPaths(catalog: CatalogFile): Set<string> {
+  return pathsOf([...catalog.sources, effectiveOfficialSource(catalog)]);
+}
+
 export function effectiveOfficialSource(catalog: CatalogFile): ContentSource {
   const overlay = catalog.official;
   const hasAdditions =

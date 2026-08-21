@@ -81,7 +81,13 @@ const router = createHashRouter([
       { path: "/remaps", element: page("remaps", "RemapsPage") },
       { path: "/curseforge", element: page("curseforge", "CurseForgePage") },
       { path: "/publish", element: page("publish", "PublishPage") },
-      { path: "/settings", element: page("settings", "SettingsPage") },
+      // Settings is split by category; the optional slug picks which one shows,
+      // so a link elsewhere in the app can point at the relevant section.
+      //
+      // One route rather than "/settings" plus "/settings/:tab": those are two
+      // route objects, so moving between them remounts the page and silently
+      // discards the unsaved draft. Changing the parameter alone does not.
+      { path: "/settings/:tab?", element: page("settings", "SettingsPage") },
       // Optional modules are always routable; the sidebar decides what shows.
       ...APP_MODULES.map((m) => ({ path: m.to, element: m.element })),
     ],

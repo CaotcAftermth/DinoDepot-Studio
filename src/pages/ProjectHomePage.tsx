@@ -7,6 +7,17 @@ import { toast, ToastContainer } from "../components/toast";
 import { chooseDialog, confirmDialog, ConfirmHost } from "../components/confirm";
 import { ipc, isTauri } from "../services/ipc";
 import { isStudioError } from "../model/errors";
+import { suggestNames, type NameSuggestion } from "../model/nameSuggestions";
+import {
+  folderNameFor,
+  joinPath,
+  loadProjectsRoot,
+  PROJECTS_FOLDER_NAME,
+  projectDirFor,
+  projectsRootIn,
+  SANDBOX_PROJECT_NAME,
+  saveProjectsRoot,
+} from "../services/projectsRoot";
 
 export function ProjectHomePage() {
   const navigate = useNavigate();
@@ -19,11 +30,24 @@ export function ProjectHomePage() {
     dropRecentEntry,
   } = useProjectStore();
   const [creating, setCreating] = useState(false);
-  const [newDir, setNewDir] = useState("");
-  const [newName, setNewName] = useState("GG Fizz");
-  const [newCluster, setNewCluster] = useState("GG Fizz Cluster");
+  const [newName, setNewName] = useState("");
+  const [newCluster, setNewCluster] = useState("");
+  /** The folder every project is made inside. Empty until first asked for. */
+  const [root, setRoot] = useState(loadProjectsRoot);
+  /** Set only when this one project is going somewhere outside that folder. */
+  const [customDir, setCustomDir] = useState("");
+  const [suggestion, setSuggestion] = useState<NameSuggestion>(suggestNames);
+  const [busy, setBusy] = useState(false);
   /** Folders in the list that no longer hold a project. */
   const [missing, setMissing] = useState<Record<string, boolean>>({});
+
+  const targetDir = customDir || projectDirFor(root, newName.trim());
+  /**
+   * What the card shows for the destination. An unnamed project still has a
+   * folder to show — its parent — so the naming is visibly what decides it.
+   */
+  const shownDir =
+    targetDir || (root ? joinPath(root, folderNameFor(newName.trim()) || "…") : "");
 
   // The stored list is only ever a list of *paths*, so a folder that has been
   // moved, renamed or deleted still looks like a project until it is checked.
@@ -160,16 +184,99 @@ export function ProjectHomePage() {
     await forgetProject(recent.dir);
   }
 
+  /**
+   * Asks where projects should live and remembers the answer.
+   *
+   * Returns the chosen folder, or "" when the dialog was dismissed.
+   */
+  async function chooseRoot(): Promise<string> {
+    const parent = await pickFolder(
+      `Where should the "${PROJECTS_FOLDER_NAME}" folder go?`,
+    );
+    if (!parent) return "";
+    const chosen = projectsRootIn(parent);
+    setRoot(chosen);
+    saveProjectsRoot(chosen);
+    // A location just chosen deliberately outranks a one-off folder picked
+    // before it.
+    setCustomDir("");
+    return chosen;
+  }
+
+  /** The projects folder, asking for it if this machine has never been told. */
+  async function ensureRoot(): Promise<string> {
+    return root || (await chooseRoot());
+  }
+
+  function startCreate() {
+    setSuggestion(suggestNames());
+    setCreating(true);
+  }
+
+  /**
+   * A project to experiment in, in the ordinary projects folder.
+   *
+   * Deliberately not special: it is created and opened exactly like any other
+   * project, so anything learned in it transfers. Opened again once it exists
+   * rather than being made a second time.
+   */
+  async function handleSandbox() {
+    const base = await ensureRoot();
+    if (!base) return;
+    const dir = projectDirFor(base, SANDBOX_PROJECT_NAME);
+    setBusy(true);
+    try {
+      const exists = await ipc<boolean>("project_exists", { dir }).catch(
+        () => false,
+      );
+      if (exists) {
+        await handleOpen(dir);
+        return;
+      }
+      // Created empty for now. Seeding it with example sources, creatures and
+      // rules comes later; what matters today is that the welcome screen has
+      // somewhere to send an administrator who has nothing to open yet.
+      await createProject(
+        dir,
+        SANDBOX_PROJECT_NAME,
+        `${SANDBOX_PROJECT_NAME} Cluster`,
+      );
+      navigate("/overview");
+    } catch (e) {
+      toast.error(
+        `Could not open the sandbox: ${e instanceof Error ? e.message : e}`,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function handleCreate() {
-    if (!newDir || !newName) {
-      toast.error("Pick a folder and enter a project name first");
+    const name = newName.trim();
+    if (!name) {
+      toast.error("Enter a project name first");
       return;
     }
+    if (!root && !customDir) {
+      toast.error(
+        `Choose where the "${PROJECTS_FOLDER_NAME}" folder should go first`,
+      );
+      return;
+    }
+    if (!targetDir) {
+      toast.error(
+        "That name leaves nothing a folder can be called — try another, or choose a folder yourself",
+      );
+      return;
+    }
+    setBusy(true);
     try {
-      await createProject(newDir, newName.trim(), newCluster.trim());
+      await createProject(targetDir, name, newCluster.trim() || `${name} Cluster`);
       navigate("/overview");
     } catch (e) {
       toast.error(`Could not create project: ${e instanceof Error ? e.message : e}`);
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -192,11 +299,21 @@ export function ProjectHomePage() {
         {!creating ? (
           <Card>
             <div className="flex flex-col gap-2">
-              <Button variant="primary" onClick={() => setCreating(true)}>
+              <Button variant="primary" onClick={startCreate} disabled={busy}>
                 + New project
               </Button>
-              <Button onClick={() => handleOpen()}>Open project folder…</Button>
+              <Button onClick={() => handleOpen()} disabled={busy}>
+                Open project folder…
+              </Button>
+              <Button onClick={() => void handleSandbox()} disabled={busy}>
+                Sandbox project
+              </Button>
             </div>
+            <p className="text-xs text-ink-400 mt-2">
+              The sandbox is an ordinary project to try things in — made in your
+              projects folder the first time you open it, and safe to break.
+              Nothing reaches a server until you publish it yourself.
+            </p>
 
             {recents.length > 0 && (
               <div className="mt-5">
@@ -243,38 +360,73 @@ export function ProjectHomePage() {
         ) : (
           <Card title="New project">
             <div className="flex flex-col gap-4">
-              <Field label="Project folder" hint="An empty folder where the project files will live">
-                <div className="flex gap-2">
-                  <Input
-                    value={newDir}
-                    onChange={(e) => setNewDir(e.target.value)}
-                    placeholder="C:\\Users\\you\\Documents\\DinoDepot Studio\\GG Fizz"
-                  />
-                  <Button
-                    onClick={async () => {
-                      const dir = await pickFolder("Choose a project folder");
-                      if (dir) setNewDir(dir);
-                    }}
-                  >
-                    Browse…
-                  </Button>
-                </div>
-              </Field>
               <Field label="Project name">
-                <Input value={newName} onChange={(e) => setNewName(e.target.value)} />
+                <Input
+                  autoFocus
+                  value={newName}
+                  placeholder={suggestion.project}
+                  onChange={(e) => setNewName(e.target.value)}
+                />
               </Field>
-              <Field label="Cluster name">
+              <Field
+                label="Cluster name"
+                hint="Used in the files this project writes. Left blank, it follows the project name."
+              >
                 <Input
                   value={newCluster}
+                  placeholder={suggestion.cluster}
                   onChange={(e) => setNewCluster(e.target.value)}
                 />
               </Field>
+              <div>
+                <span className="block text-xs font-semibold text-ink-300 uppercase tracking-wide mb-1">
+                  Folder
+                </span>
+                <div className="text-sm text-ink-100 break-all mono">
+                  {shownDir || "Not chosen yet"}
+                </div>
+                <p className="text-xs text-ink-400 mt-1">
+                  {customDir
+                    ? "This project only. The next one goes back to your projects folder."
+                    : root
+                      ? "Every project you make is a folder in here, named after the project. Projects already made stay where they are."
+                      : `A folder named "${PROJECTS_FOLDER_NAME}" is made where you choose, and every project after this one goes inside it.`}
+                </p>
+                <div className="flex gap-2 mt-2">
+                  <Button onClick={() => void chooseRoot()}>
+                    {root
+                      ? "Use a different projects folder…"
+                      : "Choose where projects live…"}
+                  </Button>
+                  {customDir ? (
+                    <Button variant="ghost" onClick={() => setCustomDir("")}>
+                      Use the projects folder
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      onClick={async () => {
+                        const dir = await pickFolder(
+                          "Choose a folder for this project",
+                        );
+                        if (dir) setCustomDir(dir);
+                      }}
+                    >
+                      Somewhere else…
+                    </Button>
+                  )}
+                </div>
+              </div>
               <div className="flex gap-2 justify-end">
                 <Button variant="ghost" onClick={() => setCreating(false)}>
                   Cancel
                 </Button>
-                <Button variant="primary" onClick={handleCreate}>
-                  Create project
+                <Button
+                  variant="primary"
+                  disabled={busy}
+                  onClick={() => void handleCreate()}
+                >
+                  {busy ? "Creating…" : "Create project"}
                 </Button>
               </div>
             </div>
