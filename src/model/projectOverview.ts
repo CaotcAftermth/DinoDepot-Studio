@@ -6,6 +6,8 @@ import type { RemapsDraft } from "./remaps";
 import type { Watchlist, WatchedMod } from "./watchlist";
 import type { GithubReadiness } from "./githubReadiness";
 import { summarizeOutputs, type OutputState } from "./outputs";
+import type { IssueLevel } from "../validation/types";
+import type { OutputFamily } from "./history";
 
 /**
  * Everything Overview states about the project, worked out in one place.
@@ -118,6 +120,79 @@ export function troubledSources(catalog: CatalogFile): ContentSource[] {
 
 // ---------------------------------------------------------------------------
 
+/**
+ * How many individual validation problems Overview lists before summarizing.
+ *
+ * Enough that the usual handful are all actionable from here, few enough that
+ * a project with forty broken rules does not bury everything else on the page.
+ */
+const ISSUE_ROWS = 6;
+
+/** Where an output's problems are actually fixed. */
+const FAMILY_PAGE: Record<OutputFamily, string> = {
+  production: "/production",
+  remaps: "/remaps",
+  cosmetics: "/curseforge",
+  viewerData: "/publish",
+  viewerPage: "/publish",
+  players: "/players",
+};
+
+/**
+ * One attention row per validation problem, linked to the thing that has it.
+ *
+ * These used to be a single row reading "7 validation errors blocking
+ * publishing", which navigated to Publish, where the errors were behind a
+ * "Show 7 validation issues" disclosure, listed by rule id. Three steps and a
+ * lookup to reach something the overview already knew. Each row now names the
+ * problem and goes straight to the rule.
+ */
+function issueItems(
+  outputs: OutputState[],
+  level: IssueLevel,
+): AttentionItem[] {
+  const rows: AttentionItem[] = [];
+  const blocking = level === "error";
+  // One rule feeds several outputs — a broken production rule is reported by
+  // Passive Production and again by Cluster Viewer Data — and it is still one
+  // thing to go and fix. The first output to report it wins, which is the one
+  // that owns the rule.
+  const seen = new Set<string>();
+
+  for (const output of outputs) {
+    for (const issue of output.issues) {
+      if (issue.level !== level) continue;
+      const fingerprint = `${issue.entityId} :: ${issue.where} :: ${issue.message}`;
+      if (seen.has(fingerprint)) continue;
+      seen.add(fingerprint);
+      const page = FAMILY_PAGE[output.family] ?? "/publish";
+      rows.push({
+        // Stable across renders, and unique even when one rule has several.
+        id: `issue:${output.family}:${issue.entityId}:${rows.length}`,
+        tone: blocking ? "error" : "warn",
+        rank: blocking ? ATTENTION_RANK.blocking : ATTENTION_RANK.warning,
+        label: issue.message,
+        detail: [output.label, issue.where].filter(Boolean).join(" › "),
+        // An issue with no entity belongs to the output as a whole, so it
+        // links to the page rather than to a rule that cannot be selected.
+        to: issue.entityId ? `${page}/${issue.entityId}` : page,
+      });
+    }
+  }
+
+  if (rows.length <= ISSUE_ROWS) return rows;
+  const shown = rows.slice(0, ISSUE_ROWS);
+  shown.push({
+    id: `issue-overflow:${level}`,
+    tone: blocking ? "error" : "warn",
+    rank: blocking ? ATTENTION_RANK.blocking : ATTENTION_RANK.warning,
+    label: `${plural(rows.length - ISSUE_ROWS, `further validation ${level}`)}`,
+    detail: "Listed in full on the Publish page",
+    to: "/publish",
+  });
+  return shown;
+}
+
 export function buildOverview(input: OverviewInput): OverviewModel {
   const { production, remaps, cosmetics, catalog, watchlist, outputs, github } =
     input;
@@ -133,16 +208,8 @@ export function buildOverview(input: OverviewInput): OverviewModel {
 
   const attention: AttentionItem[] = [];
 
-  if (totals.errors > 0) {
-    attention.push({
-      id: "validation-errors",
-      tone: "error",
-      rank: ATTENTION_RANK.blocking,
-      label: `${plural(totals.errors, "validation error")} blocking publishing`,
-      detail: totals.blocked.map((o) => o.label).join(", "),
-      to: "/publish",
-    });
-  }
+  const errorRows = issueItems(outputs, "error");
+  attention.push(...errorRows);
 
   if (publishingBlocked) {
     attention.push({
@@ -153,19 +220,11 @@ export function buildOverview(input: OverviewInput): OverviewModel {
         ? "Publishing is not ready"
         : "GitHub publishing is not configured",
       detail: github.blockers.join(" · "),
-      to: "/settings",
+      to: "/settings/github",
     });
   }
 
-  if (totals.warnings > 0) {
-    attention.push({
-      id: "validation-warnings",
-      tone: "warn",
-      rank: ATTENTION_RANK.warning,
-      label: `${plural(totals.warnings, "validation warning")} to review`,
-      to: "/publish",
-    });
-  }
+  attention.push(...issueItems(outputs, "warning"));
 
   if (removingSources.length > 0) {
     attention.push({
@@ -264,7 +323,11 @@ export function buildOverview(input: OverviewInput): OverviewModel {
     attention,
     actions: buildActions({
       dirty: publishable.length,
-      errors: totals.errors,
+      // Distinct problems, not occurrences: one broken rule is reported by
+      // every output that embeds it, and "Resolve 2 validation errors" for a
+      // single empty blueprint path sends somebody looking for a second one.
+      errors: errorRows.length,
+      firstError: errorRows[0]?.to ?? "/publish",
       needReview: needReview.length,
       // Nagging about a repository is only useful once there is something to
       // send to it — otherwise a brand-new project greets you with a chore.
@@ -450,6 +513,8 @@ function buildInventory(x: {
 function buildActions(x: {
   dirty: number;
   errors: number;
+  /** Where the first blocking problem actually is. */
+  firstError: string;
   needReview: number;
   needsGithub: boolean;
 }): NextAction[] {
@@ -459,7 +524,9 @@ function buildActions(x: {
     actions.push({
       id: "fix-errors",
       label: `Resolve ${plural(x.errors, "validation error")}`,
-      to: "/publish",
+      // Straight at the first one. Publish lists them all behind a
+      // disclosure, which is where this used to send people.
+      to: x.firstError,
       primary: true,
     });
   }
@@ -467,7 +534,7 @@ function buildActions(x: {
     actions.push({
       id: "configure-github",
       label: "Configure GitHub publishing",
-      to: "/settings",
+      to: "/settings/github",
       primary: true,
     });
   }

@@ -72,8 +72,11 @@ const router = createHashRouter([
     element: <AppShell />,
     children: [
       { path: "/overview", element: page("overview", "OverviewPage") },
+      // Optional rule id, so Overview can link straight at the rule a
+      // validation error belongs to. One route, not two: separate route
+      // objects remount the page and lose its state.
       {
-        path: "/production",
+        path: "/production/:ruleId?",
         element: page("production", "ProductionRulesPage"),
       },
       { path: "/simulator", element: page("simulator", "SimulatorPage") },

@@ -3,6 +3,10 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
+import {
+  creatureInfoFor,
+  CREATURE_VARIANT_PARENTS,
+} from "./creature-info.mjs";
 
 const repository = process.cwd();
 const sourceRoot = path.join(repository, "Public_Content", "Official_Icons");
@@ -76,9 +80,15 @@ const content = {
   icons,
   notes: {},
   maps: {},
-  variantParents: {},
+  // Creature variants, so a variant's record can hold only what differs and
+  // inherit the rest. The compiled catalog declares parents for items only.
+  variantParents: CREATURE_VARIANT_PARENTS,
   itemInfo: {},
-  creatureInfo: {},
+  // Availability, spawn maps, drag weight and drops from the ARK wiki;
+  // acquisition steps from an AI capture that is not wiki-verified. See
+  // scripts/creature-info.mjs. Arrives as a defaults layer, so an
+  // administrator's own edits win and none of it lands in a project file.
+  creatureInfo: creatureInfoFor(catalog),
 };
 
 const versionRoot = path.join(sourceRoot, "versions", version);
@@ -194,5 +204,11 @@ await writeFile(indexPath, json({
 }));
 
 console.log(
-  `Built official-asa@${version} with ${Object.keys(icons).length} matched icons, ${assets.length} logical assets, and ${new Set(assets.map((asset) => asset.blob)).size} unique blobs`,
+  `Built official-asa@${version} with ${Object.keys(icons).length} matched icons, ${Object.keys(content.creatureInfo).length} creature records, ${assets.length} logical assets, and ${new Set(assets.map((asset) => asset.blob)).size} unique blobs`,
 );
+
+// Re-stage immediately. The staged copy under src-tauri/resources is what the
+// desktop app installs from, and it is verified against the integrity in
+// index.json — so a rebuild that leaves it behind makes the current version
+// read as missing, with nothing to say why. Building and staging are one act.
+await import("./stage-bundled-official.mjs");
