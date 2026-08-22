@@ -26,7 +26,7 @@ Requires: Node 18+, Rust toolchain, Google Chrome (for the CurseForge scraper).
 
 ## First-time setup
 
-1. Create a project (Home screen) — pick an empty folder, e.g.
+1. Create a project (Home screen) - pick an empty folder, e.g.
    `Documents\DinoDepot Studio\GG Fizz`.
 2. **Settings** → set the GitHub repository owner/repo/branch and the three
    output paths, and store a fine-grained personal access token
@@ -41,15 +41,15 @@ Requires: Node 18+, Rust toolchain, Google Chrome (for the CurseForge scraper).
 
 ## Sections
 
-- **Overview** — project health: validation status, unpublished changes,
+- **Overview** - project health: validation status, unpublished changes,
   watcher alerts, quick navigation.
-- **Production Rules** — visual editor for creature production (cycles, items,
+- **Production Rules** - visual editor for creature production (cycles, items,
   alternates, consumed items, caps) with live strict-JSON preview and
   validation. Never hand-write the published JSON.
-- **Simulator** — expected-value output estimates per item/creature/cycle over
+- **Simulator** - expected-value output estimates per item/creature/cycle over
   a chosen time window, with cap behavior and balance warnings. Thresholds are
   configurable in Settings.
-- **Content Sources** — the catalog of creatures/items the pickers use.
+- **Content Sources** - the catalog of creatures/items the pickers use.
   Adding a mod by hand starts from its CurseForge project ID: the page link is
   derived from it, and *Look up name* reads the mod's own name off that page
   (desktop app + Chrome). The name is always yours to override.
@@ -57,15 +57,15 @@ Requires: Node 18+, Rust toolchain, Google Chrome (for the CurseForge scraper).
   refresh with `node scripts/build-official-catalog.mjs`) plus your own mod
   sources with bulk paste import. Mark a source *disabled* or *being removed*
   to get warnings wherever its content is referenced.
-- **Creature Remaps** — remap creature types before removing creatures/mods;
+- **Creature Remaps** - remap creature types before removing creatures/mods;
   validates destinations exist, flags chained remaps and removed-mod sources.
-- **CurseForge** — two automations (both need the desktop app + Chrome):
+- **CurseForge** - two automations (both need the desktop app + Chrome):
   - *Custom Cosmetics Collector*: sweeps the ASA custom-cosmetics category,
     then shows an added/updated/missing diff you review before applying.
     New entries default to `|1|1|`.
   - *Mod Update Watcher*: checks watched mod pages for new update dates and
     flags mods as *needs review* until you mark them reviewed.
-- **Publish** — each output publishes independently: validation gate (errors
+- **Publish** - each output publishes independently: validation gate (errors
   block, warnings need acknowledgement), remote comparison, commit message,
   publish history, and copyable RAW URLs for the server INI. Also publishes
   the **Cluster Viewer**: a public, Ark-themed lookup page for members
@@ -77,7 +77,7 @@ Requires: Node 18+, Rust toolchain, Google Chrome (for the CurseForge scraper).
 ## Icons
 
 Icons are resolved from managed packages. There is no icon folder to
-configure — official and modpack artwork is installed automatically from
+configure - official and modpack artwork is installed automatically from
 immutable, integrity-checked packages, and the app ships with the official
 package so it works on a first launch with no network.
 
@@ -86,7 +86,7 @@ exact package versions. Previously published v2 packages remain supported.
 
 Resolution order for an entry:
 
-1. a project override — click any entry icon in Content Sources to set an
+1. a project override - click any entry icon in Content Sources to set an
    emoji, an image URL, or a file from the project's own `images/` folder;
 2. the exact official or modpack package asset pinned by this project;
 3. an `images/` match by name (e.g. `Achatina.webp`), then the parent
@@ -97,8 +97,8 @@ When you catalogue a mod through **Discover installed**, each entry in the
 review list has an icon box: it opens the mod's own artwork, read straight out
 of the copy installed on this machine, and whatever you pick is saved into the
 project as a 160x160 lossless WebP. Nothing links icons to entries
-automatically — across the local mod corpus only 5.5% of items have a
-name-matching icon — so the choice is yours to make and yours to change.
+automatically - across the local mod corpus only 5.5% of items have a
+name-matching icon - so the choice is yours to make and yours to change.
 
 That reader is a .NET sidecar built from `sidecar-assets/`
 (`npm run build:assets`). It needs the ARK install Discovery already points at,
@@ -106,7 +106,7 @@ and fetches Epic's Oodle decompression library on first use, since UE5 links
 Oodle statically into the game and there is no copy to borrow.
 
 Project-owned images go in `<project folder>/images`. **WebP is preferred and
-PNG is the only fallback** — file signatures are checked, so an image is read
+PNG is the only fallback** - file signatures are checked, so an image is read
 by its actual bytes rather than its extension. Anything else is ignored.
 Package-owned images never copy into that folder: immutable and legacy
 modpacks are both normalized into the shared managed package library.
