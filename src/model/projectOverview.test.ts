@@ -39,6 +39,10 @@ const card = (model: ReturnType<typeof overviewFor>, id: string) =>
 const item = (model: ReturnType<typeof overviewFor>, id: string) =>
   model.attention.find((a) => a.id === id);
 
+/** The first row for an individual validation problem, whatever it is about. */
+const firstIssue = (model: ReturnType<typeof overviewFor>) =>
+  model.attention.find((a) => a.id.startsWith("issue:"));
+
 describe("project health", () => {
   it("calls a fully published project healthy", () => {
     const model = overviewFor(healthyFixture());
@@ -68,7 +72,7 @@ describe("project health", () => {
   it("is blocked by validation errors", () => {
     const model = overviewFor({ production: production(rule({ dinoType: "" })) });
     expect(model.health).toBe("blocked");
-    expect(item(model, "validation-errors")?.tone).toBe("error");
+    expect(firstIssue(model)?.tone).toBe("error");
   });
 
   it("ranks warnings above pending changes", () => {
@@ -311,9 +315,11 @@ describe("attention ordering and aggregation", () => {
     });
     const ranks = model.attention.map((a) => a.rank);
     expect([...ranks]).toEqual([...ranks].sort((a, b) => a - b));
-    expect(model.attention[0].id).toBe("validation-errors");
+    expect(model.attention[0].id.startsWith("issue:")).toBe(true);
     expect(model.attention[0].rank).toBe(ATTENTION_RANK.blocking);
-    expect(model.attention[1].id).toBe("github-not-ready");
+    // Not index 1: a blocking problem now takes a row each, and there may be
+    // several before the readiness row.
+    expect(item(model, "github-not-ready")?.rank).toBe(ATTENTION_RANK.readiness);
   });
 
   it("aggregates sources rather than listing one row each", () => {
@@ -334,7 +340,7 @@ describe("attention ordering and aggregation", () => {
     // anyway — two rows for one problem is the noise this aggregation exists
     // to prevent.
     const model = overviewFor({ production: production(rule({ dinoType: "" })) });
-    expect(item(model, "validation-errors")?.detail).toContain("Passive Production");
+    expect(firstIssue(model)?.detail).toContain("Passive Production");
     expect(item(model, "unpublished")).toBeUndefined();
   });
 
@@ -355,8 +361,19 @@ describe("attention ordering and aggregation", () => {
       catalog: catalog(source({ enabled: false })),
       tokenPresent: false,
     });
-    const routes = new Set(["/publish", "/settings", "/curseforge", "/content"]);
-    for (const a of model.attention) expect(routes.has(a.to), a.id).toBe(true);
+    // A validation row appends the entity id, so only the page part is fixed.
+    const routes = new Set([
+      "publish",
+      "settings",
+      "curseforge",
+      "content",
+      "production",
+      "remaps",
+      "players",
+    ]);
+    for (const a of model.attention) {
+      expect(routes.has(a.to.split("/")[1] ?? ""), `${a.id} -> ${a.to}`).toBe(true);
+    }
   });
 });
 
