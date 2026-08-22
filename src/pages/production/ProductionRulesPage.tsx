@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useParams } from "react-router-dom";
 import { recordActivity, useDraftsStore } from "../../stores/draftsStore";
 import { useProjectStore } from "../../stores/projectStore";
 import { CreatureRule } from "../../model/production";
@@ -50,7 +51,13 @@ export function ProductionRulesPage() {
     );
   }, [production.rules, prunePrefs]);
 
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // `/production/<ruleId>` opens straight onto that rule, which is how a
+  // validation row on Overview reaches the thing it is complaining about.
+  const { ruleId } = useParams();
+  const [selectedId, setSelectedId] = useState<string | null>(ruleId ?? null);
+  useEffect(() => {
+    if (ruleId) setSelectedId(ruleId);
+  }, [ruleId]);
   const [search, setSearch] = useState("");
   const [showJson, setShowJson] = useState(false);
 
