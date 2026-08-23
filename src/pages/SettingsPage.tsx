@@ -9,6 +9,7 @@ import { useBlocker, useParams } from "react-router-dom";
 import { useProjectStore } from "../stores/projectStore";
 import { SecretInput } from "../components/SecretInput";
 import { GitHubSetup } from "./settings/GitHubSetup";
+import { ProjectAccess } from "./settings/ProjectAccess";
 import { SettingsNav } from "./settings/SettingsNav";
 import { FeedbackSettings } from "./settings/FeedbackSettings";
 import { categoryFor, dirtyCategories } from "./settings/categories";
@@ -34,8 +35,11 @@ import {
 } from "../model/project";
 import {
   DISCORD_TOKENS,
+  DISCORD_WEBHOOK_LIMIT,
+  discordLimit,
   renderDiscordPost,
   SAMPLE_POST_MODS,
+  splitDiscordPost,
 } from "../model/discordPost";
 import {
   IconChooserModal,
@@ -267,6 +271,7 @@ function SettingsContent({
             <ProjectCategory draft={draft} update={update} />
           )}
           {active === "github" && <GitHubCategory />}
+          {active === "access" && <ProjectAccess />}
           {active === "publishing" && (
             <PublishingCategory draft={draft} update={update} />
           )}
@@ -565,6 +570,8 @@ function CcmPostFormatCard({
   const preview = renderDiscordPost(format, SAMPLE_POST_MODS, {
     cluster: draft.cluster,
   });
+  const limit = discordLimit(format.nitro);
+  const messages = splitDiscordPost(preview, limit).length;
 
   return (
     <Card
@@ -578,17 +585,33 @@ function CcmPostFormatCard({
       className="col-span-full"
       title="CCM Discord post format"
       actions={
-        <Button
-          onClick={() => set(DiscordFormatSchema.parse({}))}
-          title="Restore the stock wording"
-        >
-          Reset
-        </Button>
+        <div className="flex items-center gap-4">
+          <Toggle
+            checked={format.nitro}
+            onChange={(nitro) => set({ nitro })}
+            label={`Nitro — ${limit.toLocaleString()} char limit`}
+            title={
+              "On: a copied post is split at 4,000 characters, the limit for a " +
+              "Nitro account. Off: 2,000, what everyone else gets. " +
+              "Posting through the webhook always splits at 2,000 — Discord " +
+              "applies no Nitro limit to a webhook."
+            }
+          />
+          <Button
+            onClick={() => set(DiscordFormatSchema.parse({}))}
+            title="Restore the stock wording"
+          >
+            Reset
+          </Button>
+        </div>
       }
     >
       <p className="text-xs text-ink-400 mb-3">
         How the Cosmetics Collector writes its announcement. The line template
-        is rendered once per new mod.
+        is rendered once per new mod. A post longer than the limit is sent as
+        several messages split on line boundaries, never as the{" "}
+        <span className="mono">message.txt</span> attachment Discord makes of an
+        over-long paste.
       </p>
       <div className="grid grid-cols-2 gap-5 items-start">
         <div className="flex flex-col gap-3">
@@ -624,6 +647,13 @@ function CcmPostFormatCard({
             <pre className="mono bg-ink-950 border border-ink-700 rounded-md p-3 text-ink-200 whitespace-pre-wrap break-words max-h-40 overflow-y-auto">
               {preview}
             </pre>
+            <p className="text-xs text-ink-500 mt-1">
+              {preview.length.toLocaleString()} of {limit.toLocaleString()}{" "}
+              characters with {SAMPLE_POST_MODS.length} sample mods —{" "}
+              {messages === 1 ? "one message" : `${messages} messages`}.{" "}
+              {format.nitro &&
+                `Posting through the webhook still splits at ${DISCORD_WEBHOOK_LIMIT.toLocaleString()}.`}
+            </p>
           </div>
 
           <div className="mt-4">
@@ -662,6 +692,8 @@ function AdditionalPagesCard({
   draft: ProjectSettings;
   update: (patch: Partial<ProjectSettings>) => void;
 }) {
+  const publicOnly = useProjectStore((s) => s.local?.topology === "single-public");
+
   return (
     <Card title="Additional pages" feedback={feedbackTarget("settings-modules")}>
       <p className="text-xs text-ink-400 mb-3">
@@ -674,26 +706,41 @@ function AdditionalPagesCard({
         </p>
       ) : (
         <div className="flex flex-col gap-3">
-          {APP_MODULES.map((module) => (
-            <div
-              key={module.id}
-              className="flex items-start justify-between gap-4"
-            >
-              <div className="min-w-0">
-                <div className="text-sm text-ink-100">
-                  <span className="opacity-70 mr-1.5">{module.icon}</span>
-                  {module.label}
+          {APP_MODULES.map((module) => {
+            const checked = draft.modules[module.id] === true;
+            const publicPlayerData = publicOnly && module.id === "player-data";
+            return (
+              <div
+                key={module.id}
+                className="flex items-start justify-between gap-4"
+              >
+                <div className="min-w-0">
+                  <div className="text-sm text-ink-100">
+                    <span className="opacity-70 mr-1.5">{module.icon}</span>
+                    {module.label}
+                  </div>
+                  <p className="text-xs text-ink-400">{module.description}</p>
+                  {publicPlayerData && (
+                    <p className="text-xs text-amber-300 mt-0.5">
+                      Cannot be enabled while the project repository is public.
+                    </p>
+                  )}
                 </div>
-                <p className="text-xs text-ink-400">{module.description}</p>
+                <Toggle
+                  checked={checked}
+                  disabled={publicPlayerData && !checked}
+                  title={
+                    publicPlayerData
+                      ? "Player Data requires a private project repository."
+                      : undefined
+                  }
+                  onChange={(v) =>
+                    update({ modules: { ...draft.modules, [module.id]: v } })
+                  }
+                />
               </div>
-              <Toggle
-                checked={draft.modules[module.id] === true}
-                onChange={(v) =>
-                  update({ modules: { ...draft.modules, [module.id]: v } })
-                }
-              />
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </Card>

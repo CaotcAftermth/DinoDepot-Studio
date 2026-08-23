@@ -46,6 +46,8 @@ export type OutputPaths = z.infer<typeof OutputPathsSchema>;
  * file in schema 1.
  */
 export interface GithubConfig {
+  /** Credential-manager account id. Never a token. */
+  accountId: string;
   owner: string;
   repo: string;
   branch: string;
@@ -60,10 +62,11 @@ export interface GithubConfig {
  */
 export function effectiveGithubConfig(
   settings: Pick<ProjectSettings, "outputPaths"> | null,
-  local: Pick<LocalProjectState, "source"> | null,
+  local: Pick<LocalProjectState, "source" | "githubAccountId"> | null,
 ): GithubConfig {
   const source = local?.source ?? null;
   return {
+    accountId: local?.githubAccountId ?? "",
     owner: source?.owner ?? "",
     repo: source?.name ?? "",
     branch: source?.branch || "main",
@@ -123,6 +126,14 @@ export const DiscordFormatSchema = z.object({
   header: z.string().default("**🆕 New Custom Cosmetic Mods ({count})**"),
   line: z.string().default("- [{name}](<{url}>) — `{id}`{updatedSuffix}"),
   footer: z.string().default(""),
+  /**
+   * Whether the administrator posting by hand has Nitro, which raises the
+   * per-message limit from 2000 characters to 4000 and so decides where a
+   * long announcement is split. Off by default: 2000 is what everyone gets,
+   * and splitting one message too many is harmless where splitting too few
+   * turns the post into a `message.txt` attachment.
+   */
+  nitro: z.boolean().default(false),
 });
 export type DiscordFormat = z.infer<typeof DiscordFormatSchema>;
 

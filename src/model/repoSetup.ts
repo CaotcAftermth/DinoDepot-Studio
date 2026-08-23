@@ -2,6 +2,9 @@ import {
   applyRepoRename,
   bindingSlug,
   remoteUrlFor,
+  siteBinding,
+  sourceShouldBePrivate,
+  topologyUsesSeparateDelivery,
   type LocalProjectState,
   type PublishTopology,
   type RepoBinding,
@@ -16,10 +19,9 @@ import { STUDIO_REPO } from "./studio";
  *
  * 1. **Identity is the numeric id.** Owner and name are display, and both
  *    change. A binding that a rename can orphan is not a binding.
- * 2. **Nothing is created on the administrator's behalf.** Repository creation
- *    and collaborator management happen in the browser, on GitHub, where the
- *    administrator can see exactly what they are agreeing to — which is also
- *    why DinoDepot never asks for the Administration permission.
+ * 2. **Repository creation stays on GitHub.** Project Access can read members
+ *    and invite collaborators when the signed-in repository admin deliberately
+ *    grants optional Administration permission; GitHub remains the authority.
  */
 
 export type RepoRole = "source" | "delivery";
@@ -41,6 +43,7 @@ export interface RepoIdentity {
   defaultBranch: string;
   canPush: boolean;
   isEmpty: boolean;
+  hasPages: boolean;
   htmlUrl: string;
 }
 
@@ -78,15 +81,21 @@ export function checkSuitability(
     });
   }
 
-  if (role === "source" && !identity.isPrivate) {
+  if (
+    role === "source" &&
+    identity.isPrivate !== sourceShouldBePrivate(topology)
+  ) {
     issues.push({
       level: "error",
-      message: `${slug} is public.`,
-      fix: "The project repository holds your player roster and profile backups. Make it private on GitHub before connecting it.",
+      message: `${slug} is ${identity.isPrivate ? "private" : "public"}.`,
+      fix:
+        topology === "single-public"
+          ? "Public-only uses one public repository for the project and site. Make it public on GitHub, or choose a private arrangement."
+          : "The project repository can hold private project data. Make it private on GitHub before connecting it.",
     });
   }
 
-  if (role === "delivery" && topology === "source-and-delivery" && identity.isPrivate) {
+  if (role === "delivery" && topologyUsesSeparateDelivery(topology) && identity.isPrivate) {
     issues.push({
       level: "error",
       message: `${slug} is private.`,
@@ -130,6 +139,7 @@ export function bindingFor(identity: RepoIdentity, branch?: string): RepoBinding
     remoteUrl: remoteUrlFor(identity.owner, identity.name),
     branch: branch?.trim() || identity.defaultBranch || "main",
     isPrivate: identity.isPrivate,
+    hasPages: identity.hasPages,
   };
 }
 
@@ -168,7 +178,11 @@ export function reconcileBinding(
   }
 
   const moved = applyRepoRename(binding, identity.owner, identity.name);
-  const updated: RepoBinding = { ...moved, isPrivate: identity.isPrivate };
+  const updated: RepoBinding = {
+    ...moved,
+    isPrivate: identity.isPrivate,
+    hasPages: identity.hasPages,
+  };
 
   if (binding.owner !== identity.owner && binding.name !== identity.name) {
     return {
@@ -223,7 +237,7 @@ export interface PairingProblem {
  */
 export function checkPairing(state: LocalProjectState): PairingProblem | null {
   const { source, delivery, topology } = state;
-  if (topology === "single-private") return null;
+  if (!topologyUsesSeparateDelivery(topology)) return null;
   if (!source || !delivery) return null;
 
   if (source.githubId && delivery.githubId && source.githubId === delivery.githubId) {
@@ -325,11 +339,13 @@ export function availabilityFor(
 // ---------------------------------------------------------------------------
 
 export type SetupStepId =
+  | "topology"
   | "account"
   | "source"
-  | "topology"
   | "delivery"
-  | "first-sync";
+  | "first-sync"
+  | "first-publish"
+  | "pages";
 
 export interface SetupStep {
   id: SetupStepId;
@@ -344,46 +360,56 @@ export interface SetupStep {
 /**
  * Where a project has got to in setting up.
  *
- * Presented as a checklist because that is what it is — five things, in order,
- * each of which the administrator either has or has not done. The alternative,
- * a wizard, hides where you are the moment you close it.
+ * Presented as a checklist because each setup fact remains useful after the
+ * first visit. A wizard would hide where you are the moment you close it.
  */
 export function setupSteps(state: LocalProjectState | null): SetupStep[] {
+  const topology = state?.topology ?? "source-and-delivery";
+  const topologyConfirmed = Boolean(state?.topologyConfirmed || state?.source?.githubId);
   const hasAccount = Boolean(state?.githubAccountId);
   const hasSource = Boolean(state?.source?.githubId);
-  const single = state?.topology === "single-private";
-  const hasDelivery = single || Boolean(state?.delivery?.githubId);
+  const separate = topologyUsesSeparateDelivery(topology);
+  const hasDelivery = !separate || Boolean(state?.delivery?.githubId);
   const synced = Boolean(state?.lastSyncedCommit);
+  const published = Boolean(state?.lastPublishedCommit);
+  const pages = state ? Boolean(siteBinding(state)?.hasPages) : false;
+  const topologyDetail =
+    topology === "source-and-delivery"
+      ? "Private project repository, separate public site"
+      : topology === "single-private"
+        ? "One private repository, paid GitHub Pages"
+        : "One public repository for project and site";
 
   return [
     {
-      id: "account",
-      title: "Connect your GitHub account",
-      done: hasAccount,
+      id: "topology",
+      title: "Choose the repository arrangement",
+      done: topologyConfirmed,
       blocked: false,
+      detail: topologyDetail,
+    },
+    {
+      id: "account",
+      title: "Create the repositories, then connect your GitHub account",
+      done: hasAccount,
+      blocked: !topologyConfirmed,
       detail: state?.githubLogin ? `Signed in as ${state.githubLogin}` : "",
     },
     {
       id: "source",
-      title: "Choose the private project repository",
+      title:
+        topology === "single-public"
+          ? "Choose the public project repository"
+          : "Choose the private project repository",
       done: hasSource,
       blocked: !hasAccount,
       detail: state?.source ? bindingSlug(state.source) : "",
     },
     {
-      id: "topology",
-      title: "Choose how the public site is published",
-      // Every project has a topology from the moment it is created, so this is
-      // done as soon as there is a repository for it to apply to.
-      done: hasSource,
-      blocked: !hasSource,
-      detail: single
-        ? "One private repository, GitHub Pages (paid plan)"
-        : "Private project repository, separate public site",
-    },
-    {
       id: "delivery",
-      title: single ? "Install the publishing workflow" : "Choose the public site repository",
+      title: separate
+        ? "Choose the public site repository"
+        : "Use the project repository for the public site",
       done: hasDelivery,
       blocked: !hasSource,
       detail: state?.delivery ? bindingSlug(state.delivery) : "",
@@ -395,7 +421,47 @@ export function setupSteps(state: LocalProjectState | null): SetupStep[] {
       blocked: !hasSource,
       detail: "",
     },
+    {
+      id: "first-publish",
+      title: "Publish the public site once",
+      done: published,
+      blocked: !hasDelivery || !synced,
+      detail: "Creates the docs folder GitHub Pages will serve",
+    },
+    {
+      id: "pages",
+      title: "Enable GitHub Pages from the main branch /docs folder",
+      done: pages,
+      blocked: !published,
+      detail: pages ? "GitHub reports Pages is enabled" : "Use the repository's Pages settings",
+    },
   ];
+}
+
+export interface PublicSourcePrivacyInput {
+  topology: PublishTopology;
+  playerDataEnabled: boolean;
+  playerCount: number;
+  cleanSlateCount: number;
+  hasPlayerActivity: boolean;
+  hasPlayerHistory: boolean;
+  hasPendingPlayerChanges: boolean;
+}
+
+/** Public source is allowed only when no Player Data can enter its history. */
+export function publicSourcePrivacyProblem(input: PublicSourcePrivacyInput): string {
+  if (input.topology !== "single-public") return "";
+  if (
+    !input.playerDataEnabled &&
+    input.playerCount === 0 &&
+    input.cleanSlateCount === 0 &&
+    !input.hasPlayerActivity &&
+    !input.hasPlayerHistory &&
+    !input.hasPendingPlayerChanges
+  ) {
+    return "";
+  }
+  return "Public-only cannot be used after this project has held Player Data. Choose a private project repository instead.";
 }
 
 /** The step the administrator should be looking at, or null when finished. */
@@ -414,14 +480,19 @@ export function currentStep(steps: SetupStep[]): SetupStep | null {
  * administrator sees and agrees to what is being made — and so DinoDepot never
  * needs the Administration permission that creating one would require.
  */
-export function newRepoUrl(name: string, role: RepoRole): string {
+export function newRepoUrl(
+  name: string,
+  role: RepoRole,
+  topology: PublishTopology = "source-and-delivery",
+): string {
+  const privateRepo = role === "source" && sourceShouldBePrivate(topology);
   const params = new URLSearchParams({
     name,
     description:
       role === "source"
-        ? "DinoDepot Studio project — private"
+        ? `DinoDepot Studio project — ${privateRepo ? "private" : "public"}`
         : "DinoDepot Studio public cluster site",
-    visibility: role === "source" ? "private" : "public",
+    visibility: privateRepo ? "private" : "public",
   });
   return `https://github.com/new?${params.toString()}`;
 }
@@ -444,20 +515,22 @@ export const REQUIRED_TOKEN_ACCESS = [
   "Repository permissions → Metadata: Read-only (GitHub adds this for you)",
 ] as const;
 
+/** Extra permission used only by the separate Project Access screen. */
+export const OPTIONAL_TOKEN_ACCESS = [
+  "Repository permissions → Administration: Read and write — only to view pending invitations and invite project administrators",
+] as const;
+
 /**
  * Permissions DinoDepot must never be granted.
  *
- * Listed so the setup screen can say so plainly. Administration would let the
- * app create and delete repositories; Workflows would let it edit CI. Neither
- * is needed, and asking for either would be asking for trust the app does not
- * require.
+ * Listed so the setup screen can say so plainly. Workflows would let the app
+ * edit CI and is unrelated to every Studio operation.
  */
 export const UNNECESSARY_TOKEN_ACCESS = [
-  "Administration — DinoDepot never creates or deletes repositories",
   "Workflows — DinoDepot never edits GitHub Actions",
 ] as const;
 
-/** The collaborators page, for adding the other administrators by hand. */
+/** The collaborators page, retained as the authoritative management fallback. */
 export function collaboratorsUrl(binding: RepoBinding): string {
   return `https://github.com/${bindingSlug(binding)}/settings/access`;
 }
@@ -465,4 +538,14 @@ export function collaboratorsUrl(binding: RepoBinding): string {
 /** The Pages settings page, for turning the public site on. */
 export function pagesSettingsUrl(binding: RepoBinding): string {
   return `https://github.com/${bindingSlug(binding)}/settings/pages`;
+}
+
+/** Canonical GitHub Pages URL, including the special user-site repository. */
+export function pagesSiteUrl(binding: Pick<RepoBinding, "owner" | "name">): string {
+  const owner = binding.owner.trim();
+  const name = binding.name.trim();
+  const userSite = name.toLowerCase() === `${owner.toLowerCase()}.github.io`;
+  return userSite
+    ? `https://${owner}.github.io/`
+    : `https://${owner}.github.io/${name}/`;
 }

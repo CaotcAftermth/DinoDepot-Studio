@@ -210,6 +210,7 @@ export const FEEDBACK_TARGETS = {
   // --- GitHub ------------------------------------------------------------
   "github-setup": { name: "GitHub Setup", area: "github" },
   "github-account": { name: "GitHub Account", area: "github" },
+  "project-access": { name: "Project Access", area: "github" },
   "github-repository": { name: "Project Repository", area: "github" },
   "player-data": { name: "Player Data", area: "player-data" },
   "project-home": { name: "Welcome Screen", area: "project-home" },

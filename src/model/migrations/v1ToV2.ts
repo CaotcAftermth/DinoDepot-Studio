@@ -83,6 +83,7 @@ export const v1ToV2: MigrationStep = {
         remoteUrl: remoteUrlFor(owner, repo),
         branch,
         isPrivate: true,
+        hasPages: false,
       };
       notes.push(`Remembered ${owner}/${repo} as this machine's project repository`);
     }

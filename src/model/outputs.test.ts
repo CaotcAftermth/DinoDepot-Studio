@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { buildOutputStates, summarizeOutputs } from "./outputs";
+import {
+  buildOutputStates,
+  overviewPublishingOutputs,
+  standaloneOutputs,
+  summarizeOutputs,
+} from "./outputs";
+import { newLocalProjectState } from "./localState";
 import type { OutputFamily } from "./history";
 import {
   catalog,
@@ -168,6 +174,57 @@ describe("buildOutputStates — applicability", () => {
     expect(find(outputsFor({ ...fixture, history: published }), "players").status).toBe(
       "published",
     );
+  });
+});
+
+describe("standaloneOutputs", () => {
+  it("keeps public site files out of independent publishing", () => {
+    const states = outputsFor({
+      settings: settings({ modules: { "player-data": true } }),
+    });
+
+    expect(standaloneOutputs(states).map((state) => state.family)).toEqual([
+      "production",
+      "remaps",
+      "cosmetics",
+      "players",
+    ]);
+  });
+
+  it("groups viewer page and data into one persistent public-site row", () => {
+    const states = outputsFor({ production: production(rule()) });
+    const local = {
+      ...newLocalProjectState("p", "C:/project", "Project"),
+      lastSyncedCommit: "source-1",
+      lastPublishedCommit: "site-1",
+      lastPublishedSourceCommit: "source-1",
+      lastPublishedAt: "2026-08-01T10:00:00.000Z",
+    };
+
+    const grouped = overviewPublishingOutputs(states, local);
+    expect(
+      grouped.filter(
+        (state) => state.family === "viewerData" || state.family === "viewerPage",
+      ),
+    ).toHaveLength(1);
+    expect(grouped.find((state) => state.label === "Public Site")?.status).toBe(
+      "published",
+    );
+  });
+
+  it("marks the public site changed when source advances", () => {
+    const states = outputsFor({ production: production(rule()) });
+    const local = {
+      ...newLocalProjectState("p", "C:/project", "Project"),
+      lastSyncedCommit: "source-2",
+      lastPublishedCommit: "site-1",
+      lastPublishedSourceCommit: "source-1",
+    };
+    const site = overviewPublishingOutputs(states, local).find(
+      (state) => state.label === "Public Site",
+    );
+    expect(site?.status).toBe("changed");
+    expect(site?.dirty).toBe(true);
   });
 });
 

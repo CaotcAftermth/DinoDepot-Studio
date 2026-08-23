@@ -1,16 +1,23 @@
 import * as github from "./githubAccount";
 import * as git from "./gitRepo";
 import { asStudioError, isStudioError } from "../model/errors";
-import { bindingSlug, type LocalProjectState, type RepoBinding } from "../model/localState";
+import {
+  bindingSlug,
+  topologyUsesSeparateDelivery,
+  type LocalProjectState,
+  type RepoBinding,
+} from "../model/localState";
 import {
   availabilityFor,
   bindingFor,
   blockingIssues,
+  checkPairing,
   checkSuitability,
   identityMatches,
   reconcileBinding,
   type AvailabilityState,
   type BindingChange,
+  type PairingProblem,
   type RepoIdentity,
   type RepoRole,
   type SetupIssue,
@@ -52,8 +59,15 @@ export async function connectRepository(
     owner.trim(),
     name.trim(),
   );
-  const issues = checkSuitability(identity, role, state.topology);
   const binding = bindingFor(identity, branch);
+  const issues = checkSuitability(identity, role, state.topology);
+  const pairing = checkPairing({
+    ...state,
+    [role]: binding,
+  });
+  if (pairing) {
+    issues.push({ level: "error", message: pairing.message, fix: pairing.fix });
+  }
 
   return {
     binding,
@@ -158,8 +172,12 @@ export async function assertBoundIdentity(
  * stored remote URL is rebuilt from the current owner and name, and the old one
  * only worked while GitHub's redirect lasted.
  */
-export async function applyRemote(dir: string, binding: RepoBinding): Promise<void> {
-  await git.setRemote(dir, binding.remoteUrl);
+export async function applyRemote(
+  dir: string,
+  binding: RepoBinding,
+  resetHistory = false,
+): Promise<void> {
+  await git.setRemote(dir, binding.remoteUrl, resetHistory);
 }
 
 /** An empty binding, for the "nothing connected yet" case. */
@@ -171,6 +189,7 @@ function blank(): RepoBinding {
     remoteUrl: "",
     branch: "main",
     isPrivate: true,
+    hasPages: false,
   };
 }
 
@@ -184,6 +203,7 @@ function blank(): RepoBinding {
 export interface ConnectionReport {
   source: VerifyResult | null;
   delivery: VerifyResult | null;
+  pairing: PairingProblem | null;
   /** Operations that must be switched off right now. */
   disabled: ("sync" | "publish")[];
   /** Changes worth mentioning — renames, transfers. */
@@ -195,11 +215,12 @@ export async function checkConnection(
 ): Promise<ConnectionReport> {
   const source = state.source ? await verifyBinding(state, "source") : null;
   const delivery =
-    state.delivery && state.topology === "source-and-delivery"
+    state.delivery && topologyUsesSeparateDelivery(state.topology)
       ? await verifyBinding(state, "delivery")
       : null;
 
   const disabled = new Set<"sync" | "publish">();
+  const pairing = checkPairing(state);
   for (const result of [source, delivery]) {
     for (const op of result?.availability?.disabled ?? []) disabled.add(op);
   }
@@ -212,13 +233,77 @@ export async function checkConnection(
   if (delivery && blockingIssues(delivery.issues).length > 0) {
     disabled.add("publish");
   }
+  if (pairing) disabled.add("publish");
 
   return {
     source,
     delivery,
+    pairing,
     disabled: [...disabled],
     notes: [source?.note, delivery?.note].filter((n): n is string => Boolean(n)),
   };
+}
+
+export interface ConnectionRefresh {
+  report: ConnectionReport;
+  patch: Partial<LocalProjectState>;
+}
+
+/** Best user-facing reason an operation was disabled by a connection check. */
+export function connectionProblem(
+  report: ConnectionReport,
+  operation: "sync" | "publish",
+): string {
+  if (!report.disabled.includes(operation)) return "";
+  for (const result of [report.source, report.delivery]) {
+    if (result?.availability?.disabled.includes(operation)) {
+      return result.availability.message;
+    }
+    const issue = result ? blockingIssues(result.issues)[0] : undefined;
+    if (issue) return [issue.message, issue.fix].filter(Boolean).join(" ");
+  }
+  if (report.pairing) {
+    return [report.pairing.message, report.pairing.fix].filter(Boolean).join(" ");
+  }
+  return operation === "sync"
+    ? "The project repository is not ready for Sync."
+    : "The connected repositories are not ready for Publish.";
+}
+
+/**
+ * Rechecks every binding and returns machine-local metadata that must be saved.
+ * A source rename also updates the working copy's remote before callers can
+ * start Sync with a stale URL.
+ */
+export async function refreshConnection(
+  state: LocalProjectState,
+  sourceDir: string,
+): Promise<ConnectionRefresh> {
+  const report = await checkConnection(state);
+  const patch: Partial<LocalProjectState> = {};
+  if (report.source && bindingChanged(state.source, report.source.binding)) {
+    if (report.source.change !== "none") {
+      await applyRemote(sourceDir, report.source.binding);
+    }
+    patch.source = report.source.binding;
+  }
+  if (report.delivery && bindingChanged(state.delivery, report.delivery.binding)) {
+    patch.delivery = report.delivery.binding;
+  }
+  return { report, patch };
+}
+
+function bindingChanged(current: RepoBinding | null, next: RepoBinding): boolean {
+  return (
+    !current ||
+    current.githubId !== next.githubId ||
+    current.owner !== next.owner ||
+    current.name !== next.name ||
+    current.remoteUrl !== next.remoteUrl ||
+    current.branch !== next.branch ||
+    current.isPrivate !== next.isPrivate ||
+    current.hasPages !== next.hasPages
+  );
 }
 
 export { isStudioError };

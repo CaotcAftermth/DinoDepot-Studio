@@ -2,7 +2,10 @@ import { useEffect, useMemo } from "react";
 import { useDraftsStore } from "../../stores/draftsStore";
 import { useGithubConfig, useProjectStore } from "../../stores/projectStore";
 import { useCatalogIndex } from "../../stores/useCatalogIndex";
-import { useGithubStatus } from "../../services/githubStatus";
+import {
+  githubConnectionTarget,
+  useGithubStatus,
+} from "../../services/githubStatus";
 import { isTauri } from "../../services/ipc";
 import { buildOutputStates } from "../../model/outputs";
 import { githubReadiness } from "../../model/githubReadiness";
@@ -38,6 +41,7 @@ export function useProjectOverview(): ProjectOverview {
   const imageFiles = useDraftsStore((s) => s.imageFiles);
   const activityFile = useDraftsStore((s) => s.activity);
   const settings = useProjectStore((s) => s.settings);
+  const local = useProjectStore((s) => s.local);
   const githubConfig = useGithubConfig();
   const index = useCatalogIndex();
 
@@ -49,7 +53,7 @@ export function useProjectOverview(): ProjectOverview {
   useEffect(hydrate, [hydrate]);
   // Read once per session, never during render — Overview re-renders on every
   // keystroke elsewhere in the app and this reaches the credential store.
-  useEffect(ensureToken, [ensureToken]);
+  useEffect(() => ensureToken(githubConfig.accountId), [ensureToken, githubConfig.accountId]);
 
   const outputs = useMemo(
     () =>
@@ -80,7 +84,7 @@ export function useProjectOverview(): ProjectOverview {
   );
 
   const github = useMemo(() => {
-    const target = `${githubConfig.owner}/${githubConfig.repo}@${githubConfig.branch}`;
+    const target = githubConnectionTarget(githubConfig);
     return githubReadiness({
       github: githubConfig,
       outputs,
@@ -102,8 +106,9 @@ export function useProjectOverview(): ProjectOverview {
         watchlist,
         outputs,
         github,
+        local,
       }),
-    [production, remaps, cosmetics, catalog, watchlist, outputs, github],
+    [production, remaps, cosmetics, catalog, watchlist, outputs, github, local],
   );
 
   const activity = useMemo(

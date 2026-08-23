@@ -1,5 +1,5 @@
 import { githubConfigComplete } from "../services/publish";
-import type { OutputState } from "./outputs";
+import { standaloneOutputs, type OutputState } from "./outputs";
 import type { GithubConfig } from "./project";
 
 /**
@@ -50,8 +50,8 @@ export function githubReadiness(input: ReadinessInput): GithubReadiness {
   // Only outputs the project actually publishes need a path; a blank path for
   // a disabled Player Data output is not a problem worth reporting.
   const missingPaths = github
-    ? outputs
-        .filter((o) => o.applicable && !github.paths[o.family]?.trim())
+    ? standaloneOutputs(outputs)
+        .filter((o) => !github.paths[o.family]?.trim())
         .map((o) => o.label)
     : [];
   const pathsConfigured = Boolean(github) && missingPaths.length === 0;

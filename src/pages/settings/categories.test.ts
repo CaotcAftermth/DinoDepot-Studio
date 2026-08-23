@@ -22,6 +22,15 @@ describe("categoryFor", () => {
 });
 
 describe("category keys", () => {
+  it("places project access between GitHub setup and publishing", () => {
+    const slugs = SETTINGS_CATEGORIES.map((category) => category.slug);
+    expect(slugs.slice(slugs.indexOf("github"), slugs.indexOf("publishing") + 1)).toEqual([
+      "github",
+      "access",
+      "publishing",
+    ]);
+  });
+
   it("claims each key once, so an edit lights one section", () => {
     const seen = new Set<string>();
     for (const category of SETTINGS_CATEGORIES) {

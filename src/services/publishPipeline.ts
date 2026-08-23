@@ -13,7 +13,7 @@ import {
   type BuildManifest,
   type PublicFiles,
 } from "../model/publishArtifact";
-import type { LocalProjectState } from "../model/localState";
+import { siteBinding, type LocalProjectState } from "../model/localState";
 import type { ValidationReport } from "../validation/project";
 
 /**
@@ -239,6 +239,16 @@ export async function publishProject(context: PublishContext): Promise<PublishOu
       manifest,
     });
   }
+  if (!binding.hasPages) {
+    return outcome({
+      stage: "timed-out",
+      message:
+        "Published. Enable GitHub Pages from the main branch /docs folder in repository settings, then check the connection.",
+      commit,
+      sourceRevision: context.sourceRevision,
+      manifest,
+    });
+  }
 
   stage("waiting-for-pages");
   const live = await waitForDeployment(context, manifest);
@@ -254,7 +264,7 @@ export async function publishProject(context: PublishContext): Promise<PublishOu
 }
 
 function deliveryBinding(local: LocalProjectState) {
-  return local.topology === "single-private" ? local.source : local.delivery;
+  return siteBinding(local);
 }
 
 /**

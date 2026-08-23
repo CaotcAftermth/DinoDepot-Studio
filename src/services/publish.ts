@@ -32,11 +32,12 @@ export function rawImagesUrl(config: GithubConfig): string {
 }
 
 export function githubConfigComplete(config: GithubConfig): boolean {
-  return Boolean(config.owner && config.repo && config.branch);
+  return Boolean(config.accountId && config.owner && config.repo && config.branch);
 }
 
 export async function testConnection(config: GithubConfig): Promise<GithubStatus> {
   return ipc<GithubStatus>("github_test", {
+    accountId: config.accountId,
     owner: config.owner,
     repo: config.repo,
     branch: config.branch,
@@ -48,6 +49,7 @@ export async function fetchRemote(
   family: OutputFamily,
 ): Promise<RemoteFile> {
   return ipc<RemoteFile>("github_get_file", {
+    accountId: config.accountId,
     owner: config.owner,
     repo: config.repo,
     branch: config.branch,
@@ -62,6 +64,7 @@ export async function publishFile(
   message: string,
 ): Promise<PublishResult> {
   return ipc<PublishResult>("github_put_file", {
+    accountId: config.accountId,
     owner: config.owner,
     repo: config.repo,
     branch: config.branch,

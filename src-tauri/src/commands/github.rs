@@ -18,8 +18,8 @@ const REQUEST_TIMEOUT_SECS: u64 = 30;
 /// Goes through `secrets` rather than reading the keyring directly so the
 /// per-account key layout, and the fallback for installs that predate it, live
 /// in exactly one place.
-fn token() -> Result<String, String> {
-    super::secrets::github_token("")
+fn token(account_id: &str) -> Result<String, String> {
+    super::secrets::github_token(account_id)
 }
 
 fn client() -> Result<reqwest::Client, String> {
@@ -37,8 +37,13 @@ pub struct GithubStatus {
 }
 
 #[tauri::command]
-pub async fn github_test(owner: String, repo: String, branch: String) -> Result<GithubStatus, String> {
-    let token = token()?;
+pub async fn github_test(
+    account_id: String,
+    owner: String,
+    repo: String,
+    branch: String,
+) -> Result<GithubStatus, String> {
+    let token = token(&account_id)?;
     let client = client()?;
     let url = format!("{API}/repos/{owner}/{repo}/branches/{branch}");
     let res = client
@@ -81,12 +86,13 @@ struct ContentsResponse {
 
 #[tauri::command]
 pub async fn github_get_file(
+    account_id: String,
     owner: String,
     repo: String,
     branch: String,
     path: String,
 ) -> Result<RemoteFile, String> {
-    let token = token()?;
+    let token = token(&account_id)?;
     let client = client()?;
     let url = format!("{API}/repos/{owner}/{repo}/contents/{path}?ref={branch}");
     let res = client
@@ -154,6 +160,7 @@ struct PutCommit {
 
 #[tauri::command]
 pub async fn github_put_file(
+    account_id: String,
     owner: String,
     repo: String,
     branch: String,
@@ -162,13 +169,14 @@ pub async fn github_put_file(
     message: String,
 ) -> Result<PublishResult, String> {
     let encoded = base64::engine::general_purpose::STANDARD.encode(content.as_bytes());
-    put_encoded(owner, repo, branch, path, encoded, message).await
+    put_encoded(account_id, owner, repo, branch, path, encoded, message).await
 }
 
 /// Uploads already-base64 content — used for binary files such as .arkprofile
 /// saves, which have no meaningful text representation.
 #[tauri::command]
 pub async fn github_put_file_b64(
+    account_id: String,
     owner: String,
     repo: String,
     branch: String,
@@ -177,18 +185,19 @@ pub async fn github_put_file_b64(
     message: String,
 ) -> Result<PublishResult, String> {
     let cleaned: String = content_b64.chars().filter(|c| !c.is_whitespace()).collect();
-    put_encoded(owner, repo, branch, path, cleaned, message).await
+    put_encoded(account_id, owner, repo, branch, path, cleaned, message).await
 }
 
 /// Fetches a file's raw bytes as base64, for binary downloads.
 #[tauri::command]
 pub async fn github_get_file_b64(
+    account_id: String,
     owner: String,
     repo: String,
     branch: String,
     path: String,
 ) -> Result<Option<String>, String> {
-    let token = token()?;
+    let token = token(&account_id)?;
     let client = client()?;
     let url = format!("{API}/repos/{owner}/{repo}/contents/{path}?ref={branch}");
     let res = client
@@ -215,6 +224,7 @@ pub async fn github_get_file_b64(
 }
 
 async fn put_encoded(
+    account_id: String,
     owner: String,
     repo: String,
     branch: String,
@@ -222,11 +232,18 @@ async fn put_encoded(
     content_b64: String,
     message: String,
 ) -> Result<PublishResult, String> {
-    let token = token()?;
+    let token = token(&account_id)?;
     let client = client()?;
 
     // The Contents API requires the current blob sha when updating a file.
-    let existing = github_get_file(owner.clone(), repo.clone(), branch.clone(), path.clone()).await?;
+    let existing = github_get_file(
+        account_id,
+        owner.clone(),
+        repo.clone(),
+        branch.clone(),
+        path.clone(),
+    )
+    .await?;
 
     let mut body = serde_json::json!({
         "message": message,
@@ -279,8 +296,8 @@ fn truncate(s: &str, max: usize) -> String {
 // ---------------------------------------------------------------------------
 
 /// Shared GET returning parsed JSON, with GitHub's error body surfaced.
-async fn api_get(url: &str) -> Result<serde_json::Value, String> {
-    let token = token()?;
+async fn api_get(account_id: &str, url: &str) -> Result<serde_json::Value, String> {
+    let token = token(account_id)?;
     let client = client()?;
     let res = client
         .get(url)
@@ -299,8 +316,12 @@ async fn api_get(url: &str) -> Result<serde_json::Value, String> {
 }
 
 /// Shared POST returning parsed JSON.
-async fn api_post(url: &str, body: serde_json::Value) -> Result<serde_json::Value, String> {
-    let token = token()?;
+async fn api_post(
+    account_id: &str,
+    url: &str,
+    body: serde_json::Value,
+) -> Result<serde_json::Value, String> {
+    let token = token(account_id)?;
     let client = client()?;
     let res = client
         .post(url)
@@ -324,8 +345,8 @@ async fn api_post(url: &str, body: serde_json::Value) -> Result<serde_json::Valu
 
 /// The signed-in account's login, used to build the PR's `head` reference.
 #[tauri::command]
-pub async fn github_me() -> Result<String, String> {
-    let me = api_get(&format!("{API}/user")).await?;
+pub async fn github_me(account_id: String) -> Result<String, String> {
+    let me = api_get(&account_id, &format!("{API}/user")).await?;
     me.get("login")
         .and_then(|v| v.as_str())
         .map(|s| s.to_string())
@@ -341,8 +362,12 @@ pub struct RepoInfo {
 }
 
 #[tauri::command]
-pub async fn github_repo_info(owner: String, repo: String) -> Result<RepoInfo, String> {
-    let repo_json = api_get(&format!("{API}/repos/{owner}/{repo}")).await?;
+pub async fn github_repo_info(
+    account_id: String,
+    owner: String,
+    repo: String,
+) -> Result<RepoInfo, String> {
+    let repo_json = api_get(&account_id, &format!("{API}/repos/{owner}/{repo}")).await?;
     Ok(RepoInfo {
         can_push: repo_json
             .get("permissions")
@@ -370,8 +395,13 @@ pub struct ForkResult {
 /// materialises a moment later, so committing straight away fails. Polling
 /// here keeps that detail out of the frontend.
 #[tauri::command]
-pub async fn github_fork(owner: String, repo: String) -> Result<ForkResult, String> {
+pub async fn github_fork(
+    account_id: String,
+    owner: String,
+    repo: String,
+) -> Result<ForkResult, String> {
     let created = api_post(
+        &account_id,
         &format!("{API}/repos/{owner}/{repo}/forks"),
         serde_json::json!({}),
     )
@@ -387,7 +417,7 @@ pub async fn github_fork(owner: String, repo: String) -> Result<ForkResult, Stri
     let fork_repo = fork_repo.to_string();
 
     for attempt in 0..10u64 {
-        if api_get(&format!("{API}/repos/{fork_owner}/{fork_repo}"))
+        if api_get(&account_id, &format!("{API}/repos/{fork_owner}/{fork_repo}"))
             .await
             .is_ok()
         {
@@ -407,12 +437,13 @@ pub async fn github_fork(owner: String, repo: String) -> Result<ForkResult, Stri
 /// should reuse it rather than failing halfway through.
 #[tauri::command]
 pub async fn github_create_branch(
+    account_id: String,
     owner: String,
     repo: String,
     from_branch: String,
     branch: String,
 ) -> Result<(), String> {
-    let head = api_get(&format!(
+    let head = api_get(&account_id, &format!(
         "{API}/repos/{owner}/{repo}/git/ref/heads/{from_branch}"
     ))
     .await?;
@@ -423,6 +454,7 @@ pub async fn github_create_branch(
         .ok_or_else(|| format!("Could not read the tip of {from_branch}"))?;
 
     match api_post(
+        &account_id,
         &format!("{API}/repos/{owner}/{repo}/git/refs"),
         serde_json::json!({ "ref": format!("refs/heads/{branch}"), "sha": sha }),
     )
@@ -440,6 +472,7 @@ pub async fn github_create_branch(
 /// stale history and the PR carries unrelated changes.
 #[tauri::command]
 pub async fn github_sync_branch(
+    account_id: String,
     owner: String,
     repo: String,
     branch: String,
@@ -447,7 +480,7 @@ pub async fn github_sync_branch(
     upstream_repo: String,
     upstream_branch: String,
 ) -> Result<(), String> {
-    let head = api_get(&format!(
+    let head = api_get(&account_id, &format!(
         "{API}/repos/{upstream_owner}/{upstream_repo}/git/ref/heads/{upstream_branch}"
     ))
     .await?;
@@ -457,7 +490,7 @@ pub async fn github_sync_branch(
         .and_then(|v| v.as_str())
         .ok_or_else(|| "Could not read the upstream tip".to_string())?;
 
-    let token = token()?;
+    let token = token(&account_id)?;
     let client = client()?;
     let res = client
         .patch(&format!("{API}/repos/{owner}/{repo}/git/refs/heads/{branch}"))
@@ -486,6 +519,7 @@ pub struct PullRequest {
 /// Opens a pull request, reusing the open one for this branch if it exists.
 #[tauri::command]
 pub async fn github_open_pr(
+    account_id: String,
     owner: String,
     repo: String,
     head: String,
@@ -493,7 +527,7 @@ pub async fn github_open_pr(
     title: String,
     body: String,
 ) -> Result<PullRequest, String> {
-    let existing = api_get(&format!(
+    let existing = api_get(&account_id, &format!(
         "{API}/repos/{owner}/{repo}/pulls?state=open&head={head}"
     ))
     .await
@@ -504,6 +538,7 @@ pub async fn github_open_pr(
         Some(pr) => pr,
         None => {
             api_post(
+                &account_id,
                 &format!("{API}/repos/{owner}/{repo}/pulls"),
                 serde_json::json!({
                     "title": title,

@@ -48,7 +48,7 @@ describe("project health", () => {
     const model = overviewFor(healthyFixture());
     expect(model.health).toBe("healthy");
     expect(model.attention).toHaveLength(0);
-    expect(model.synchronized).toEqual({ count: 5, total: 5 });
+    expect(model.synchronized).toEqual({ count: 4, total: 4 });
   });
 
   it("calls a brand-new empty project healthy, not dirty", () => {
@@ -170,6 +170,22 @@ describe("publishing readiness gates health", () => {
     const verified = githubReadiness({ ...base, tokenPresent: true, connection: "ok" });
     expect(verified.verified).toBe(true);
     expect(verified.target).toBe("ggfizz/cluster@main");
+  });
+
+  it("does not require legacy viewer paths for atomic site publishing", () => {
+    const config = githubConfig();
+    const readiness = githubReadiness({
+      github: {
+        ...config,
+        paths: { ...config.paths, viewerData: "", viewerPage: "" },
+      },
+      outputs: outputsFor({ production: production(rule()) }),
+      tokenPresent: true,
+      desktop: true,
+      connection: "ok",
+    });
+    expect(readiness.pathsConfigured).toBe(true);
+    expect(readiness.ready).toBe(true);
   });
 
   it("stays healthy when ready but not verified this session", () => {
@@ -431,7 +447,7 @@ describe("optional outputs in the publishing list", () => {
     expect(playersOutput.status).toBe("disabled");
     expect(model.health).toBe("healthy");
     // Disabled outputs are excluded from the synchronized tally.
-    expect(model.synchronized.total).toBe(5);
+    expect(model.synchronized.total).toBe(4);
   });
 
   it("counts Player Data once the module is on", () => {
@@ -441,12 +457,12 @@ describe("optional outputs in the publishing list", () => {
       players: players(3),
     };
     const model = overviewFor({ ...base, history: historyMatching(base) });
-    expect(model.synchronized).toEqual({ count: 6, total: 6 });
+    expect(model.synchronized).toEqual({ count: 5, total: 5 });
     expect(model.health).toBe("healthy");
   });
 
-  it("includes viewer outputs in the publishing health", () => {
-    // Production published but the viewer left behind — still pending work.
+  it("groups viewer outputs as one public site in publishing health", () => {
+    // Production published but public site left behind — still pending work.
     const fixture = { production: production(rule()) };
     const history = historyMatching(fixture);
     const model = overviewFor({
@@ -459,7 +475,7 @@ describe("optional outputs in the publishing list", () => {
       },
     });
     expect(model.health).toBe("changes");
-    expect(item(model, "unpublished")?.detail).toContain("Cluster Viewer Data");
-    expect(item(model, "unpublished")?.detail).toContain("Cluster Viewer Page");
+    expect(item(model, "unpublished")?.detail).toContain("Public Site");
+    expect(model.outputs.filter((output) => output.label === "Public Site")).toHaveLength(1);
   });
 });

@@ -50,6 +50,7 @@ const {
   assertBoundIdentity,
   applyRemote,
   checkConnection,
+  refreshConnection,
 } = await import("./repoConnection");
 
 function identity(over: Partial<RepoIdentity> = {}): RepoIdentity {
@@ -61,6 +62,7 @@ function identity(over: Partial<RepoIdentity> = {}): RepoIdentity {
     defaultBranch: "main",
     canPush: true,
     isEmpty: true,
+    hasPages: false,
     htmlUrl: "https://github.com/ggfizz/cluster-source",
     ...over,
   };
@@ -145,6 +147,21 @@ describe("connecting a repository", () => {
     bySlug["ggfizz/cluster-source"] = identity({ defaultBranch: "trunk" });
     const result = await connectRepository(state(), "source", "ggfizz", "cluster-source");
     expect(result.binding.branch).toBe("trunk");
+  });
+
+  it("refuses to bind the same repository as project and site", async () => {
+    bySlug["ggfizz/cluster-site"] = identity({
+      name: "cluster-site",
+      isPrivate: false,
+    });
+    const result = await connectRepository(
+      state({ source: binding() }),
+      "delivery",
+      "ggfizz",
+      "cluster-site",
+    );
+    expect(result.connected).toBe(false);
+    expect(result.issues.some((issue) => issue.message.includes("same repository"))).toBe(true);
   });
 });
 
@@ -272,6 +289,24 @@ describe("pointing the local repository at its remote", () => {
     await applyRemote("C:\\proj", binding({ owner: "gg-fizz-org", name: "renamed", remoteUrl: "https://github.com/gg-fizz-org/renamed.git" }));
     expect(remoteSet).toEqual(["https://github.com/gg-fizz-org/renamed.git"]);
   });
+
+  it("updates Pages metadata without rewriting an unchanged remote", async () => {
+    byId["123456789"] = identity({ hasPages: true });
+    const current = state({ source: binding() });
+    const refreshed = await refreshConnection(current, "C:\\proj");
+    expect(refreshed.patch.source?.hasPages).toBe(true);
+    expect(remoteSet).toEqual([]);
+  });
+
+  it("rewrites the source remote after a rename", async () => {
+    byId["123456789"] = identity({ name: "cluster-renamed" });
+    const refreshed = await refreshConnection(
+      state({ source: binding() }),
+      "C:\\proj",
+    );
+    expect(refreshed.patch.source?.name).toBe("cluster-renamed");
+    expect(remoteSet).toEqual(["https://github.com/ggfizz/cluster-renamed.git"]);
+  });
 });
 
 describe("the whole connection", () => {
@@ -328,6 +363,12 @@ describe("the whole connection", () => {
     });
     const report = await checkConnection(paired());
     expect(report.disabled).toEqual(["publish"]);
+  });
+
+  it("switches off publishing when both bindings name the same repository", async () => {
+    const report = await checkConnection(paired({ delivery: binding() }));
+    expect(report.pairing?.message).toContain("same repository");
+    expect(report.disabled).toContain("publish");
   });
 
   it("does not look for a site repository on the paid topology", async () => {

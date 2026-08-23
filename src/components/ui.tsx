@@ -533,19 +533,25 @@ export function Toggle({
   onChange,
   label,
   title,
+  disabled = false,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
   label?: string;
   /** Hover explanation, for switches whose meaning isn't obvious from the label. */
   title?: string;
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       title={title}
       onClick={() => onChange(!checked)}
-      className="inline-flex items-center gap-2 cursor-pointer"
+      disabled={disabled}
+      className={cx(
+        "inline-flex items-center gap-2",
+        disabled ? "cursor-not-allowed opacity-45" : "cursor-pointer",
+      )}
     >
       <span
         className={cx(

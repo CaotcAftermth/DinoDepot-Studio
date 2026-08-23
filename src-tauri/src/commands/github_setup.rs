@@ -22,7 +22,13 @@ fn client() -> Outcome<reqwest::Client> {
         .user_agent(concat!("DinoDepotStudio/", env!("CARGO_PKG_VERSION")))
         .timeout(std::time::Duration::from_secs(TIMEOUT_SECS))
         .build()
-        .map_err(|e| Failure::new("unknown", "Could not start the GitHub connection.", e.to_string()))
+        .map_err(|e| {
+            Failure::new(
+                "unknown",
+                "Could not start the GitHub connection.",
+                e.to_string(),
+            )
+        })
 }
 
 /// `Retry-After`, or the seconds until the rate limit resets.
@@ -168,6 +174,127 @@ pub struct AccountStatus {
     pub problem: String,
 }
 
+/** GitHub access-management requests need Administration-specific advice. */
+fn access_status(status: u16, what: &str, detail: impl Into<String>, wait: Option<u64>) -> Failure {
+    if status == 403 && wait.is_none() {
+        return Failure::new(
+            "auth.forbidden",
+            "Project Access needs Administration: Read and write for this repository. Update the token on GitHub, then reconnect it in Studio.",
+            detail,
+        );
+    }
+    classify_status(status, what, detail, wait)
+}
+
+async fn access_get(token: &str, url: &str, what: &str) -> Outcome<serde_json::Value> {
+    let client = client()?;
+    let response = client
+        .get(url)
+        .bearer_auth(token)
+        .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", API_VERSION)
+        .send()
+        .await
+        .map_err(|e| classify_transport(&e, what))?;
+    let status = response.status().as_u16();
+    let wait = retry_after(response.headers());
+    let body = response.text().await.unwrap_or_default();
+    if !(200..300).contains(&status) {
+        return Err(access_status(status, what, truncate(&body, 300), wait));
+    }
+    if body.trim().is_empty() {
+        return Ok(serde_json::Value::Null);
+    }
+    serde_json::from_str(&body).map_err(|e| {
+        Failure::new(
+            "unknown",
+            "GitHub sent something DinoDepot could not read.",
+            format!("{what}: {e}"),
+        )
+    })
+}
+
+async fn access_put(
+    token: &str,
+    url: &str,
+    what: &str,
+    body: serde_json::Value,
+) -> Outcome<(u16, serde_json::Value)> {
+    let client = client()?;
+    let response = client
+        .put(url)
+        .bearer_auth(token)
+        .header("Accept", "application/vnd.github+json")
+        .header("X-GitHub-Api-Version", API_VERSION)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| classify_transport(&e, what))?;
+    let status = response.status().as_u16();
+    let wait = retry_after(response.headers());
+    let text = response.text().await.unwrap_or_default();
+    if !(200..300).contains(&status) {
+        if status == 404 || status == 422 {
+            return Err(Failure::new(
+                "repo.conflict",
+                "GitHub could not invite that username. Check the spelling and try again.",
+                truncate(&text, 300),
+            ));
+        }
+        return Err(access_status(status, what, truncate(&text, 300), wait));
+    }
+    let parsed = if text.trim().is_empty() {
+        serde_json::Value::Null
+    } else {
+        serde_json::from_str(&text).map_err(|e| {
+            Failure::new(
+                "unknown",
+                "GitHub sent something DinoDepot could not read.",
+                format!("{what}: {e}"),
+            )
+        })?
+    };
+    Ok((status, parsed))
+}
+
+/** Reads every page, with a hard ceiling against a broken pagination loop. */
+async fn access_pages(token: &str, base_url: &str, what: &str) -> Outcome<Vec<serde_json::Value>> {
+    let mut all = Vec::new();
+    for page in 1..=100 {
+        let separator = if base_url.contains('?') { '&' } else { '?' };
+        let value = access_get(
+            token,
+            &format!("{base_url}{separator}per_page=100&page={page}"),
+            what,
+        )
+        .await?;
+        let entries = value.as_array().ok_or_else(|| {
+            Failure::new(
+                "unknown",
+                "GitHub sent something DinoDepot could not read.",
+                format!("{what}: expected an array"),
+            )
+        })?;
+        let count = entries.len();
+        all.extend(entries.iter().cloned());
+        if count < 100 {
+            return Ok(all);
+        }
+    }
+    Err(Failure::new(
+        "unknown",
+        "This repository has too many access entries to display safely.",
+        what,
+    ))
+}
+
+fn is_account_access_failure(failure: &Failure) -> bool {
+    matches!(
+        failure.code.as_str(),
+        "auth.missing" | "auth.expired" | "auth.forbidden"
+    )
+}
+
 #[tauri::command]
 pub async fn github_account_status(account_id: String) -> Result<AccountStatus, String> {
     let token = match secrets::github_token(&account_id) {
@@ -190,17 +317,22 @@ pub async fn github_account_status(account_id: String) -> Result<AccountStatus, 
                 .to_string(),
             problem: String::new(),
         }),
-        Err(failure) => Ok(AccountStatus {
+        Err(failure) if is_account_access_failure(&failure) => Ok(AccountStatus {
             connected: false,
             login: String::new(),
             problem: failure.message,
         }),
+        Err(failure) => Err(failure.to_string()),
     }
 }
 
 #[tauri::command]
 pub fn github_disconnect_account(account_id: String) -> Result<(), String> {
-    secrets::secret_delete(secrets::github_key(&account_id))
+    secrets::secret_delete(secrets::github_key(&account_id))?;
+    // An upgraded install may still hold the single-account credential. Every
+    // current command uses the account-specific key, but Sign out must remove
+    // the old fallback too or the credential remains on the machine unnoticed.
+    secrets::secret_delete(secrets::LEGACY_GITHUB_KEY.to_string())
 }
 
 // ---------------------------------------------------------------------------
@@ -220,6 +352,8 @@ pub struct RepoIdentity {
     pub can_push: bool,
     /// True when the repository has no commits yet.
     pub is_empty: bool,
+    /// Whether GitHub Pages is enabled for this repository.
+    pub has_pages: bool,
     pub html_url: String,
 }
 
@@ -249,7 +383,10 @@ fn identity_from(repo: &serde_json::Value) -> Outcome<RepoIdentity> {
             .and_then(|v| v.as_str())
             .unwrap_or_default()
             .to_string(),
-        is_private: repo.get("private").and_then(|v| v.as_bool()).unwrap_or(true),
+        is_private: repo
+            .get("private")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(true),
         default_branch: repo
             .get("default_branch")
             .and_then(|v| v.as_str())
@@ -262,6 +399,10 @@ fn identity_from(repo: &serde_json::Value) -> Outcome<RepoIdentity> {
             .unwrap_or(false),
         // GitHub reports 0 for a repository with no commits.
         is_empty: repo.get("size").and_then(|v| v.as_u64()).unwrap_or(1) == 0,
+        has_pages: repo
+            .get("has_pages")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false),
         html_url: repo
             .get("html_url")
             .and_then(|v| v.as_str())
@@ -336,14 +477,269 @@ pub async fn github_branch_exists(
     }
 }
 
+// ---------------------------------------------------------------------------
+// Project access
+// ---------------------------------------------------------------------------
+
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct RepositoryCollaborator {
+    pub login: String,
+    pub avatar_url: String,
+    pub html_url: String,
+    pub role_name: String,
+}
+
+#[derive(Serialize, Debug, PartialEq, Eq)]
+#[serde(rename_all = "camelCase")]
+pub struct RepositoryInvitation {
+    pub id: String,
+    pub login: String,
+    pub avatar_url: String,
+    pub html_url: String,
+    pub permission: String,
+    pub created_at: String,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RepositoryAccess {
+    pub current_permission: String,
+    pub can_admin: bool,
+    pub management_available: bool,
+    pub management_problem: String,
+    pub collaborators: Vec<RepositoryCollaborator>,
+    pub invitations: Vec<RepositoryInvitation>,
+}
+
+fn permission_from_repo(repo: &serde_json::Value) -> String {
+    let permissions = repo.get("permissions");
+    for (key, role) in [
+        ("admin", "admin"),
+        ("maintain", "maintain"),
+        ("push", "write"),
+        ("triage", "triage"),
+        ("pull", "read"),
+    ] {
+        if permissions
+            .and_then(|value| value.get(key))
+            .and_then(|value| value.as_bool())
+            .unwrap_or(false)
+        {
+            return role.to_string();
+        }
+    }
+    "none".to_string()
+}
+
+fn collaborator_from(value: &serde_json::Value) -> Option<RepositoryCollaborator> {
+    let login = value.get("login")?.as_str()?.to_string();
+    Some(RepositoryCollaborator {
+        login,
+        avatar_url: value
+            .get("avatar_url")
+            .and_then(|field| field.as_str())
+            .unwrap_or_default()
+            .to_string(),
+        html_url: value
+            .get("html_url")
+            .and_then(|field| field.as_str())
+            .unwrap_or_default()
+            .to_string(),
+        role_name: value
+            .get("role_name")
+            .or_else(|| value.get("permission"))
+            .and_then(|field| field.as_str())
+            .unwrap_or("read")
+            .to_string(),
+    })
+}
+
+fn invitation_from(value: &serde_json::Value) -> Option<RepositoryInvitation> {
+    let invitee = value.get("invitee");
+    let login = invitee
+        .and_then(|user| user.get("login"))
+        .and_then(|field| field.as_str())
+        .or_else(|| value.get("email").and_then(|field| field.as_str()))
+        .unwrap_or("Pending invitation")
+        .to_string();
+    Some(RepositoryInvitation {
+        id: value.get("id")?.as_u64()?.to_string(),
+        login,
+        avatar_url: invitee
+            .and_then(|user| user.get("avatar_url"))
+            .and_then(|field| field.as_str())
+            .unwrap_or_default()
+            .to_string(),
+        html_url: invitee
+            .and_then(|user| user.get("html_url"))
+            .and_then(|field| field.as_str())
+            .unwrap_or_default()
+            .to_string(),
+        permission: value
+            .get("permissions")
+            .and_then(|field| field.as_str())
+            .unwrap_or("write")
+            .to_string(),
+        created_at: value
+            .get("created_at")
+            .and_then(|field| field.as_str())
+            .unwrap_or_default()
+            .to_string(),
+    })
+}
+
+fn valid_github_login(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    !bytes.is_empty()
+        && bytes.len() <= 39
+        && bytes
+            .iter()
+            .all(|byte| byte.is_ascii_alphanumeric() || *byte == b'-')
+        && bytes.first() != Some(&b'-')
+        && bytes.last() != Some(&b'-')
+}
+
+fn collaborator_invite_body(repository: &serde_json::Value) -> serde_json::Value {
+    let organization_owned = repository
+        .get("owner")
+        .and_then(|owner| owner.get("type"))
+        .and_then(|value| value.as_str())
+        == Some("Organization");
+    if organization_owned {
+        // Organization repositories support explicit roles.
+        serde_json::json!({ "permission": "push" })
+    } else {
+        // Personal repositories always add collaborators with Write access;
+        // GitHub documents the permission argument as organization-only.
+        serde_json::json!({})
+    }
+}
+
+#[tauri::command]
+pub async fn github_repository_access(
+    account_id: String,
+    owner: String,
+    repo: String,
+) -> Result<RepositoryAccess, String> {
+    let token = credential(&account_id)?;
+    let slug = format!("{owner}/{repo}");
+    let repository = access_get(
+        &token,
+        &format!("{API}/repos/{slug}"),
+        &format!("access to {slug}"),
+    )
+    .await
+    .map_err(|failure| failure.to_string())?;
+    let current_permission = permission_from_repo(&repository);
+    let can_admin = current_permission == "admin";
+    let collaborators = access_pages(
+        &token,
+        &format!("{API}/repos/{slug}/collaborators?affiliation=all"),
+        &format!("collaborators for {slug}"),
+    )
+    .await
+    .map_err(|failure| failure.to_string())?
+    .iter()
+    .filter_map(collaborator_from)
+    .collect();
+
+    let (management_available, management_problem, invitations) = if can_admin {
+        match access_pages(
+            &token,
+            &format!("{API}/repos/{slug}/invitations"),
+            &format!("pending invitations for {slug}"),
+        )
+        .await
+        {
+            Ok(values) => (
+                true,
+                String::new(),
+                values.iter().filter_map(invitation_from).collect(),
+            ),
+            Err(failure) => (false, failure.message, Vec::new()),
+        }
+    } else {
+        (false, String::new(), Vec::new())
+    };
+
+    Ok(RepositoryAccess {
+        current_permission,
+        can_admin,
+        management_available,
+        management_problem,
+        collaborators,
+        invitations,
+    })
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct InviteResult {
+    pub status: String,
+    pub login: String,
+    pub permission: String,
+}
+
+#[tauri::command]
+pub async fn github_invite_collaborator(
+    account_id: String,
+    owner: String,
+    repo: String,
+    username: String,
+) -> Result<InviteResult, String> {
+    let username = username.trim().to_string();
+    if !valid_github_login(&username) {
+        return Err(Failure::new(
+            "repo.conflict",
+            "Enter a valid GitHub username.",
+            "invalid username",
+        )
+        .to_string());
+    }
+
+    let token = credential(&account_id)?;
+    let slug = format!("{owner}/{repo}");
+    let repository = access_get(
+        &token,
+        &format!("{API}/repos/{slug}"),
+        &format!("access to {slug}"),
+    )
+    .await
+    .map_err(|failure| failure.to_string())?;
+    if permission_from_repo(&repository) != "admin" {
+        return Err(Failure::new(
+            "auth.forbidden",
+            "Only a repository administrator can invite project administrators.",
+            slug,
+        )
+        .to_string());
+    }
+
+    let invite_body = collaborator_invite_body(&repository);
+    let (status, _) = access_put(
+        &token,
+        &format!("{API}/repos/{slug}/collaborators/{username}"),
+        &format!("project access to {slug}"),
+        invite_body,
+    )
+    .await
+    .map_err(|failure| failure.to_string())?;
+
+    Ok(InviteResult {
+        status: if status == 204 {
+            "alreadyCollaborator".to_string()
+        } else {
+            "invited".to_string()
+        },
+        login: username,
+        permission: "write".to_string(),
+    })
+}
+
 fn credential(account_id: &str) -> Result<String, String> {
     secrets::github_token(account_id).map_err(|detail| {
-        Failure::new(
-            "auth.missing",
-            "Connect your GitHub account first.",
-            detail,
-        )
-        .to_string()
+        Failure::new("auth.missing", "Connect your GitHub account first.", detail).to_string()
     })
 }
 
@@ -394,6 +790,16 @@ mod tests {
             None
         );
         assert_eq!(retry_after(&headers(&[])), None);
+    }
+
+    #[test]
+    fn only_access_failures_look_like_an_expired_sign_in() {
+        for code in ["auth.missing", "auth.expired", "auth.forbidden"] {
+            assert!(is_account_access_failure(&Failure::new(code, "x", "")));
+        }
+        for code in ["network.offline", "network.timeout", "network.rateLimited"] {
+            assert!(!is_account_access_failure(&Failure::new(code, "x", "")));
+        }
     }
 
     #[test]
@@ -451,7 +857,8 @@ mod tests {
     fn absent_permissions_are_treated_as_read_only() {
         let identity = identity_from(&repo_json(serde_json::json!({ "permissions": {} }))).unwrap();
         assert!(!identity.can_push);
-        let identity = identity_from(&repo_json(serde_json::json!({ "permissions": null }))).unwrap();
+        let identity =
+            identity_from(&repo_json(serde_json::json!({ "permissions": null }))).unwrap();
         assert!(!identity.can_push);
     }
 
@@ -473,5 +880,73 @@ mod tests {
         let identity =
             identity_from(&repo_json(serde_json::json!({ "id": 9007199254740993u64 }))).unwrap();
         assert_eq!(identity.github_id, "9007199254740993");
+    }
+
+    #[test]
+    fn repository_permission_uses_highest_available_role() {
+        let repository = repo_json(serde_json::json!({
+            "permissions": { "pull": true, "push": true, "admin": true }
+        }));
+        assert_eq!(permission_from_repo(&repository), "admin");
+        assert_eq!(
+            permission_from_repo(&repo_json(serde_json::json!({
+                "permissions": { "pull": true, "push": true }
+            }))),
+            "write"
+        );
+    }
+
+    #[test]
+    fn collaborator_and_invitation_are_reduced_to_display_fields() {
+        let collaborator = collaborator_from(&serde_json::json!({
+            "login": "rex-admin",
+            "avatar_url": "https://avatars.example/rex",
+            "html_url": "https://github.com/rex-admin",
+            "role_name": "maintain",
+            "secret": "ignored"
+        }))
+        .unwrap();
+        assert_eq!(collaborator.login, "rex-admin");
+        assert_eq!(collaborator.role_name, "maintain");
+
+        let invitation = invitation_from(&serde_json::json!({
+            "id": 9007199254740993u64,
+            "invitee": {
+                "login": "new-admin",
+                "avatar_url": "https://avatars.example/new",
+                "html_url": "https://github.com/new-admin"
+            },
+            "permissions": "write",
+            "created_at": "2026-08-23T12:00:00Z"
+        }))
+        .unwrap();
+        assert_eq!(invitation.id, "9007199254740993");
+        assert_eq!(invitation.login, "new-admin");
+    }
+
+    #[test]
+    fn github_login_validation_keeps_urls_path_safe() {
+        for good in ["admin", "Dino-Admin", "a1"] {
+            assert!(valid_github_login(good), "{good}");
+        }
+        for bad in ["", "-admin", "admin-", "admin/name", "admin@example.com"] {
+            assert!(!valid_github_login(bad), "{bad}");
+        }
+    }
+
+    #[test]
+    fn collaborator_role_is_only_sent_where_github_accepts_it() {
+        let personal = repo_json(serde_json::json!({
+            "owner": { "login": "ggfizz", "type": "User" }
+        }));
+        assert_eq!(collaborator_invite_body(&personal), serde_json::json!({}));
+
+        let organization = repo_json(serde_json::json!({
+            "owner": { "login": "dino-org", "type": "Organization" }
+        }));
+        assert_eq!(
+            collaborator_invite_body(&organization),
+            serde_json::json!({ "permission": "push" })
+        );
     }
 }

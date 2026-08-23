@@ -50,6 +50,7 @@ export async function backupProfile(
   const sanitized = sanitizeProfile(decodeBase64(originalB64));
 
   const publish = await ipc<PublishResult>("github_put_file_b64", {
+    accountId: config.accountId,
     owner: config.owner,
     repo: config.repo,
     branch: config.branch,
@@ -77,6 +78,7 @@ export async function restoreProfile(
   fileName: string,
 ): Promise<boolean> {
   const contentB64 = await ipc<string | null>("github_get_file_b64", {
+    accountId: config.accountId,
     owner: config.owner,
     repo: config.repo,
     branch: config.branch,

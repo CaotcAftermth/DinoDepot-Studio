@@ -9,10 +9,17 @@ import {
   type ScrapedMod,
   type ScrapeResult,
 } from "../model/cosmetics";
+import { serializeCosmetics } from "../serializers/cosmetics";
+import { OUTPUT_FAMILY_LABELS } from "../model/history";
 import { isWatched, sourceCurseforgeUrl } from "../model/catalog";
 import { normalizeCurseforgeId } from "../model/catalogDuplicates";
 import { DiscordFormatSchema } from "../model/project";
-import { renderDiscordPost } from "../model/discordPost";
+import {
+  DISCORD_WEBHOOK_LIMIT,
+  discordLimit,
+  renderDiscordPost,
+  splitDiscordPost,
+} from "../model/discordPost";
 import { WatchedMod } from "../model/watchlist";
 import { newId } from "../model/ids";
 import {
@@ -38,6 +45,7 @@ import {
 } from "../components/ui";
 import { toast } from "../components/toast";
 import { confirmDialog } from "../components/confirm";
+import { OutputPreviewModal } from "../components/OutputPreviewModal";
 import { feedbackTarget } from "../model/feedback/targets";
 
 /**
@@ -47,6 +55,17 @@ import { feedbackTarget } from "../model/feedback/targets";
  * "these mods are gone" would quietly strip the published CCM list.
  */
 const MIN_TRUSTWORTHY_SCRAPE = 25;
+
+async function copyDiscordText(content: string, success: string) {
+  try {
+    await navigator.clipboard.writeText(content);
+    toast.success(success);
+  } catch {
+    toast.error(
+      "Could not reach the clipboard. Select the message and copy it instead.",
+    );
+  }
+}
 
 export function CurseForgePage() {
   const [tab, setTab] = useState<"collector" | "watcher">("collector");
@@ -94,17 +113,28 @@ function Collector() {
   const { cosmetics, setCosmetics } = useDraftsStore();
   const settings = useProjectStore((s) => s.settings);
   /** The post's wording lives in Settings → Discord post format. */
+  const discordFormat = settings?.discord ?? DiscordFormatSchema.parse({});
   const discordPostForNewMods = (mods: ScrapedMod[]) =>
-    renderDiscordPost(
-      settings?.discord ?? DiscordFormatSchema.parse({}),
-      mods,
-      { cluster: settings?.cluster ?? "" },
-    );
+    renderDiscordPost(discordFormat, mods, { cluster: settings?.cluster ?? "" });
+  /**
+   * A list of a few dozen new mods runs past Discord's per-message limit, and
+   * an over-long message is not truncated — it becomes a `message.txt`
+   * attachment nobody opens. So it goes out as several messages instead, cut
+   * on line boundaries. The webhook is capped at 2000 whatever the admin's own
+   * plan is; the Nitro setting only widens the post they copy and paste.
+   */
+  const copySegments = (mods: ScrapedMod[]) =>
+    splitDiscordPost(discordPostForNewMods(mods), discordLimit(discordFormat.nitro));
+  const webhookSegments = (mods: ScrapedMod[]) =>
+    splitDiscordPost(discordPostForNewMods(mods), DISCORD_WEBHOOK_LIMIT);
   const [running, setRunning] = useState(false);
   const [log, setLog] = useState<string[]>([]);
   const [progress, setProgress] = useState<{ page: number; total: number } | null>(null);
   const [scraped, setScraped] = useState<Map<string, ScrapedMod> | null>(null);
   const [showPrevious, setShowPrevious] = useState(false);
+  /** Messages of a post too long to paste in one go, shown for copying. */
+  const [copySplit, setCopySplit] = useState<string[] | null>(null);
+  const [showOutput, setShowOutput] = useState(false);
   const [metrics, setMetrics] = useState<ScraperMetrics | null>(null);
   const scrapedRef = useRef(new Map<string, ScrapedMod>());
   /** Persisted with the project, so it outlives both navigation and restarts. */
@@ -324,21 +354,42 @@ function Collector() {
     );
   }
 
-  function copyDiscordPost(mods: ScrapedMod[]) {
-    navigator.clipboard.writeText(discordPostForNewMods(mods));
-    toast.success(`Discord post for ${mods.length} new mods copied`);
+  async function copyDiscordPost(mods: ScrapedMod[]) {
+    const segments = copySegments(mods);
+    if (segments.length === 0) return;
+    if (segments.length === 1) {
+      await copyDiscordText(
+        segments[0],
+        `Discord post for ${mods.length} new mods copied`,
+      );
+      return;
+    }
+    // Too long for one message. Copying the lot would just hand Discord a
+    // paste it turns into a message.txt attachment, so the split is shown
+    // instead and each message is copied on its own.
+    setCopySplit(segments);
   }
 
   async function postToDiscord(mods: ScrapedMod[]) {
+    const segments = webhookSegments(mods);
+    if (segments.length === 0) return;
     const ok = await confirmDialog({
       title: "Post to Discord?",
-      message: `${mods.length} new cosmetic mod(s) will be posted to the stored webhook.`,
+      message:
+        `${mods.length} new cosmetic mod(s) will be posted to the stored webhook` +
+        (segments.length > 1
+          ? ` as ${segments.length} messages — the list is longer than Discord's ${DISCORD_WEBHOOK_LIMIT.toLocaleString()}-character limit.`
+          : "."),
       confirmLabel: "Post",
     });
     if (!ok) return;
     try {
-      await ipc("discord_post", { content: discordPostForNewMods(mods) });
-      toast.success("Posted to Discord");
+      await ipc("discord_post", { segments });
+      toast.success(
+        segments.length === 1
+          ? "Posted to Discord"
+          : `Posted to Discord in ${segments.length} messages`,
+      );
     } catch (e) {
       toast.error(`Discord post failed: ${e instanceof Error ? e.message : e}`);
     }
@@ -553,11 +604,17 @@ function Collector() {
         <Card
           title={`Cosmetic mod entries (${included} included of ${active.length})`}
           actions={
-            cosmetics.lastScrapeAt && (
-              <span className="text-xs text-ink-400">
-                Last scrape: {new Date(cosmetics.lastScrapeAt).toLocaleString()}
-              </span>
-            )
+            <>
+              {cosmetics.lastScrapeAt && (
+                <span className="text-xs text-ink-400">
+                  Last scrape:{" "}
+                  {new Date(cosmetics.lastScrapeAt).toLocaleString()}
+                </span>
+              )}
+              <Button variant="ghost" onClick={() => setShowOutput(true)}>
+                Preview output
+              </Button>
+            </>
           }
         >
           <CosmeticsTable />
@@ -588,11 +645,36 @@ function Collector() {
       {showPrevious && previous && (
         <PreviousScrapeModal
           scrape={previous}
-          post={discordPostForNewMods(previous.added)}
+          segments={copySegments(previous.added)}
           onCopy={() => copyDiscordPost(previous.added)}
           onPost={() => postToDiscord(previous.added)}
           onClose={() => setShowPrevious(false)}
         />
+      )}
+
+      {showOutput && (
+        <OutputPreviewModal
+          label={OUTPUT_FAMILY_LABELS.cosmetics}
+          content={serializeCosmetics(cosmetics)}
+          onClose={() => setShowOutput(false)}
+        />
+      )}
+
+      {copySplit && (
+        <Modal
+          title={`Discord post — ${copySplit.length} messages`}
+          onClose={() => setCopySplit(null)}
+          wide
+          footer={
+            <div className="flex justify-end">
+              <Button variant="primary" onClick={() => setCopySplit(null)}>
+                Done
+              </Button>
+            </div>
+          }
+        >
+          <DiscordMessages segments={copySplit} />
+        </Modal>
       )}
     </div>
   );
@@ -604,15 +686,61 @@ function Collector() {
  * The new mods from the most recent applied scrape, with the Discord post
  * ready to copy — the thing an admin comes back for after navigating away.
  */
+/**
+ * The post as Discord will actually receive it: one block per message, each
+ * copied on its own. A post that outgrows the character limit has to be
+ * pasted in pieces, and guessing where to cut it by hand is how a masked link
+ * or a bold marker ends up straddling two messages.
+ */
+function DiscordMessages({ segments }: { segments: string[] }) {
+  const single = segments.length === 1;
+  return (
+    <div className="flex flex-col gap-3">
+      {!single && (
+        <p className="text-xs text-ink-400">
+          Longer than one Discord message. Pasted whole it would arrive as a{" "}
+          <span className="mono">message.txt</span> attachment, so it is split
+          on line boundaries — copy and send these in order.
+        </p>
+      )}
+      {segments.map((segment, i) => (
+        <div key={i}>
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-semibold text-ink-300 uppercase tracking-wide">
+              {single ? "Discord post" : `Message ${i + 1} of ${segments.length}`}
+              <span className="ml-2 text-ink-500 normal-case font-normal">
+                · {segment.length.toLocaleString()} characters
+              </span>
+            </span>
+            <Button
+              onClick={() => {
+                void copyDiscordText(
+                  segment,
+                  single ? "Discord post copied" : `Message ${i + 1} copied`,
+                );
+              }}
+            >
+              Copy
+            </Button>
+          </div>
+          <pre className="mono bg-ink-950 border border-ink-700 rounded-md p-3 max-h-60 overflow-auto text-ink-200 text-xs whitespace-pre-wrap">
+            {segment}
+          </pre>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PreviousScrapeModal({
   scrape,
-  post,
+  segments,
   onCopy,
   onPost,
   onClose,
 }: {
   scrape: ScrapeResult;
-  post: string;
+  segments: string[];
   onCopy: () => void;
   onPost: () => void;
   onClose: () => void;
@@ -634,13 +762,14 @@ function PreviousScrapeModal({
             {isTauri && scrape.added.length > 0 && (
               <Button onClick={onPost}>Post to Discord</Button>
             )}
-            <Button
-              variant="primary"
-              disabled={scrape.added.length === 0}
-              onClick={onCopy}
-            >
-              Copy Discord post
-            </Button>
+            {/* Only while it is one message — a split post is copied from the
+                per-message buttons beside each block, and a second modal
+                stacked on this one would say the same thing twice. */}
+            {segments.length === 1 && (
+              <Button variant="primary" onClick={onCopy}>
+                Copy Discord post
+              </Button>
+            )}
           </div>
         </div>
       }
@@ -688,12 +817,7 @@ function PreviousScrapeModal({
               </div>
             ))}
           </div>
-          <span className="block text-xs font-semibold text-ink-300 uppercase tracking-wide mb-1">
-            Discord post
-          </span>
-          <pre className="mono bg-ink-950 border border-ink-700 rounded-md p-3 max-h-60 overflow-auto text-ink-200 text-xs whitespace-pre-wrap">
-            {post}
-          </pre>
+          <DiscordMessages segments={segments} />
         </>
       )}
     </Modal>

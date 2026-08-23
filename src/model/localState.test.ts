@@ -5,13 +5,16 @@ import {
   bindingSlug,
   canPublish,
   canSync,
+  deliveryBindingPatch,
   isSafeRemoteUrl,
   LocalProjectStateSchema,
   newLocalProjectState,
   remoteUrlFor,
   RepoBindingSchema,
+  sourceBindingPatch,
   sourceIconDir,
   withSourceIconDir,
+  topologyPatch,
   type LocalProjectState,
   type RepoBinding,
 } from "./localState";
@@ -177,6 +180,27 @@ describe("what the bindings allow", () => {
     expect(canPublish(single)).toBe(true);
   });
 
+  it("syncs and publishes from one public repository on public-only", () => {
+    const single = state({
+      source: binding({ isPrivate: false }),
+      githubAccountId: "9",
+      topology: "single-public",
+    });
+    expect(canSync(single)).toBe(true);
+    expect(canPublish(single)).toBe(true);
+  });
+
+  it("refuses a source whose privacy does not match the arrangement", () => {
+    expect(
+      canSync(
+        state({ source: binding(), githubAccountId: "9", topology: "single-public" }),
+      ),
+    ).toBe(false);
+    expect(
+      canSync(state({ source: binding({ isPrivate: false }), githubAccountId: "9" })),
+    ).toBe(false);
+  });
+
   /**
    * Publishing generated output into the source repository would leave the
    * private roster one directory from a public Pages site.
@@ -197,6 +221,55 @@ describe("what the bindings allow", () => {
       delivery: binding({ githubId: "2" }),
     });
     expect(bindingsAreDistinct(distinct)).toBe(true);
+  });
+});
+
+describe("changing repository decisions", () => {
+  const connected = () =>
+    state({
+      source: binding(),
+      delivery: binding({ githubId: "2", isPrivate: false }),
+      lastSyncedCommit: "s1",
+      lastPublishedCommit: "p1",
+      lastPublishedSourceCommit: "s1",
+    });
+
+  it("resets every repository-specific checkpoint when source changes", () => {
+    const patch = sourceBindingPatch(connected(), binding({ githubId: "new" }));
+    expect(patch.lastSyncedCommit).toBe("");
+    expect(patch.lastPublishedCommit).toBe("");
+  });
+
+  it("resets source checkpoints when its branch changes", () => {
+    const patch = sourceBindingPatch(connected(), binding({ branch: "trunk" }));
+    expect(patch.lastSyncedCommit).toBe("");
+  });
+
+  it("resets only publish checkpoints when delivery changes", () => {
+    const patch = deliveryBindingPatch(connected(), binding({ githubId: "new-site" }));
+    expect(patch.lastPublishedCommit).toBe("");
+    expect(patch).not.toHaveProperty("lastSyncedCommit");
+  });
+
+  it("resets publish checkpoints when the site branch changes", () => {
+    const current = connected();
+    const patch = deliveryBindingPatch(
+      current,
+      binding({
+        githubId: current.delivery!.githubId,
+        isPrivate: false,
+        branch: "pages",
+      }),
+    );
+    expect(patch.lastPublishedCommit).toBe("");
+  });
+
+  it("disconnects a private source when changing to public-only", () => {
+    const patch = topologyPatch(connected(), "single-public");
+    expect(patch.source).toBeNull();
+    expect(patch.delivery).toBeNull();
+    expect(patch.topologyConfirmed).toBe(true);
+    expect(patch.lastSyncedCommit).toBe("");
   });
 });
 

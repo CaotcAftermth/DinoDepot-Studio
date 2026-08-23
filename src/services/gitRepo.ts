@@ -109,8 +109,16 @@ export async function readTree(
   );
 }
 
-export async function setRemote(dir: string, url: string): Promise<void> {
-  await call<void>("git_set_remote", { dir, url }, "Could not set the project repository.");
+export async function setRemote(
+  dir: string,
+  url: string,
+  resetHistory = false,
+): Promise<void> {
+  await call<void>(
+    "git_set_remote",
+    { dir, url, resetHistory },
+    "Could not set the project repository.",
+  );
 }
 
 /**

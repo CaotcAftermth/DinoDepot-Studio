@@ -315,6 +315,8 @@ async function mockInvoke<T>(cmd: string, args: Args): Promise<T> {
     case "github_repo_by_slug":
     case "github_repo_by_id":
     case "github_branch_exists":
+    case "github_repository_access":
+    case "github_invite_collaborator":
       throw new Error(
         JSON.stringify({
           code: "auth.missing",

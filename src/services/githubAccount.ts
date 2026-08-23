@@ -55,7 +55,7 @@ function decodeFailure(e: unknown, fallback: string): StudioError {
   return asStudioError(e, "unknown", fallback);
 }
 
-async function call<T>(
+export async function githubCall<T>(
   cmd: string,
   args: Record<string, unknown>,
   fallback: string,
@@ -75,7 +75,7 @@ async function call<T>(
  * and the account id comes from GitHub rather than from anything typed.
  */
 export async function connectAccount(token: string): Promise<GithubAccount> {
-  return call<GithubAccount>(
+  return githubCall<GithubAccount>(
     "github_connect_account",
     { token },
     "That sign-in could not be completed.",
@@ -85,7 +85,7 @@ export async function connectAccount(token: string): Promise<GithubAccount> {
 /** Whether a stored credential still works. Never reveals it. */
 export async function accountStatus(accountId: string): Promise<AccountStatus> {
   if (!accountId) return { connected: false, login: "", problem: "" };
-  return call<AccountStatus>(
+  return githubCall<AccountStatus>(
     "github_account_status",
     { accountId },
     "Could not check your GitHub sign-in.",
@@ -93,7 +93,7 @@ export async function accountStatus(accountId: string): Promise<AccountStatus> {
 }
 
 export async function disconnectAccount(accountId: string): Promise<void> {
-  await call<void>(
+  await githubCall<void>(
     "github_disconnect_account",
     { accountId },
     "Could not remove your GitHub sign-in.",
@@ -106,7 +106,7 @@ export async function repoBySlug(
   owner: string,
   name: string,
 ): Promise<RepoIdentity> {
-  return call<RepoIdentity>(
+  return githubCall<RepoIdentity>(
     "github_repo_by_slug",
     { accountId, owner, name },
     "Could not find that repository.",
@@ -124,7 +124,7 @@ export async function repoById(
   accountId: string,
   githubId: string,
 ): Promise<RepoIdentity> {
-  return call<RepoIdentity>(
+  return githubCall<RepoIdentity>(
     "github_repo_by_id",
     { accountId, githubId },
     "Could not reach the project repository.",
@@ -137,7 +137,7 @@ export async function branchExists(
   name: string,
   branch: string,
 ): Promise<boolean> {
-  return call<boolean>(
+  return githubCall<boolean>(
     "github_branch_exists",
     { accountId, owner, name, branch },
     "Could not check the branch.",

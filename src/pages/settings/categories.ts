@@ -52,6 +52,14 @@ export const SETTINGS_CATEGORIES: readonly SettingsCategory[] = [
     keys: [],
   },
   {
+    slug: "access",
+    label: "Project access",
+    blurb: "Administrators and invitations",
+    columns: 1,
+    // GitHub owns membership; nothing here enters the shared settings draft.
+    keys: [],
+  },
+  {
     slug: "publishing",
     label: "Publishing",
     blurb: "Where published files land",

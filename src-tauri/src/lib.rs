@@ -67,6 +67,8 @@ pub fn run() {
             github_setup::github_repo_by_slug,
             github_setup::github_repo_by_id,
             github_setup::github_branch_exists,
+            github_setup::github_repository_access,
+            github_setup::github_invite_collaborator,
             icon_cache::icon_fetch,
             icon_cache::icon_cache_get,
             icon_cache::icon_cache_put,

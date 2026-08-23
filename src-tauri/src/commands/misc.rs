@@ -103,9 +103,33 @@ pub fn list_images(dir: String) -> Result<Vec<String>, String> {
     Ok(names)
 }
 
-/// Posts a message to the Discord webhook stored in the credential manager.
+/// Posts an announcement to the Discord webhook stored in the credential
+/// manager, one message per segment, in order.
+///
+/// The splitting itself lives in `discordPost.ts`, next to the template that
+/// produced the text: only the renderer knows where a line ends or a code
+/// fence opens, and a second, blunter splitter here would cut through both.
+/// This end just refuses anything Discord would reject outright.
 #[tauri::command]
-pub async fn discord_post(content: String) -> Result<(), String> {
+pub async fn discord_post(segments: Vec<String>) -> Result<(), String> {
+    let messages: Vec<String> = segments
+        .into_iter()
+        .filter(|s| !s.trim().is_empty())
+        .collect();
+    if messages.is_empty() {
+        return Err("Nothing to post".to_string());
+    }
+    // Counted in UTF-16 units, which is how Discord counts a message.
+    if let Some(over) = messages
+        .iter()
+        .position(|m| m.encode_utf16().count() > DISCORD_MESSAGE_LIMIT)
+    {
+        return Err(format!(
+            "Segment {} is longer than Discord's {DISCORD_MESSAGE_LIMIT}-character limit",
+            over + 1
+        ));
+    }
+
     let entry =
         keyring::Entry::new("DinoDepotStudio", "discord-webhook").map_err(|e| e.to_string())?;
     let webhook = match entry.get_password() {
@@ -124,35 +148,59 @@ pub async fn discord_post(content: String) -> Result<(), String> {
         .build()
         .map_err(|e| e.to_string())?;
 
-    // Discord limits messages to 2000 characters; chunk on line boundaries.
-    let mut chunks: Vec<String> = vec![];
-    let mut current = String::new();
-    for line in content.lines() {
-        if current.len() + line.len() + 1 > 1900 && !current.is_empty() {
-            chunks.push(current.clone());
-            current.clear();
+    let total = messages.len();
+    for (i, message) in messages.iter().enumerate() {
+        // Webhooks allow roughly five messages per two seconds. A short pause
+        // keeps a long announcement under that without relying on the retry
+        // path, and keeps the segments in the order they were written.
+        if i > 0 {
+            tokio::time::sleep(std::time::Duration::from_millis(400)).await;
         }
-        if !current.is_empty() {
-            current.push('\n');
-        }
-        current.push_str(line);
+        post_segment(&client, &webhook, message)
+            .await
+            .map_err(|e| format!("Message {} of {total}: {e}", i + 1))?;
     }
-    if !current.is_empty() {
-        chunks.push(current);
-    }
+    Ok(())
+}
 
-    for chunk in chunks {
+/// Discord's hard cap on `content`, whatever the poster's plan: a webhook is
+/// not a user, so Nitro's 4000 never applies to it.
+const DISCORD_MESSAGE_LIMIT: usize = 2000;
+
+/// Posts one message, waiting out a rate limit rather than losing the rest of
+/// a split announcement to it.
+async fn post_segment(
+    client: &reqwest::Client,
+    webhook: &str,
+    content: &str,
+) -> Result<(), String> {
+    for attempt in 0..3 {
         let res = client
-            .post(&webhook)
-            .json(&serde_json::json!({ "content": chunk }))
+            .post(webhook)
+            .json(&serde_json::json!({ "content": content }))
             .send()
             .await
             .map_err(|e| e.to_string())?;
-        if !res.status().is_success() {
-            let status = res.status();
-            let body = res.text().await.unwrap_or_default();
-            return Err(format!("Discord returned {status}: {body}"));
+        if res.status().is_success() {
+            return Ok(());
         }
+        let status = res.status();
+        let body = res.text().await.unwrap_or_default();
+        if status == reqwest::StatusCode::TOO_MANY_REQUESTS && attempt < 2 {
+            tokio::time::sleep(retry_after(&body)).await;
+            continue;
+        }
+        return Err(format!("Discord returned {status}: {body}"));
     }
-    Ok(())
+    Err("Discord kept rate-limiting the post".to_string())
+}
+
+/// Reads `retry_after` (seconds) out of a 429 body, clamped so a bad or
+/// missing value cannot park the post for minutes.
+fn retry_after(body: &str) -> std::time::Duration {
+    let seconds = serde_json::from_str::<serde_json::Value>(body)
+        .ok()
+        .and_then(|v| v.get("retry_after").and_then(|r| r.as_f64()))
+        .unwrap_or(1.0);
+    std::time::Duration::from_millis((seconds.clamp(0.0, 10.0) * 1000.0) as u64 + 100)
 }

@@ -50,6 +50,18 @@ describe("the credential boundary", () => {
     // And no credentials smuggled into the remote URL either.
     expect(serialized).not.toMatch(/https:\/\/[^"@/]+:[^"@/]+@/);
   });
+
+  it("passes an explicit history reset only for a deliberate rebind", async () => {
+    await git.setRemote("C:\\proj", "https://github.com/o/new.git", true);
+    expect(sent[0]).toEqual({
+      cmd: "git_set_remote",
+      args: {
+        dir: "C:\\proj",
+        url: "https://github.com/o/new.git",
+        resetHistory: true,
+      },
+    });
+  });
 });
 
 /**

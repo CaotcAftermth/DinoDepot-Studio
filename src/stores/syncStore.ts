@@ -2,10 +2,13 @@ import { create } from "zustand";
 import { ipc } from "../services/ipc";
 import { syncProject, type SyncContext } from "../services/sync";
 import { reconcile } from "../services/reconcile";
-import { flushPendingSaves } from "./draftsStore";
+import { flushPendingSaves, useDraftsStore } from "./draftsStore";
 import { flushJournal, useProjectStore } from "./projectStore";
 import { CURRENT_PROJECT_SCHEMA } from "../model/manifest";
 import { canSync } from "../model/localState";
+import { StudioError } from "../model/errors";
+import { publicSourcePrivacyProblem } from "../model/repoSetup";
+import { connectionProblem, refreshConnection } from "../services/repoConnection";
 import type { Conflict, ResolvedConflict } from "../model/merge/conflicts";
 import {
   restingPhase,
@@ -93,11 +96,47 @@ async function run(
 
   set({ running: true, phase: "checking" });
   try {
+    const drafts = useDraftsStore.getState();
+    const privacyProblem = publicSourcePrivacyProblem({
+      topology: local.topology,
+      playerDataEnabled: settings.modules["player-data"] === true,
+      playerCount: drafts.players.players.length,
+      cleanSlateCount: drafts.players.cleanSlates.length,
+      hasPlayerActivity: drafts.activity.events.some((event) => event.kind === "players"),
+      hasPlayerHistory: drafts.history.records.some((record) => record.family === "players"),
+      hasPendingPlayerChanges: local.pendingActions.some((action) =>
+        action.type.startsWith("player."),
+      ),
+    });
+    if (privacyProblem) {
+      const result = emptyOutcome(
+        privacyProblem,
+        new StudioError("publish.privacyViolation", privacyProblem),
+      );
+      set({ last: result, phase: result.phase });
+      return result;
+    }
+
+    const refreshed = await refreshConnection(local, dir);
+    if (Object.keys(refreshed.patch).length > 0) {
+      await useProjectStore.getState().updateLocal(refreshed.patch);
+    }
+    const currentLocal = { ...local, ...refreshed.patch };
+    const repositoryProblem = connectionProblem(refreshed.report, "sync");
+    if (repositoryProblem) {
+      const result = emptyOutcome(
+        repositoryProblem,
+        new StudioError("repo.unavailable", repositoryProblem),
+      );
+      set({ last: result, phase: result.phase });
+      return result;
+    }
+
     const context: SyncContext = {
       dir,
       projectId: settings.projectId,
       schemaVersion: CURRENT_PROJECT_SCHEMA,
-      local,
+      local: currentLocal,
       async flush() {
         // The journal describes what the commit will say, so it has to be on
         // disk before the commit is built — a crash between the two would
@@ -190,7 +229,7 @@ async function run(
   }
 }
 
-function emptyOutcome(message = ""): SyncOutcome {
+function emptyOutcome(message = "", error: StudioError | null = null): SyncOutcome {
   return {
     kind: "blocked",
     phase: "blocked",
@@ -200,7 +239,7 @@ function emptyOutcome(message = ""): SyncOutcome {
     actions: [],
     retries: 0,
     conflicts: null,
-    error: null,
+    error,
   };
 }
 

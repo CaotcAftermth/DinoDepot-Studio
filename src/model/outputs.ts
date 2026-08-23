@@ -22,6 +22,7 @@ import type { RemapsDraft } from "./remaps";
 import type { CosmeticsDraft } from "./cosmetics";
 import type { PlayersFile } from "./players";
 import type { GithubConfig, ProjectSettings } from "./project";
+import type { LocalProjectState } from "./localState";
 
 /**
  * The one place that decides what is publishable and what state it is in.
@@ -267,6 +268,106 @@ export function buildOutputStates(input: OutputBuildInput): OutputState[] {
 /** The outputs that count towards project health. */
 export function applicableOutputs(states: OutputState[]): OutputState[] {
   return states.filter((s) => s.applicable);
+}
+
+/**
+ * Outputs that still have their own publish destination.
+ *
+ * Viewer page and viewer data are parts of the public site artifact. They are
+ * generated and committed together by the site pipeline, never published as
+ * independent files.
+ */
+export function standaloneOutputs(states: OutputState[]): OutputState[] {
+  return states.filter(
+    (state) =>
+      state.applicable &&
+      state.family !== "viewerData" &&
+      state.family !== "viewerPage",
+  );
+}
+
+/**
+ * Publishing rows shown on Overview.
+ *
+ * Viewer page and data are one public-site artifact now. Their old per-file
+ * history cannot describe an atomic site publish, so machine-local publish
+ * checkpoints own the grouped row. Legacy per-file history remains a fallback
+ * for projects published by an older Studio build.
+ */
+export function overviewPublishingOutputs(
+  states: OutputState[],
+  local: LocalProjectState | null = null,
+): OutputState[] {
+  // Overview keeps disabled outputs visible; Publish hides them. Only viewer
+  // rows are replaced here.
+  const standalone = states.filter(
+    (state) => state.family !== "viewerData" && state.family !== "viewerPage",
+  );
+  const viewer = states.filter(
+    (state) => state.family === "viewerData" || state.family === "viewerPage",
+  );
+  if (viewer.length === 0 || !viewer.some((state) => state.applicable)) {
+    return standalone;
+  }
+
+  const issues = viewer.flatMap((state) => state.issues);
+  const errors = issues.filter((issue) => issue.level === "error").length;
+  const warnings = issues.filter((issue) => issue.level === "warning").length;
+  const hasContent = viewer.some((state) => state.hasContent);
+  const atomicPublished = Boolean(local?.lastPublishedCommit);
+  const legacyPublished = viewer
+    .filter((state) => state.applicable)
+    .every((state) => Boolean(state.publishedHash));
+  const published = atomicPublished || legacyPublished;
+  const sourceChanged = Boolean(
+    atomicPublished &&
+      local?.lastSyncedCommit &&
+      local.lastPublishedSourceCommit !== local.lastSyncedCommit,
+  );
+  const draftChanged = Boolean(atomicPublished && local?.pendingActions.length);
+  const legacyChanged = !atomicPublished && viewer.some((state) => state.dirty);
+  const dirty = published
+    ? sourceChanged || draftChanged || legacyChanged
+    : hasContent;
+  const status: OutputStatus =
+    errors > 0
+      ? "blocked"
+      : !published && !hasContent
+        ? "empty"
+        : !published
+          ? "unpublished"
+          : dirty
+            ? "changed"
+            : "published";
+  const hash = contentHash(viewer.map((state) => state.hash).join("\n"));
+  const lastPublishedAt = atomicPublished
+    ? local?.lastPublishedAt || null
+    : viewer
+        .map((state) => state.lastPublishedAt)
+        .filter((value): value is string => Boolean(value))
+        .sort()
+        .at(-1) ?? null;
+  const site: OutputState = {
+    family: "viewerPage",
+    label: "Public Site",
+    applicable: true,
+    content: viewer.map((state) => state.content).join("\n"),
+    hash,
+    issues,
+    errors,
+    warnings,
+    hasContent,
+    lastPublishedAt,
+    publishedHash: published && !dirty ? hash : null,
+    lastRecord: null,
+    dirty,
+    status,
+    path: "docs/",
+  };
+
+  const players = standalone.findIndex((state) => state.family === "players");
+  if (players < 0) return [...standalone, site];
+  return [...standalone.slice(0, players), site, ...standalone.slice(players)];
 }
 
 export interface OutputTotals {

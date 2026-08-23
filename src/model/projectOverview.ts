@@ -5,7 +5,12 @@ import type { ProductionDraft } from "./production";
 import type { RemapsDraft } from "./remaps";
 import type { Watchlist, WatchedMod } from "./watchlist";
 import type { GithubReadiness } from "./githubReadiness";
-import { summarizeOutputs, type OutputState } from "./outputs";
+import {
+  overviewPublishingOutputs,
+  summarizeOutputs,
+  type OutputState,
+} from "./outputs";
+import type { LocalProjectState } from "./localState";
 import type { IssueLevel } from "../validation/types";
 import type { OutputFamily } from "./history";
 
@@ -96,6 +101,7 @@ export interface OverviewInput {
   watchlist: Watchlist;
   outputs: OutputState[];
   github: GithubReadiness;
+  local?: LocalProjectState | null;
 }
 
 /**
@@ -196,7 +202,8 @@ function issueItems(
 export function buildOverview(input: OverviewInput): OverviewModel {
   const { production, remaps, cosmetics, catalog, watchlist, outputs, github } =
     input;
-  const totals = summarizeOutputs(outputs);
+  const publishingOutputs = overviewPublishingOutputs(outputs, input.local);
+  const totals = summarizeOutputs(publishingOutputs);
   const needReview = watchedNeedingReview(watchlist);
   const troubled = troubledSources(catalog);
   const removingSources = troubled.filter((s) => s.removed);
@@ -208,7 +215,7 @@ export function buildOverview(input: OverviewInput): OverviewModel {
 
   const attention: AttentionItem[] = [];
 
-  const errorRows = issueItems(outputs, "error");
+  const errorRows = issueItems(publishingOutputs, "error");
   attention.push(...errorRows);
 
   if (publishingBlocked) {
@@ -224,7 +231,7 @@ export function buildOverview(input: OverviewInput): OverviewModel {
     });
   }
 
-  attention.push(...issueItems(outputs, "warning"));
+  attention.push(...issueItems(publishingOutputs, "warning"));
 
   if (removingSources.length > 0) {
     attention.push({
@@ -296,7 +303,7 @@ export function buildOverview(input: OverviewInput): OverviewModel {
     dirty: publishable.length,
   });
 
-  const applicable = outputs.filter((o) => o.applicable);
+  const applicable = publishingOutputs.filter((o) => o.applicable);
   const synchronized = {
     count: totals.synchronized.length,
     total: applicable.length,
@@ -311,14 +318,14 @@ export function buildOverview(input: OverviewInput): OverviewModel {
       synchronized,
       configured: totals.withContent.length > 0,
     }),
-    outputs,
+    outputs: publishingOutputs,
     inventory: buildInventory({
       production,
       remaps,
       cosmetics,
       catalog,
       watchlist,
-      outputs,
+      outputs: publishingOutputs,
     }),
     attention,
     actions: buildActions({

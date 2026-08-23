@@ -47,6 +47,8 @@ export const RepoBindingSchema = z.object({
   branch: z.string().default("main"),
   /** Whether GitHub reports this repository as private. */
   isPrivate: z.boolean().default(true),
+  /** Whether GitHub reports Pages as enabled for this repository. */
+  hasPages: z.boolean().default(false),
 });
 export type RepoBinding = z.infer<typeof RepoBindingSchema>;
 
@@ -58,15 +60,30 @@ export function bindingSlug(binding: RepoBinding): string {
 /**
  * How this project publishes.
  *
- * `source-and-delivery` is the recommended default and the only one that works
- * on GitHub Free: the source stays private, and a second public repository
- * carries the viewer. `single-private` needs a paid plan, because Pages from a
- * private repository does.
+ * `source-and-delivery` is the safe default: the project stays private and a
+ * second public repository carries the viewer. `single-private` needs a paid
+ * plan because Pages comes from a private repository. `single-public` is only
+ * for projects that contain no Player Data; source and site share one public
+ * repository.
  */
 export const PublishTopologySchema = z
-  .enum(["source-and-delivery", "single-private"])
+  .enum(["source-and-delivery", "single-private", "single-public"])
   .default("source-and-delivery");
 export type PublishTopology = z.infer<typeof PublishTopologySchema>;
+
+export function topologyUsesSeparateDelivery(topology: PublishTopology): boolean {
+  return topology === "source-and-delivery";
+}
+
+export function sourceShouldBePrivate(topology: PublishTopology): boolean {
+  return topology !== "single-public";
+}
+
+export function siteBinding(
+  state: Pick<LocalProjectState, "topology" | "source" | "delivery">,
+): RepoBinding | null {
+  return topologyUsesSeparateDelivery(state.topology) ? state.delivery : state.source;
+}
 
 /**
  * An operation that started and has not been seen to finish.
@@ -129,6 +146,8 @@ export const LocalProjectStateSchema = z.object({
   source: RepoBindingSchema.nullable().default(null),
   delivery: RepoBindingSchema.nullable().default(null),
   topology: PublishTopologySchema,
+  /** False only until a new project has deliberately chosen a topology. */
+  topologyConfirmed: z.boolean().default(false),
 
   /** Source commit the local project was last reconciled with. */
   lastSyncedCommit: z.string().default(""),
@@ -230,13 +249,89 @@ export function bindingsAreDistinct(state: LocalProjectState): boolean {
 
 /** Whether Sync has everything it needs. Publish additionally needs delivery. */
 export function canSync(state: LocalProjectState | null): boolean {
-  return Boolean(state?.source?.githubId && state.githubAccountId);
+  return Boolean(
+    state?.source?.githubId &&
+      state.githubAccountId &&
+      state.source.isPrivate === sourceShouldBePrivate(state.topology),
+  );
 }
 
 export function canPublish(state: LocalProjectState | null): boolean {
   if (!canSync(state) || !state) return false;
-  if (state.topology === "single-private") return true;
-  return Boolean(state.delivery?.githubId) && bindingsAreDistinct(state);
+  const site = siteBinding(state);
+  if (!site?.githubId) return false;
+  if (!topologyUsesSeparateDelivery(state.topology)) return true;
+  return !site.isPrivate && bindingsAreDistinct(state);
+}
+
+/**
+ * Binding changes invalidate repository-specific checkpoints together.
+ * Pending edits remain in the journal; only claims about where they landed are
+ * cleared.
+ */
+export function sourceBindingPatch(
+  current: LocalProjectState,
+  source: RepoBinding | null,
+): Partial<LocalProjectState> {
+  if (
+    current.source?.githubId === source?.githubId &&
+    current.source?.branch === source?.branch
+  ) {
+    return { source };
+  }
+  return {
+    source,
+    lastSyncedCommit: "",
+    lastSyncedAt: "",
+    lastPublishedCommit: "",
+    lastPublishedAt: "",
+    lastPublishedSourceCommit: "",
+    pending: null,
+  };
+}
+
+export function deliveryBindingPatch(
+  current: LocalProjectState,
+  delivery: RepoBinding | null,
+): Partial<LocalProjectState> {
+  if (
+    current.delivery?.githubId === delivery?.githubId &&
+    current.delivery?.branch === delivery?.branch
+  ) {
+    return { delivery };
+  }
+  return {
+    delivery,
+    lastPublishedCommit: "",
+    lastPublishedAt: "",
+    lastPublishedSourceCommit: "",
+    pending: current.pending?.kind === "publish" ? null : current.pending,
+  };
+}
+
+export function topologyPatch(
+  current: LocalProjectState,
+  topology: PublishTopology,
+): Partial<LocalProjectState> {
+  if (current.topology === topology) return { topology, topologyConfirmed: true };
+  const sourceStillFits =
+    !current.source || current.source.isPrivate === sourceShouldBePrivate(topology);
+  return {
+    topology,
+    topologyConfirmed: true,
+    source: sourceStillFits ? current.source : null,
+    delivery: null,
+    ...(sourceStillFits
+      ? {}
+      : {
+          lastSyncedCommit: "",
+          lastSyncedAt: "",
+        }),
+    lastPublishedCommit: "",
+    lastPublishedAt: "",
+    lastPublishedSourceCommit: "",
+    pending: null,
+  };
 }
 
 /**

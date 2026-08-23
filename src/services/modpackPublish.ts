@@ -428,15 +428,16 @@ export function mergeRegistryIndex(
  * opening a pull request is not something to discover after the fact.
  */
 export async function planPublish(
+  accountId: string,
   registry: ModpackRegistry,
   pack: AssembledPack,
 ): Promise<PublishPlan> {
   requirePublishable(pack);
   const info = await ipc<{ canPush: boolean; defaultBranch: string }>(
     "github_repo_info",
-    { owner: registry.owner, repo: registry.repo },
+    { accountId, owner: registry.owner, repo: registry.repo },
   );
-  const login = await ipc<string>("github_me", {});
+  const login = await ipc<string>("github_me", { accountId });
   const forked = !info.canPush;
   const headOwner = forked ? login : registry.owner;
   const branch = `modpack/${pack.dir}-${pack.registryVersion.version}`;
@@ -465,6 +466,7 @@ export async function planPublish(
  * open a second pull request for the same pack.
  */
 export async function publishPack(
+  accountId: string,
   registry: ModpackRegistry,
   pack: AssembledPack,
   plan: PublishPlan,
@@ -477,6 +479,7 @@ export async function publishPack(
   if (plan.forked) {
     say("Forking the registry…");
     const fork = await ipc<{ owner: string; repo: string }>("github_fork", {
+      accountId,
       owner: registry.owner,
       repo: registry.repo,
     });
@@ -486,6 +489,7 @@ export async function publishPack(
     // stale tip would put unrelated changes in the pull request.
     say("Syncing the fork…");
     await ipc("github_sync_branch", {
+      accountId,
       owner: plan.headOwner,
       repo: plan.headRepo,
       branch: plan.baseBranch,
@@ -500,6 +504,7 @@ export async function publishPack(
 
   say("Creating the branch…");
   await ipc("github_create_branch", {
+    accountId,
     owner: plan.headOwner,
     repo: plan.headRepo,
     fromBranch: plan.baseBranch,
@@ -509,6 +514,7 @@ export async function publishPack(
   const root = registry.path.replace(/^\/|\/$/g, "");
   const manifestPath = repoPath(root, pack.registryVersion.manifest);
   const existingManifest = await ipc<GithubTextFile>("github_get_file", {
+    accountId,
     owner: plan.headOwner,
     repo: plan.headRepo,
     branch: plan.branch,
@@ -525,6 +531,7 @@ export async function publishPack(
 
   const indexPath = repoPath(root, "index.json");
   const remoteIndex = await ipc<GithubTextFile>("github_get_file", {
+    accountId,
     owner: plan.headOwner,
     repo: plan.headRepo,
     branch: plan.branch,
@@ -548,6 +555,7 @@ export async function publishPack(
     const message = `Modpack: ${meta.name} ${meta.version} — ${file.path}`;
     if (file.text !== undefined) {
       await ipc("github_put_file", {
+        accountId,
         owner: plan.headOwner,
         repo: plan.headRepo,
         branch: plan.branch,
@@ -558,6 +566,7 @@ export async function publishPack(
     } else if (file.contentB64 !== undefined) {
       if (file.path.startsWith("assets/sha256/")) {
         const existing = await ipc<GithubTextFile>("github_get_file", {
+          accountId,
           owner: plan.headOwner,
           repo: plan.headRepo,
           branch: plan.branch,
@@ -572,6 +581,7 @@ export async function publishPack(
         }
       }
       await ipc("github_put_file_b64", {
+        accountId,
         owner: plan.headOwner,
         repo: plan.headRepo,
         branch: plan.branch,
@@ -584,6 +594,7 @@ export async function publishPack(
 
   say("Updating the registry index…");
   await ipc("github_put_file", {
+    accountId,
     owner: plan.headOwner,
     repo: plan.headRepo,
     branch: plan.branch,
@@ -594,6 +605,7 @@ export async function publishPack(
 
   say("Opening the pull request…");
   const pr = await ipc<{ url: string; number: number }>("github_open_pr", {
+    accountId,
     owner: registry.owner,
     repo: registry.repo,
     head: plan.head,

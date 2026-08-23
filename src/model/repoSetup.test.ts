@@ -19,6 +19,9 @@ import {
   identityMatches,
   newRepoUrl,
   newTokenUrl,
+  OPTIONAL_TOKEN_ACCESS,
+  pagesSiteUrl,
+  publicSourcePrivacyProblem,
   reconcileBinding,
   REQUIRED_TOKEN_ACCESS,
   setupSteps,
@@ -35,6 +38,7 @@ function identity(over: Partial<RepoIdentity> = {}): RepoIdentity {
     defaultBranch: "main",
     canPush: true,
     isEmpty: true,
+    hasPages: false,
     htmlUrl: "https://github.com/ggfizz/cluster-source",
     ...over,
   };
@@ -77,7 +81,19 @@ describe("checking a repository is suitable", () => {
     );
     expect(blockingIssues(issues)).toHaveLength(1);
     expect(issues[0].message).toContain("is public");
-    expect(issues[0].fix).toContain("roster");
+    expect(issues[0].fix).toContain("private project data");
+  });
+
+  it("accepts a public project repository on public-only", () => {
+    expect(
+      checkSuitability(identity({ isPrivate: false }), "source", "single-public"),
+    ).toEqual([]);
+  });
+
+  it("refuses a private project repository on public-only", () => {
+    const issues = checkSuitability(identity(), "source", "single-public");
+    expect(blockingIssues(issues)).toHaveLength(1);
+    expect(issues[0].fix).toContain("Make it public");
   });
 
   it("refuses a repository the token cannot write to", () => {
@@ -238,6 +254,11 @@ describe("keeping a binding current", () => {
     const update = reconcileBinding(binding(), identity({ isPrivate: false }));
     expect(update.binding.isPrivate).toBe(false);
   });
+
+  it("tracks whether Pages is enabled", () => {
+    const update = reconcileBinding(binding(), identity({ hasPages: true }));
+    expect(update.binding.hasPages).toBe(true);
+  });
 });
 
 describe("identity matching", () => {
@@ -350,18 +371,21 @@ describe("when a repository cannot be reached", () => {
 });
 
 describe("the setup checklist", () => {
-  it("starts with connecting an account, everything after it blocked", () => {
+  it("starts by asking for a deliberate repository arrangement", () => {
     const steps = setupSteps(state());
-    expect(steps[0].id).toBe("account");
+    expect(steps[0].id).toBe("topology");
     expect(steps[0].done).toBe(false);
     expect(steps.slice(1).every((s) => s.blocked)).toBe(true);
-    expect(currentStep(steps)?.id).toBe("account");
+    expect(currentStep(steps)?.id).toBe("topology");
   });
 
   it("unblocks choosing a repository once an account is connected", () => {
-    const steps = setupSteps(state({ githubAccountId: "9", githubLogin: "ggfizz" }));
-    expect(steps[0].done).toBe(true);
-    expect(steps[0].detail).toContain("ggfizz");
+    const steps = setupSteps(
+      state({ topologyConfirmed: true, githubAccountId: "9", githubLogin: "ggfizz" }),
+    );
+    const account = steps.find((s) => s.id === "account");
+    expect(account?.done).toBe(true);
+    expect(account?.detail).toContain("ggfizz");
     expect(steps.find((s) => s.id === "source")?.blocked).toBe(false);
     expect(currentStep(steps)?.id).toBe("source");
   });
@@ -382,16 +406,17 @@ describe("the setup checklist", () => {
     );
     const delivery = steps.find((s) => s.id === "delivery");
     expect(delivery?.done).toBe(true);
-    expect(delivery?.title).toContain("workflow");
+    expect(delivery?.title).toContain("project repository");
   });
 
-  it("is finished once the project has been shared", () => {
+  it("is finished once source, publish, and Pages are confirmed", () => {
     const steps = setupSteps(
       state({
         githubAccountId: "9",
         source: binding(),
-        delivery: binding({ githubId: "987", isPrivate: false }),
+        delivery: binding({ githubId: "987", isPrivate: false, hasPages: true }),
         lastSyncedCommit: "c1",
+        lastPublishedCommit: "p1",
       }),
     );
     expect(steps.every((s) => s.done)).toBe(true);
@@ -400,17 +425,59 @@ describe("the setup checklist", () => {
 
   it("copes with no project at all", () => {
     const steps = setupSteps(null);
-    expect(steps).toHaveLength(5);
+    expect(steps).toHaveLength(7);
     expect(steps.every((s) => !s.done)).toBe(true);
+  });
+
+  it("uses the public source as the site on public-only", () => {
+    const steps = setupSteps(
+      state({
+        topology: "single-public",
+        githubAccountId: "9",
+        source: binding({ isPrivate: false, hasPages: true }),
+        lastSyncedCommit: "c1",
+        lastPublishedCommit: "p1",
+      }),
+    );
+    expect(steps.find((s) => s.id === "source")?.title).toContain("public");
+    expect(steps.find((s) => s.id === "delivery")?.done).toBe(true);
+    expect(steps.find((s) => s.id === "pages")?.done).toBe(true);
+  });
+});
+
+describe("public-only privacy", () => {
+  const safe = {
+    topology: "single-public" as const,
+    playerDataEnabled: false,
+    playerCount: 0,
+    cleanSlateCount: 0,
+    hasPlayerActivity: false,
+    hasPlayerHistory: false,
+    hasPendingPlayerChanges: false,
+  };
+
+  it("allows a project with no Player Data evidence", () => {
+    expect(publicSourcePrivacyProblem(safe)).toBe("");
+  });
+
+  it("blocks every retained form of Player Data evidence", () => {
+    for (const changed of [
+      { playerDataEnabled: true },
+      { playerCount: 1 },
+      { cleanSlateCount: 1 },
+      { hasPlayerActivity: true },
+      { hasPlayerHistory: true },
+      { hasPendingPlayerChanges: true },
+    ]) {
+      expect(publicSourcePrivacyProblem({ ...safe, ...changed })).toContain(
+        "Public-only cannot be used",
+      );
+    }
   });
 });
 
 describe("browser-guided setup", () => {
-  /**
-   * Repository creation happens on GitHub, in the browser, so the administrator
-   * sees what is being made — and so DinoDepot never needs the Administration
-   * permission that creating one through the API would require.
-   */
+  /** Repository creation remains visible and deliberate on GitHub. */
   it("pre-fills the new-repository page as private for the project", () => {
     const url = new URL(newRepoUrl("cluster-source", "source"));
     expect(url.origin + url.pathname).toBe("https://github.com/new");
@@ -423,6 +490,20 @@ describe("browser-guided setup", () => {
     expect(url.searchParams.get("visibility")).toBe("public");
   });
 
+  it("pre-fills a public source for public-only", () => {
+    const url = new URL(newRepoUrl("cluster", "source", "single-public"));
+    expect(url.searchParams.get("visibility")).toBe("public");
+  });
+
+  it("builds both project-site and user-site Pages addresses", () => {
+    expect(pagesSiteUrl(binding({ owner: "GGFizz", name: "cluster" }))).toBe(
+      "https://GGFizz.github.io/cluster/",
+    );
+    expect(pagesSiteUrl(binding({ owner: "GGFizz", name: "ggfizz.github.io" }))).toBe(
+      "https://GGFizz.github.io/",
+    );
+  });
+
   it("escapes a name that would otherwise break the query", () => {
     const url = new URL(newRepoUrl("my repo&x=1", "source"));
     expect(url.searchParams.get("name")).toBe("my repo&x=1");
@@ -432,7 +513,7 @@ describe("browser-guided setup", () => {
     expect(newTokenUrl()).toContain("personal-access-tokens");
   });
 
-  it("asks for exactly the access it needs, and says what it does not want", () => {
+  it("separates core access from optional collaborator management", () => {
     const required = REQUIRED_TOKEN_ACCESS.join(" ");
     expect(required).toContain("Only select repositories");
     expect(required).toContain("Contents: Read and write");
@@ -440,12 +521,13 @@ describe("browser-guided setup", () => {
     expect(required).not.toContain("Administration");
     expect(required).not.toContain("Workflows");
 
+    expect(OPTIONAL_TOKEN_ACCESS.join(" ")).toContain("Administration: Read and write");
+
     const unnecessary = UNNECESSARY_TOKEN_ACCESS.join(" ");
-    expect(unnecessary).toContain("Administration");
     expect(unnecessary).toContain("Workflows");
   });
 
-  /** Collaborators are added by hand, on GitHub — never through the API. */
+  /** GitHub remains the fallback and source of truth for access. */
   it("links to the repository's own access settings", () => {
     expect(collaboratorsUrl(binding())).toBe(
       "https://github.com/ggfizz/cluster-source/settings/access",

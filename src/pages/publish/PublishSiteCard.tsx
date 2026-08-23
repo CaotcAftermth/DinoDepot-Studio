@@ -72,9 +72,20 @@ export function PublishSiteCard() {
         only be built from a version the team already has.
       </p>
 
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <span className="text-xs text-ink-400">Published together:</span>
+        <Badge tone="info">Cluster Viewer Page</Badge>
+        <Badge tone="info">Cluster Viewer Data</Badge>
+        <Badge tone="neutral">Icons and build manifest</Badge>
+      </div>
+
       {!ready && (
         <p className="text-sm text-amber-400 mb-3">
-          Connect a public site repository in Settings before publishing.
+          {local?.topology === "source-and-delivery"
+            ? "Connect a public site repository in Settings before publishing."
+            : local?.topology === "single-public"
+              ? "Connect one public project repository in Settings before publishing."
+              : "Connect a private project repository in Settings before publishing."}
         </p>
       )}
 

@@ -212,6 +212,7 @@ fn copy_tree(from: &Path, to: &Path) -> Result<usize, String> {
         // lock files describe who is editing right now, which is never true of
         // a copy — restoring one would hand the restored project a lock.
         if name == "backups"
+            || name == ".git"
             || name == STAGING_DIR
             || name == "recovery"
             || name.starts_with(".dinodepot-lock")
@@ -483,6 +484,8 @@ mod tests {
         fs::write(dir.path().join("profiles/x.arkprofile"), b"\x00\x01").unwrap();
         fs::create_dir_all(dir.path().join("backups")).unwrap();
         fs::write(dir.path().join("backups/old_project.json"), "stale").unwrap();
+        fs::create_dir_all(dir.path().join(".git")).unwrap();
+        fs::write(dir.path().join(".git/config"), "private history").unwrap();
 
         let info =
             snapshot_project(dir.path().to_string_lossy().into(), "pre-migration".into()).unwrap();
@@ -493,6 +496,7 @@ mod tests {
         // Binary project data is copied byte-for-byte, not through a string.
         assert_eq!(fs::read(snap.join("profiles/x.arkprofile")).unwrap(), vec![0, 1]);
         assert!(!snap.join("backups").exists());
+        assert!(!snap.join(".git").exists());
         assert_eq!(info.file_count, 3);
     }
 

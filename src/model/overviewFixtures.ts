@@ -41,6 +41,7 @@ export function settings(over: Partial<ProjectSettings> = {}): ProjectSettings {
  */
 export function githubConfig(over: Partial<GithubConfig> = {}): GithubConfig {
   return {
+    accountId: "9",
     owner: "ggfizz",
     repo: "cluster",
     branch: "main",

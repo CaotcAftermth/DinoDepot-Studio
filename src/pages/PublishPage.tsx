@@ -14,7 +14,11 @@ import {
   OutputFamily,
   PublishRecord,
 } from "../model/history";
-import { buildOutputStates, type OutputState } from "../model/outputs";
+import {
+  buildOutputStates,
+  standaloneOutputs,
+  type OutputState,
+} from "../model/outputs";
 import { newId } from "../model/ids";
 import {
   fetchRemote,
@@ -30,9 +34,9 @@ import {
   Card,
   Field,
   Input,
-  Modal,
   PageHeader,
 } from "../components/ui";
+import { OutputPreviewModal } from "../components/OutputPreviewModal";
 import { toast } from "../components/toast";
 import { feedbackTarget } from "../model/feedback/targets";
 
@@ -99,9 +103,9 @@ export function PublishPage() {
       }),
     [drafts.production, drafts.remaps, drafts.cosmetics, drafts.catalog, drafts.players, drafts.history, drafts.imageFiles, index, settings, github],
   );
-  /** Only what this project actually publishes gets a card. */
+  /** Site files publish atomically above; only standalone outputs get cards. */
   const families = useMemo(
-    () => allOutputs.filter((o) => o.applicable),
+    () => standaloneOutputs(allOutputs),
     [allOutputs],
   );
 
@@ -156,15 +160,11 @@ export function PublishPage() {
       </div>
 
       {preview && (
-        <Modal
-          title={`${OUTPUT_FAMILY_LABELS[preview.family]} — output preview`}
+        <OutputPreviewModal
+          label={OUTPUT_FAMILY_LABELS[preview.family]}
+          content={preview.content}
           onClose={() => setPreview(null)}
-          wide
-        >
-          <pre className="mono bg-ink-950 border border-ink-700 rounded-lg p-3 overflow-auto max-h-[60vh] text-ink-200 whitespace-pre-wrap break-all">
-            {preview.content || "(empty output)"}
-          </pre>
-        </Modal>
+        />
       )}
     </div>
   );
@@ -178,8 +178,9 @@ export function PublishPage() {
  * It published each output as its own commit, so a failure halfway through left
  * a site that was half last week's — and there was no single moment at which
  * the published site was known to correspond to one version of the project.
- * `PublishSiteCard` replaces it with one atomic commit carrying the whole
- * generated tree. The per-output cards below remain as status and preview.
+ * `PublishSiteCard` replaces it with one atomic commit carrying the viewer
+ * page, viewer data, assets, and manifest. Cards below are only for outputs
+ * with independent consumers and destinations.
  */
 
 // ---------------------------------------------------------------------------

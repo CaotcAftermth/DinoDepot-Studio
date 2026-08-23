@@ -10,18 +10,33 @@ import {
 } from "../../components/ui";
 import { SecretInput } from "../../components/SecretInput";
 import { toast } from "../../components/toast";
+import { confirmDialog } from "../../components/confirm";
 import { openExternal } from "../../services/openExternal";
 import { useProjectStore } from "../../stores/projectStore";
+import { useDraftsStore } from "../../stores/draftsStore";
 import * as github from "../../services/githubAccount";
-import { checkConnection, connectRepository } from "../../services/repoConnection";
-import { asStudioError } from "../../model/errors";
-import { bindingSlug, type PublishTopology } from "../../model/localState";
 import {
-  collaboratorsUrl,
+  applyRemote,
+  connectRepository,
+  refreshConnection,
+} from "../../services/repoConnection";
+import { asStudioError } from "../../model/errors";
+import {
+  bindingSlug,
+  deliveryBindingPatch,
+  siteBinding,
+  sourceBindingPatch,
+  topologyPatch,
+  topologyUsesSeparateDelivery,
+  type PublishTopology,
+} from "../../model/localState";
+import {
   currentStep,
   newRepoUrl,
   newTokenUrl,
   pagesSettingsUrl,
+  publicSourcePrivacyProblem,
+  OPTIONAL_TOKEN_ACCESS,
   REQUIRED_TOKEN_ACCESS,
   setupSteps,
   UNNECESSARY_TOKEN_ACCESS,
@@ -31,18 +46,33 @@ import {
 } from "../../model/repoSetup";
 import { feedbackTarget } from "../../model/feedback/targets";
 
+function privacyProblemFor(topology: PublishTopology): string {
+  const project = useProjectStore.getState();
+  const drafts = useDraftsStore.getState();
+  return publicSourcePrivacyProblem({
+    topology,
+    playerDataEnabled: project.settings?.modules["player-data"] === true,
+    playerCount: drafts.players.players.length,
+    cleanSlateCount: drafts.players.cleanSlates.length,
+    hasPlayerActivity: drafts.activity.events.some((event) => event.kind === "players"),
+    hasPlayerHistory: drafts.history.records.some((record) => record.family === "players"),
+    hasPendingPlayerChanges: Boolean(
+      project.local?.pendingActions.some((action) => action.type.startsWith("player.")),
+    ),
+  });
+}
+
 /**
  * Connecting a project to GitHub.
  *
- * A checklist rather than a wizard: five things, in order, each of which the
+ * A checklist rather than a wizard: each setup fact, in order, which the
  * administrator either has or has not done. A wizard hides where you are the
  * moment you close it, and this is a setup people come back to — when a token
  * expires, when a repository is renamed, when a second administrator joins.
  *
- * Every repository and every collaborator is created **on GitHub, in the
- * browser**. DinoDepot never asks for the Administration permission, so it
- * could not create one even if it wanted to — and the administrator sees
- * exactly what they are agreeing to.
+ * Repository creation stays on GitHub. Collaborator visibility and invitations
+ * live in the separate Project Access category; its extra Administration grant
+ * is optional, repository-scoped, and never needed for Sync or Publish.
  *
  * The cards are in the order of the checklist above them, and a step that is
  * done folds itself away: once a token is stored there is nothing to read in
@@ -58,6 +88,8 @@ export function GitHubSetup() {
   const [token, setToken] = useState("");
   const [busy, setBusy] = useState("");
   const [status, setStatus] = useState<github.AccountStatus | null>(null);
+  const [statusError, setStatusError] = useState("");
+  const [connectionIssues, setConnectionIssues] = useState<SetupIssue[]>([]);
   /**
    * Whether the account has been asked about yet.
    *
@@ -72,6 +104,7 @@ export function GitHubSetup() {
 
   const refreshStatus = useCallback(() => {
     setChecked(false);
+    setStatusError("");
     if (!accountId) {
       setStatus(null);
       setChecked(true);
@@ -79,9 +112,23 @@ export function GitHubSetup() {
     }
     github
       .accountStatus(accountId)
-      .then(setStatus)
-      .catch(() => setStatus(null))
-      .finally(() => setChecked(true));
+      .then((next) => {
+        if (useProjectStore.getState().local?.githubAccountId !== accountId) return;
+        setStatus(next);
+        setStatusError("");
+      })
+      .catch((error) => {
+        if (useProjectStore.getState().local?.githubAccountId !== accountId) return;
+        setStatus(null);
+        setStatusError(
+          asStudioError(error, "unknown", "Could not check your GitHub sign-in.").message,
+        );
+      })
+      .finally(() => {
+        if (useProjectStore.getState().local?.githubAccountId === accountId) {
+          setChecked(true);
+        }
+      });
   }, [accountId]);
 
   useEffect(refreshStatus, [refreshStatus]);
@@ -115,28 +162,49 @@ export function GitHubSetup() {
       await updateLocal({ githubAccountId: "", githubLogin: "" });
       setStatus(null);
       toast.info("GitHub sign-in removed from this computer");
+    } catch (e) {
+      toast.error(asStudioError(e, "unknown", "Could not remove your GitHub sign-in.").message);
     } finally {
       setBusy("");
     }
   }
 
   async function handleRecheck() {
-    if (!local) return;
+    if (!local || !dir) return;
     setBusy("check");
+    setConnectionIssues([]);
     try {
-      const report = await checkConnection(local);
-      // A rename or transfer is followed silently and mentioned — never
-      // treated as the repository having gone.
-      if (report.source && report.source.change !== "none") {
-        await updateLocal({ source: report.source.binding });
-      }
-      if (report.delivery && report.delivery.change !== "none") {
-        await updateLocal({ delivery: report.delivery.binding });
-      }
+      const { report, patch } = await refreshConnection(local, dir);
+      if (Object.keys(patch).length > 0) await updateLocal(patch);
       for (const note of report.notes) toast.info(note);
-      const unreachable = [report.source, report.delivery].find((r) => r?.availability);
-      if (unreachable?.availability) toast.error(unreachable.availability.message);
-      else if (report.notes.length === 0) toast.success("Both repositories are reachable");
+      const results = [report.source, report.delivery].filter(Boolean);
+      const issues: SetupIssue[] = [
+        ...results.flatMap((result) => result?.issues ?? []),
+        ...(report.pairing
+          ? [{ level: "error" as const, message: report.pairing.message, fix: report.pairing.fix }]
+          : []),
+      ];
+      const unavailable = results.flatMap((result) =>
+        result?.availability ? [result.availability] : [],
+      );
+      setConnectionIssues([
+        ...issues,
+        ...unavailable.map((problem) => ({
+          level: problem.availability === "offline" ? ("warning" as const) : ("error" as const),
+          message: problem.message,
+          fix: problem.offerReconnect
+            ? "Choose Change on that repository to connect a replacement."
+            : "Try Check connection again when GitHub is reachable.",
+        })),
+      ]);
+      for (const problem of unavailable) toast.error(problem.message);
+      if (issues.some((issue) => issue.level === "error")) {
+        toast.error(issues.find((issue) => issue.level === "error")!.message);
+      } else if (unavailable.length === 0 && report.notes.length === 0) {
+        toast.success(
+          `${results.length} connected ${results.length === 1 ? "repository is" : "repositories are"} reachable`,
+        );
+      }
     } catch (e) {
       toast.error(asStudioError(e, "unknown", "Could not check the connection.").message);
     } finally {
@@ -154,6 +222,14 @@ export function GitHubSetup() {
         onCheck={() => void handleRecheck()}
       />
 
+      {connectionIssues.length > 0 && (
+        <Card title="Connection issues">
+          <IssueList issues={connectionIssues} />
+        </Card>
+      )}
+
+      <TopologyCard />
+
       <CollapsibleCard
         title="GitHub account"
         prefKey="github:account"
@@ -162,10 +238,14 @@ export function GitHubSetup() {
         // stops working — the reason is inside the card, so it must not be
         // the thing that is hidden. Stays folded until the check comes back,
         // rather than flashing open on every visit.
-        defaultOpen={!accountId || (checked && !status?.connected)}
+        defaultOpen={!accountId || (checked && (!status?.connected || Boolean(statusError)))}
         actions={
           status?.connected ? (
             <Badge tone="ok">Signed in as {status.login}</Badge>
+          ) : accountId && !checked ? (
+            <Badge tone="neutral">Checking…</Badge>
+          ) : statusError ? (
+            <Badge tone="warn">Could not check</Badge>
           ) : accountId ? (
             <Badge tone="error">Access expired</Badge>
           ) : (
@@ -173,7 +253,21 @@ export function GitHubSetup() {
           )
         }
       >
-        {accountId && status?.connected ? (
+        {accountId && statusError ? (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-amber-300">{statusError}</p>
+            <div className="flex gap-2">
+              <Button onClick={refreshStatus}>Try again</Button>
+              <Button
+                variant="danger"
+                onClick={() => void handleDisconnect()}
+                disabled={busy === "account"}
+              >
+                Sign out
+              </Button>
+            </div>
+          </div>
+        ) : accountId && status?.connected ? (
           <div className="flex items-center justify-between gap-3">
             <p className="text-xs text-ink-400">
               Your token is in Windows Credential Manager. DinoDepot never puts it
@@ -197,11 +291,23 @@ export function GitHubSetup() {
               project's repositories. Every administrator uses their own — a
               shared one is not supported.
             </p>
+            <p className="text-xs text-ink-300 mb-3">
+              Create the repository or repositories below first, so GitHub can
+              limit the token to only those repositories.
+            </p>
 
             <div className="text-xs text-ink-300 mb-3">
-              <div className="font-medium mb-1">Give it exactly this:</div>
+              <div className="font-medium mb-1">Core access:</div>
               <ul className="list-disc ml-5 flex flex-col gap-0.5 text-ink-400">
                 {REQUIRED_TOKEN_ACCESS.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+              <div className="font-medium mt-2 mb-1">
+                Optional — direct invitations:
+              </div>
+              <ul className="list-disc ml-5 flex flex-col gap-0.5 text-ink-400">
+                {OPTIONAL_TOKEN_ACCESS.map((line) => (
                   <li key={line}>{line}</li>
                 ))}
               </ul>
@@ -239,18 +345,22 @@ export function GitHubSetup() {
 
       <RepositoryCard
         role="source"
-        title="Project repository (private)"
-        blurb="Holds the project itself — the roster, the profile backups, and the history every administrator shares. It must be private."
+        title={
+          local?.topology === "single-public"
+            ? "Project repository (public)"
+            : "Project repository (private)"
+        }
+        blurb={
+          local?.topology === "single-public"
+            ? "Holds the project and generated viewer together. It is public, so this arrangement is available only to projects that have never held Player Data."
+            : "Holds the project itself — including shared project data and history. It must be private. Local backups and raw profiles are never committed."
+        }
         disabled={!accountId}
         busyKey={busy}
         setBusy={setBusy}
       />
 
-      {/* Before the public repository, not after it: this choice decides
-          whether there is a public repository to connect at all. */}
-      <TopologyCard hasSource={Boolean(local?.source?.githubId)} />
-
-      {local?.topology === "source-and-delivery" && (
+      {local && topologyUsesSeparateDelivery(local.topology) && (
         <RepositoryCard
           role="delivery"
           title="Public site repository"
@@ -261,23 +371,12 @@ export function GitHubSetup() {
         />
       )}
 
-      {dir && local?.source?.githubId && (
-        <Card title="Other administrators">
-          <p className="text-xs text-ink-400 mb-3">
-            Add them on GitHub, as collaborators on the project repository. Each
-            one connects their own token in their own copy of Studio.
-          </p>
-          <Button onClick={() => void openExternal(collaboratorsUrl(local.source!))}>
-            Manage access on GitHub ↗
-          </Button>
-        </Card>
-      )}
     </>
   );
 }
 
 /**
- * The five things, in order, with the cards below in the same order.
+ * The setup facts, in dependency order.
  *
  * Folds itself once every step is done: a finished checklist is a list of
  * ticks, and the header alone carries that. The Check connection button stays
@@ -372,25 +471,59 @@ function RepositoryCard({
 }) {
   const local = useProjectStore((s) => s.local);
   const updateLocal = useProjectStore((s) => s.updateLocal);
+  const dir = useProjectStore((s) => s.dir);
   const bound = role === "source" ? local?.source : local?.delivery;
 
   const [owner, setOwner] = useState("");
   const [name, setName] = useState("");
   const [issues, setIssues] = useState<SetupIssue[]>([]);
+  const [editing, setEditing] = useState(false);
 
   async function handleConnect() {
-    if (!local) return;
+    if (!local || !dir) return;
+    if (role === "source") {
+      const privacyProblem = privacyProblemFor(local.topology);
+      if (privacyProblem) {
+        setIssues([{ level: "error", message: privacyProblem, fix: "" }]);
+        return;
+      }
+    }
     setBusy(role);
     setIssues([]);
     try {
       const result = await connectRepository(local, role, owner, name);
       setIssues(result.issues);
       if (!result.connected) return;
-      await updateLocal(
-        role === "source" ? { source: result.binding } : { delivery: result.binding },
+      const changing = Boolean(
+        bound?.githubId &&
+          (bound.githubId !== result.binding.githubId || bound.branch !== result.binding.branch),
       );
+      if (
+        changing &&
+        !(await confirmDialog({
+          title: `Switch to ${bindingSlug(result.binding)}?`,
+          message:
+            role === "source"
+              ? "Sync checkpoints and the local Git history will be reset for the new project repository. Your project files and unsynchronized edit journal stay on this computer."
+              : "Publish checkpoints and the cached site history will be reset for the new site repository.",
+          confirmLabel: "Switch repository",
+        }))
+      ) {
+        return;
+      }
+      if (role === "source") {
+        await applyRemote(
+          dir,
+          result.binding,
+          bound?.githubId !== result.binding.githubId || bound?.branch !== result.binding.branch,
+        );
+        await updateLocal(sourceBindingPatch(local, result.binding));
+      } else {
+        await updateLocal(deliveryBindingPatch(local, result.binding));
+      }
       setOwner("");
       setName("");
+      setEditing(false);
       toast.success(`Connected ${bindingSlug(result.binding)}`);
     } catch (e) {
       const error = asStudioError(e, "repo.unavailable", "Could not find that repository.");
@@ -419,7 +552,7 @@ function RepositoryCard({
     >
       <p className="text-xs text-ink-400 mb-3">{blurb}</p>
 
-      {bound?.githubId ? (
+      {bound?.githubId && !editing ? (
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs text-ink-400">
             Branch <span className="mono">{bound.branch}</span>
@@ -429,16 +562,12 @@ function RepositoryCard({
           >
             Open on GitHub ↗
           </Button>
-          {role === "delivery" && (
+          {local && siteBinding(local)?.githubId === bound.githubId && (
             <Button onClick={() => void openExternal(pagesSettingsUrl(bound))}>
               Pages settings ↗
             </Button>
           )}
-          <Button
-            onClick={() =>
-              void updateLocal(role === "source" ? { source: null } : { delivery: null })
-            }
-          >
+          <Button onClick={() => setEditing(true)}>
             Change
           </Button>
         </div>
@@ -446,12 +575,12 @@ function RepositoryCard({
         <>
           <div className="flex gap-2 mb-2">
             <Button
-              disabled={disabled}
               onClick={() =>
                 void openExternal(
                   newRepoUrl(
                     role === "source" ? "dinodepot-project" : "dinodepot-site",
                     role,
+                    local?.topology ?? "source-and-delivery",
                   ),
                 )
               }
@@ -462,7 +591,7 @@ function RepositoryCard({
               then type its name below
             </span>
           </div>
-          <div className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
+          <div className="grid grid-cols-[1fr_1fr_auto_auto] gap-2 items-end">
             <Field label="Owner">
               <Input
                 value={owner}
@@ -486,70 +615,121 @@ function RepositoryCard({
             >
               {busyKey === role ? "Checking…" : "Connect"}
             </Button>
+            {editing && (
+              <Button
+                onClick={() => {
+                  setEditing(false);
+                  setIssues([]);
+                  setOwner("");
+                  setName("");
+                }}
+              >
+                Cancel
+              </Button>
+            )}
           </div>
         </>
       )}
 
-      {issues.length > 0 && (
-        <ul className="mt-3 flex flex-col gap-2">
-          {issues.map((issue, i) => (
-            <li
-              key={i}
-              className={cx(
-                "text-xs rounded border p-2",
-                issue.level === "error"
-                  ? "border-danger/30 bg-danger/10 text-red-300"
-                  : "border-amber-flag/30 bg-amber-flag/10 text-amber-300",
-              )}
-            >
-              <div>{issue.message}</div>
-              {issue.fix && <div className="text-ink-400 mt-1">{issue.fix}</div>}
-            </li>
-          ))}
-        </ul>
-      )}
+      {issues.length > 0 && <IssueList issues={issues} className="mt-3" />}
     </CollapsibleCard>
   );
 }
 
-/** How the public site is published. Two options, and the trade-off is money. */
-function TopologyCard({ hasSource }: { hasSource: boolean }) {
+/** How the project and public site are divided between repositories. */
+function TopologyCard() {
   const local = useProjectStore((s) => s.local);
   const updateLocal = useProjectStore((s) => s.updateLocal);
   const topology = local?.topology ?? "source-and-delivery";
-  const single = topology === "single-private";
 
-  const choose = (value: PublishTopology) => void updateLocal({ topology: value });
+  async function choose(value: PublishTopology) {
+    if (!local) return;
+    const privacyProblem = privacyProblemFor(value);
+    if (privacyProblem) {
+      toast.error(privacyProblem);
+      return;
+    }
+    if (value === topology) {
+      if (!local.topologyConfirmed) await updateLocal({ topologyConfirmed: true });
+      return;
+    }
+    if (
+      (local.source || local.delivery) &&
+      !(await confirmDialog({
+        title: "Change repository arrangement?",
+        message:
+          "Repository bindings that no longer fit will be disconnected, and publishing checkpoints will be reset. Project files and unsynchronized edits stay on this computer.",
+        confirmLabel: "Change arrangement",
+      }))
+    ) {
+      return;
+    }
+    try {
+      await updateLocal(topologyPatch(local, value));
+      toast.info("Repository arrangement updated");
+    } catch (error) {
+      toast.error(asStudioError(error, "unknown", "Could not change the arrangement.").message);
+    }
+  }
+
+  const summary =
+    topology === "source-and-delivery"
+      ? "Separate public site"
+      : topology === "single-private"
+        ? "One private repository"
+        : "One public repository";
 
   return (
     <CollapsibleCard
       title="How the public site is published"
       prefKey="github:topology"
-      // Every project has a topology from the moment it is made, so this is
-      // never unanswered — only unconsidered. It stays open until there is a
-      // repository for it to apply to, and folds after that.
-      defaultOpen={!hasSource}
+      defaultOpen={!local?.topologyConfirmed && !local?.source}
       actions={
-        <Badge tone="neutral">
-          {single ? "One private repository" : "Separate public site"}
-        </Badge>
+        <Badge tone="neutral">{summary}</Badge>
       }
     >
       <div className="flex flex-col gap-2">
         <TopologyChoice
           selected={topology === "source-and-delivery"}
-          onSelect={() => choose("source-and-delivery")}
+          onSelect={() => void choose("source-and-delivery")}
           title="Private project, separate public site"
           detail="Recommended, and the only arrangement that works on a free GitHub plan. The project stays private; a second, public repository carries the viewer."
         />
         <TopologyChoice
           selected={topology === "single-private"}
-          onSelect={() => choose("single-private")}
+          onSelect={() => void choose("single-private")}
           title="One private repository, GitHub Pages"
-          detail="Needs a paid GitHub plan — Pages cannot serve a private repository for free. You install a small publishing workflow yourself; DinoDepot never edits workflows."
+          detail="Needs a paid GitHub plan. DinoDepot publishes to /docs; after the first publish, enable Pages from the main branch and /docs folder in GitHub settings."
+        />
+        <TopologyChoice
+          selected={topology === "single-public"}
+          onSelect={() => void choose("single-public")}
+          title="One public repository"
+          detail="Free and simple, but the entire project history is public. Available only when the project has never held Player Data. Local backups and raw profiles remain excluded."
         />
       </div>
     </CollapsibleCard>
+  );
+}
+
+function IssueList({ issues, className }: { issues: SetupIssue[]; className?: string }) {
+  return (
+    <ul className={cx("flex flex-col gap-2", className)}>
+      {issues.map((issue, i) => (
+        <li
+          key={`${issue.level}-${issue.message}-${i}`}
+          className={cx(
+            "text-xs rounded border p-2",
+            issue.level === "error"
+              ? "border-danger/30 bg-danger/10 text-red-300"
+              : "border-amber-flag/30 bg-amber-flag/10 text-amber-300",
+          )}
+        >
+          <div>{issue.message}</div>
+          {issue.fix && <div className="text-ink-400 mt-1">{issue.fix}</div>}
+        </li>
+      ))}
+    </ul>
   );
 }
 

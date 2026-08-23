@@ -268,8 +268,30 @@ fn commit_inner(request: CommitRequest) -> Outcome<String> {
     let mut index = repo.index().map_err(|e| classify(e, "opening the index"))?;
 
     if request.paths.is_empty() {
+        // These folders are recovery material or private machine-local data.
+        // Remove old tracked entries too: skipping them during add would leave
+        // a previously committed profile or snapshot in every future tree.
+        let local_only: Vec<PathBuf> = index
+            .iter()
+            .filter_map(|entry| {
+                let path = PathBuf::from(String::from_utf8_lossy(&entry.path).as_ref());
+                is_local_only_path(&path).then_some(path)
+            })
+            .collect();
+        for path in local_only {
+            index
+                .remove_path(&path)
+                .map_err(|e| classify(e, "removing local-only data from the index"))?;
+        }
+        let mut include = |path: &Path, _matched: &[u8]| {
+            if is_local_only_path(path) { 1 } else { 0 }
+        };
         index
-            .add_all(["*"].iter(), git2::IndexAddOption::DEFAULT, None)
+            .add_all(
+                ["*"].iter(),
+                git2::IndexAddOption::DEFAULT,
+                Some(&mut include),
+            )
             .map_err(|e| classify(e, "staging the project"))?;
     } else {
         for path in &request.paths {
@@ -280,6 +302,13 @@ fn commit_inner(request: CommitRequest) -> Outcome<String> {
                     "project.corrupt",
                     "That file is not part of the project.",
                     format!("refused path '{path}'"),
+                ));
+            }
+            if is_local_only_path(Path::new(path)) {
+                return Err(Failure::new(
+                    "publish.privacyViolation",
+                    "That local-only file cannot be shared.",
+                    format!("refused local-only path '{path}'"),
                 ));
             }
             index
@@ -345,7 +374,7 @@ fn is_safe_repo_path(path: &str) -> bool {
 /// credential callback instead. A URL carrying one would be written straight
 /// into `.git/config`, where anything that can read the folder can read it.
 #[tauri::command]
-pub fn git_set_remote(dir: String, url: String) -> Result<(), String> {
+pub fn git_set_remote(dir: String, url: String, reset_history: bool) -> Result<(), String> {
     if url.contains('@') || !url.starts_with("https://") {
         return Err(Failure::new(
             "repo.conflict",
@@ -360,6 +389,71 @@ pub fn git_set_remote(dir: String, url: String) -> Result<(), String> {
     let _ = repo.remote_delete(REMOTE);
     repo.remote(REMOTE, &url)
         .map_err(|e| classify(e, "setting the remote").to_string())?;
+    if reset_history {
+        reset_repository_history(&repo).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/** Data that stays on this computer and must never enter source history. */
+fn is_local_only_path(path: &Path) -> bool {
+    let first = path
+        .components()
+        .next()
+        .map(|part| part.as_os_str().to_string_lossy())
+        .unwrap_or_default();
+    first.eq_ignore_ascii_case("backups")
+        || first.eq_ignore_ascii_case("profiles")
+        || first.eq_ignore_ascii_case("recovery")
+        || first.eq_ignore_ascii_case(".dinodepot-staging")
+        || first.to_ascii_lowercase().starts_with(".dinodepot-lock")
+}
+
+/**
+ * Starts an unrelated repository with clean history while keeping old commits
+ * reachable from a private recovery ref. Working files are never touched.
+ */
+fn reset_repository_history(repo: &Repository) -> Outcome<()> {
+    if let Ok(head) = repo.head() {
+        if let Some(oid) = head.target() {
+            let stamp = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis();
+            repo.reference(
+                &format!("refs/dinodepot/recovery/rebind-{stamp}"),
+                oid,
+                true,
+                "DinoDepot repository rebind",
+            )
+            .map_err(|e| classify(e, "preserving the previous repository history"))?;
+        }
+    }
+
+    let names: Vec<String> = repo
+        .references()
+        .map_err(|e| classify(e, "listing repository history"))?
+        .filter_map(|reference| {
+            reference
+                .ok()
+                .and_then(|r| r.name().map(str::to_string))
+                .filter(|name| {
+                    name.starts_with("refs/heads/")
+                        || name.starts_with(&format!("refs/remotes/{REMOTE}/"))
+                })
+        })
+        .collect();
+    for name in names {
+        if let Ok(mut reference) = repo.find_reference(&name) {
+            reference
+                .delete()
+                .map_err(|e| classify(e, "clearing the previous repository history"))?;
+        }
+    }
+
+    let mut index = repo.index().map_err(|e| classify(e, "opening the index"))?;
+    index.clear().map_err(|e| classify(e, "clearing the index"))?;
+    index.write().map_err(|e| classify(e, "writing the index"))?;
     Ok(())
 }
 
@@ -931,6 +1025,113 @@ mod tests {
     }
 
     #[test]
+    fn a_default_commit_excludes_machine_local_and_private_folders() {
+        let dir = tempfile::tempdir().unwrap();
+        project(dir.path(), &[("project.json", "{}")]);
+        for folder in ["backups", "profiles", "recovery", ".dinodepot-staging"] {
+            fs::create_dir_all(dir.path().join(folder)).unwrap();
+            fs::write(dir.path().join(folder).join("private.bin"), b"private").unwrap();
+        }
+        fs::write(dir.path().join(".dinodepot-lock-owner"), "local").unwrap();
+
+        let oid = commit(dir.path(), "main", "safe");
+        let files = git_read_tree(
+            dir.path().to_string_lossy().into(),
+            oid,
+            String::new(),
+        )
+        .unwrap();
+
+        assert_eq!(files.len(), 1);
+        assert_eq!(files.get("project.json").map(String::as_str), Some("{}"));
+    }
+
+    #[test]
+    fn an_explicit_local_only_path_is_refused() {
+        let dir = tempfile::tempdir().unwrap();
+        fs::create_dir_all(dir.path().join("profiles")).unwrap();
+        fs::write(dir.path().join("profiles/player.arkprofile"), b"private").unwrap();
+        let result = commit_inner(CommitRequest {
+            dir: dir.path().to_string_lossy().into(),
+            branch: "main".into(),
+            message: "unsafe".into(),
+            paths: vec!["profiles/player.arkprofile".into()],
+        });
+        assert_eq!(result.unwrap_err().code, "publish.privacyViolation");
+    }
+
+    #[test]
+    fn a_later_commit_removes_local_only_data_tracked_by_an_older_build() {
+        let dir = tempfile::tempdir().unwrap();
+        project(dir.path(), &[("project.json", "{}")]);
+        fs::create_dir_all(dir.path().join("profiles")).unwrap();
+        fs::write(dir.path().join("profiles/player.arkprofile"), b"private").unwrap();
+
+        // Simulate a tree written before the local-only boundary existed.
+        let repo = open_or_init(&dir.path().to_string_lossy()).unwrap();
+        let mut index = repo.index().unwrap();
+        index
+            .add_all(["*"].iter(), git2::IndexAddOption::DEFAULT, None)
+            .unwrap();
+        index.write().unwrap();
+        let tree_id = index.write_tree().unwrap();
+        let tree = repo.find_tree(tree_id).unwrap();
+        let signature = signature().unwrap();
+        repo.commit(
+            Some("refs/heads/main"),
+            &signature,
+            &signature,
+            "old build",
+            &tree,
+            &[],
+        )
+        .unwrap();
+        drop(tree);
+        drop(index);
+        drop(repo);
+
+        let oid = commit(dir.path(), "main", "enforce local boundary");
+        let files = git_read_tree(
+            dir.path().to_string_lossy().into(),
+            oid,
+            String::new(),
+        )
+        .unwrap();
+        assert!(!files.contains_key("profiles/player.arkprofile"));
+        assert!(dir.path().join("profiles/player.arkprofile").is_file());
+    }
+
+    #[test]
+    fn rebinding_preserves_files_but_starts_unrelated_history() {
+        let dir = tempfile::tempdir().unwrap();
+        project(dir.path(), &[("project.json", "{\"v\":1}")]);
+        let old = commit(dir.path(), "main", "old repository");
+        let path = dir.path().to_string_lossy().to_string();
+
+        git_set_remote(
+            path,
+            "https://github.com/example/new-project.git".into(),
+            true,
+        )
+        .unwrap();
+
+        let repo = Repository::open(dir.path()).unwrap();
+        assert!(repo.find_reference("refs/heads/main").is_err());
+        assert_eq!(read(dir.path(), "project.json"), "{\"v\":1}");
+        assert!(repo.references_glob("refs/dinodepot/recovery/rebind-*")
+            .unwrap()
+            .any(|reference| reference.unwrap().target().unwrap().to_string() == old));
+
+        let new = commit(dir.path(), "main", "new repository");
+        assert_eq!(
+            repo.find_commit(git2::Oid::from_str(&new).unwrap())
+                .unwrap()
+                .parent_count(),
+            0,
+        );
+    }
+
+    #[test]
     fn reading_a_tree_returns_the_files_as_text() {
         let dir = tempfile::tempdir().unwrap();
         project(
@@ -1393,11 +1594,12 @@ mod tests {
         let path: String = dir.path().to_string_lossy().into();
         assert!(git_set_remote(
             path.clone(),
-            "https://x-access-token:ghp_abcdefghijklmnop@github.com/o/r.git".into()
+            "https://x-access-token:ghp_abcdefghijklmnop@github.com/o/r.git".into(),
+            false,
         )
         .is_err());
-        assert!(git_set_remote(path.clone(), "http://github.com/o/r.git".into()).is_err());
-        assert!(git_set_remote(path, "https://github.com/o/r.git".into()).is_ok());
+        assert!(git_set_remote(path.clone(), "http://github.com/o/r.git".into(), false).is_err());
+        assert!(git_set_remote(path, "https://github.com/o/r.git".into(), false).is_ok());
     }
 
     #[test]

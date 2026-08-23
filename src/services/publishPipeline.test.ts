@@ -96,6 +96,14 @@ function localState(over: Partial<LocalProjectState> = {}): LocalProjectState {
   });
 }
 
+function pagesEnabledState(): LocalProjectState {
+  const local = localState();
+  return {
+    ...local,
+    delivery: local.delivery ? { ...local.delivery, hasPages: true } : null,
+  };
+}
+
 function context(over: Record<string, unknown> = {}) {
   const state = { current: (over.local as LocalProjectState) ?? localState() };
   const stages: string[] = [];
@@ -326,6 +334,7 @@ describe("waiting for GitHub Pages", () => {
     let polls = 0;
     const result = await publishProject(
       context({
+        local: pagesEnabledState(),
         fetchLiveManifest: async () => {
           polls++;
           return polls > 1 ? manifestFrom() : { publishOperationId: "an-older-one" };
@@ -341,6 +350,7 @@ describe("waiting for GitHub Pages", () => {
     let clock = 0;
     const result = await publishProject(
       context({
+        local: pagesEnabledState(),
         fetchLiveManifest: async () => ({ publishOperationId: "never-matches" }),
         now: () => (clock += 60_000),
         sleep: async () => {},
@@ -356,6 +366,7 @@ describe("waiting for GitHub Pages", () => {
     let polls = 0;
     const result = await publishProject(
       context({
+        local: pagesEnabledState(),
         fetchLiveManifest: async () => {
           polls++;
           if (polls < 2) throw new StudioError("repo.unavailable", "404");
@@ -370,6 +381,21 @@ describe("waiting for GitHub Pages", () => {
     const result = await publishProject(context().ctx);
     expect(result.stage).toBe("live");
     expect(liveManifest).toBeNull();
+  });
+
+  it("publishes without polling when Pages still needs enabling", async () => {
+    let polls = 0;
+    const result = await publishProject(
+      context({
+        fetchLiveManifest: async () => {
+          polls++;
+          return manifestFrom();
+        },
+      }).ctx,
+    );
+    expect(result.stage).toBe("timed-out");
+    expect(result.message).toContain("Enable GitHub Pages");
+    expect(polls).toBe(0);
   });
 });
 

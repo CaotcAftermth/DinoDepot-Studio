@@ -3,6 +3,7 @@ import { profileBackupPath, rawUrl, githubConfigComplete } from "./publish";
 import type { GithubConfig } from "../model/project";
 
 const config: GithubConfig = {
+  accountId: "9",
   owner: "ggfizz",
   repo: "cluster",
   branch: "main",
@@ -44,8 +45,9 @@ describe("rawUrl", () => {
 });
 
 describe("githubConfigComplete", () => {
-  it("needs owner, repo and branch", () => {
+  it("needs account, owner, repo and branch", () => {
     expect(githubConfigComplete(config)).toBe(true);
+    expect(githubConfigComplete({ ...config, accountId: "" })).toBe(false);
     expect(githubConfigComplete({ ...config, owner: "" })).toBe(false);
     expect(githubConfigComplete({ ...config, repo: "" })).toBe(false);
     expect(githubConfigComplete({ ...config, branch: "" })).toBe(false);

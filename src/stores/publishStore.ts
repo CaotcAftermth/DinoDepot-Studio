@@ -7,12 +7,15 @@ import { serializeViewerData } from "../serializers/viewer";
 import { buildViewerHtml } from "../viewer/template";
 import { rawUrl } from "../services/publish";
 import { effectiveGithubConfig } from "../model/project";
+import { siteBinding, type LocalProjectState } from "../model/localState";
+import { pagesSiteUrl, publicSourcePrivacyProblem } from "../model/repoSetup";
 import { PUBLIC_ROOT } from "../model/publishArtifact";
 import { asStudioError, StudioError } from "../model/errors";
 import { resolveImagesDir, useDraftsStore } from "./draftsStore";
 import { useProjectStore } from "./projectStore";
 import { useSyncStore } from "./syncStore";
 import { vendorViewerAssets } from "../services/viewerAssets";
+import { connectionProblem, refreshConnection } from "../services/repoConnection";
 
 /**
  * Publishing, driven from the stores.
@@ -127,8 +130,46 @@ async function runPublish(
   onStage: (stage: PublishStage) => void,
 ): Promise<PublishOutcome> {
   const project = useProjectStore.getState();
-  const { settings, local } = project;
-  if (!settings || !local) return blocked("No project is open.");
+  const { settings } = project;
+  let local = project.local;
+  if (!settings || !local || !project.dir) return blocked("No project is open.");
+
+  const drafts = useDraftsStore.getState();
+  const privacyProblem = publicSourcePrivacyProblem({
+    topology: local.topology,
+    playerDataEnabled: settings.modules["player-data"] === true,
+    playerCount: drafts.players.players.length,
+    cleanSlateCount: drafts.players.cleanSlates.length,
+    hasPlayerActivity: drafts.activity.events.some((event) => event.kind === "players"),
+    hasPlayerHistory: drafts.history.records.some((record) => record.family === "players"),
+    hasPendingPlayerChanges: local.pendingActions.some((action) =>
+      action.type.startsWith("player."),
+    ),
+  });
+  if (privacyProblem) {
+    return {
+      ...blocked(privacyProblem),
+      error: new StudioError("publish.privacyViolation", privacyProblem),
+    };
+  }
+
+  try {
+    const refreshed = await refreshConnection(local, project.dir);
+    if (Object.keys(refreshed.patch).length > 0) {
+      await useProjectStore.getState().updateLocal(refreshed.patch);
+      local = { ...local, ...refreshed.patch };
+    }
+    const repositoryProblem = connectionProblem(refreshed.report, "publish");
+    if (repositoryProblem) {
+      return {
+        ...blocked(repositoryProblem),
+        error: new StudioError("repo.unavailable", repositoryProblem),
+      };
+    }
+  } catch (e) {
+    const error = asStudioError(e, "repo.unavailable", "Could not check the repositories.");
+    return { ...blocked(error.message), error };
+  }
 
   let deliveryDir: string;
   try {
@@ -167,11 +208,9 @@ async function runPublish(
  */
 async function prepareDelivery(
   projectId: string,
-  local: { topology: string; source: unknown; delivery: unknown },
+  local: LocalProjectState,
 ): Promise<string> {
-  const binding = (local.topology === "single-private" ? local.source : local.delivery) as
-    | { remoteUrl: string; branch: string }
-    | null;
+  const binding = siteBinding(local);
   if (!binding?.remoteUrl) {
     throw new StudioError(
       "repo.unavailable",
@@ -180,7 +219,7 @@ async function prepareDelivery(
   }
 
   const dir = await ipc<string>("delivery_dir", { projectId });
-  await git.setRemote(dir, binding.remoteUrl);
+  await git.setRemote(dir, binding.remoteUrl, !local.lastPublishedCommit);
   return dir;
 }
 
@@ -242,15 +281,11 @@ async function generateSite() {
  * the commit the instant it is pushed, and the question being asked is whether
  * the *site* has caught up.
  */
-async function fetchLiveManifest(local: {
-  delivery: { owner: string; name: string } | null;
-  source: { owner: string; name: string } | null;
-  topology: string;
-}): Promise<unknown> {
-  const binding = local.topology === "single-private" ? local.source : local.delivery;
+async function fetchLiveManifest(local: LocalProjectState): Promise<unknown> {
+  const binding = siteBinding(local);
   if (!binding) throw new StudioError("repo.unavailable", "No public site repository.");
 
-  const url = `https://${binding.owner}.github.io/${binding.name}/dinodepot-build.json`;
+  const url = `${pagesSiteUrl(binding)}dinodepot-build.json`;
   const response = await fetch(`${url}?t=${Date.now()}`, { cache: "no-store" });
   if (!response.ok) {
     throw new StudioError("repo.unavailable", "The public site is not answering yet.");
@@ -262,9 +297,9 @@ async function fetchLiveManifest(local: {
 export function publicSiteUrl(): string {
   const local = useProjectStore.getState().local;
   if (!local) return "";
-  const binding = local.topology === "single-private" ? local.source : local.delivery;
+  const binding = siteBinding(local);
   if (!binding?.owner || !binding.name) return "";
-  return `https://${binding.owner}.github.io/${binding.name}/`;
+  return pagesSiteUrl(binding);
 }
 
 export { PUBLIC_ROOT, effectiveGithubConfig, rawUrl };

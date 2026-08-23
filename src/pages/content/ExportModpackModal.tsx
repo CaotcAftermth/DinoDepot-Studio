@@ -43,6 +43,7 @@ export function ExportModpackModal({
 }) {
   const { catalog } = useDraftsStore();
   const imagesDirSetting = useProjectStore((s) => s.local?.imagesDir);
+  const githubAccountId = useProjectStore((s) => s.local?.githubAccountId ?? "");
   const dir = useProjectStore((s) => s.dir);
 
   const [version, setVersion] = useState(source.modpackVersion || "1.0.0");
@@ -109,7 +110,7 @@ export function ExportModpackModal({
     if (!assembled) return;
     setBusy("Checking the registry…");
     try {
-      setPlan(await planPublish(registry, assembled));
+      setPlan(await planPublish(githubAccountId, registry, assembled));
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     } finally {
@@ -121,6 +122,7 @@ export function ExportModpackModal({
     if (!assembled || !plan) return;
     try {
       const result = await publishPack(
+        githubAccountId,
         registry,
         assembled,
         plan,
