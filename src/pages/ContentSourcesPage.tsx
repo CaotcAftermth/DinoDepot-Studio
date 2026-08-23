@@ -103,6 +103,7 @@ import {
   planEntryMove,
   type EntryOwner,
 } from "../model/catalogDuplicates";
+import { feedbackTarget } from "../model/feedback/targets";
 
 /** Discord's wordmark glyph, inlined — the app ships no external assets. */
 function DiscordIcon() {
@@ -435,7 +436,7 @@ export function ContentSourcesPage() {
   }
 
   return (
-    <div>
+    <div {...feedbackTarget("content-sources")}>
       <PageHeader
         title="Content Sources"
         subtitle="The mods, creatures, and items this project can reference — mods watched for updates are managed here too"

@@ -8,6 +8,7 @@ import { useSyncStore } from "../../stores/syncStore";
 import { PUBLISH_STAGE_LABELS } from "../../services/publishPipeline";
 import { issuesFor, type ProjectIssue } from "../../validation/project";
 import { canPublish } from "../../model/localState";
+import { feedbackTarget } from "../../model/feedback/targets";
 
 /**
  * Publishing the public site.
@@ -52,6 +53,7 @@ export function PublishSiteCard() {
     <Card
       className="mb-4"
       title="Public site"
+      feedback={feedbackTarget("publish-site-card")}
       actions={
         <div className="flex items-center gap-2">
           {running ? (

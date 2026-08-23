@@ -6,6 +6,9 @@ import { Badge, Button, Card, Field, Input } from "../components/ui";
 import { toast, ToastContainer } from "../components/toast";
 import { chooseDialog, confirmDialog, ConfirmHost } from "../components/confirm";
 import { ipc, isTauri } from "../services/ipc";
+import { FeedbackHost } from "../components/feedback/FeedbackHost";
+import { useFeedback } from "../components/feedback/useFeedback";
+import { feedbackTarget } from "../model/feedback/targets";
 import { isStudioError } from "../model/errors";
 import { suggestNames, type NameSuggestion } from "../model/nameSuggestions";
 import {
@@ -40,6 +43,7 @@ export function ProjectHomePage() {
   const [busy, setBusy] = useState(false);
   /** Folders in the list that no longer hold a project. */
   const [missing, setMissing] = useState<Record<string, boolean>>({});
+  const { enabled: feedbackEnabled, openFeedback } = useFeedback();
 
   const targetDir = customDir || projectDirFor(root, newName.trim());
   /**
@@ -281,7 +285,10 @@ export function ProjectHomePage() {
   }
 
   return (
-    <div className="h-full flex items-center justify-center bg-ink-950">
+    <div
+      className="h-full flex items-center justify-center bg-ink-950"
+      {...feedbackTarget("project-home")}
+    >
       <div className="w-[520px]">
         <div className="text-center mb-8">
           <div className="text-xs font-bold tracking-widest text-accent-400 uppercase mb-1">
@@ -432,9 +439,22 @@ export function ProjectHomePage() {
             </div>
           </Card>
         )}
+        {/* Reachable before any project is open: a problem on this screen is
+            still a problem, and there is nowhere else to say so from. */}
+        {feedbackEnabled && (
+          <div className="mt-6 text-center">
+            <button
+              onClick={openFeedback}
+              className="text-xs text-ink-500 hover:text-ink-200 cursor-pointer"
+            >
+              Report a problem or suggest an improvement
+            </button>
+          </div>
+        )}
       </div>
       <ToastContainer />
       <ConfirmHost />
+      <FeedbackHost />
     </div>
   );
 }

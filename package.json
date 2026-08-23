@@ -1,7 +1,7 @@
 {
   "name": "dino-depot-studio",
   "private": true,
-  "version": "0.6.0",
+  "version": "0.7.0",
   "type": "module",
   "scripts": {
     "stage:official": "node scripts/stage-bundled-official.mjs",

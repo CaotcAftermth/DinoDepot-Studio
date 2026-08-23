@@ -33,6 +33,9 @@ export default defineConfig(async () => ({
 
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    // `services/` is the feedback API, which shares its request and issue
+    // formatting code with the app. Running both suites under one runner is
+    // what keeps the two halves of that contract honest.
+    include: ["src/**/*.test.ts", "services/**/src/**/*.test.ts"],
   },
 }));

@@ -31,6 +31,7 @@ import { ipc } from "../../services/ipc";
 import { importProductionText } from "../../services/importers";
 import { plural } from "../../model/text";
 import { useUiPrefsStore } from "../../stores/uiPrefsStore";
+import { feedbackTarget } from "../../model/feedback/targets";
 
 export function ProductionRulesPage() {
   const { production, setProduction, catalog, setCatalog, hydrate } =
@@ -326,7 +327,7 @@ export function ProductionRulesPage() {
   }
 
   return (
-    <div>
+    <div {...feedbackTarget("production-rules")}>
       <PageHeader
         title="Production Rules"
         subtitle={`${production.rules.length} rules · ${totals.errors} errors · ${totals.warnings} warnings`}

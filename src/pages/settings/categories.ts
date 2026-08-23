@@ -72,6 +72,15 @@ export const SETTINGS_CATEGORIES: readonly SettingsCategory[] = [
     columns: 1,
     keys: ["discord"],
   },
+  {
+    // Machine-local, like GitHub: the service address and the report history
+    // belong to this computer, so this category never carries a dirty marker.
+    slug: "feedback",
+    label: "Feedback",
+    blurb: "Bug reports and suggestions",
+    columns: 1,
+    keys: [],
+  },
 ];
 
 export const DEFAULT_CATEGORY = "project";

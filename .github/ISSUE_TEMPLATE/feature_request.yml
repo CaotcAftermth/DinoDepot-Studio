@@ -1,0 +1,55 @@
+name: Feature request
+description: Something DinoDepot Studio cannot do yet.
+title: "[Feature] "
+labels: ["feature-request", "needs-triage"]
+body:
+  - type: input
+    id: feature
+    attributes:
+      label: Feature
+      description: A short name for it.
+      placeholder: Spawn command presets
+    validations:
+      required: true
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What should DinoDepot Studio be able to do?
+      placeholder: >-
+        Save a set of spawn command arguments as a preset and apply it to
+        another creature.
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why would this be useful?
+      description: >-
+        What you are doing by hand today is the most useful thing you can put
+        here.
+      placeholder: >-
+        We run six maps with the same colour scheme, and every creature is set
+        up one at a time.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where would you expect to find it?
+      options:
+        - Not sure
+        - Overview
+        - Production Rules
+        - Passive Production Simulator
+        - Content Sources
+        - Spawn Commands
+        - Creature Remaps
+        - CurseForge
+        - Publishing
+        - Settings
+        - GitHub
+        - Player Data
+        - Somewhere new

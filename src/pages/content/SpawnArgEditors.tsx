@@ -31,6 +31,7 @@ import {
   Select,
   usePopover,
 } from "../../components/ui";
+import { feedbackTarget } from "../../model/feedback/targets";
 
 /**
  * The three structured editors behind the Dino Depot ball command's -s=, -r=
@@ -230,7 +231,7 @@ export function ColorsEditor({
     >
       {() =>
         picking === null ? (
-          <>
+          <div {...feedbackTarget("spawn-command-color-selector")}>
             <div className="flex flex-col gap-1">
               {COLOR_REGIONS.map((region) => {
                 const assignment = used.find((c) => c.region === region);
@@ -279,9 +280,9 @@ export function ColorsEditor({
                 );
               })}
             </div>
-          </>
+          </div>
         ) : (
-          <>
+          <div {...feedbackTarget("spawn-command-color-selector")}>
             <div className="flex items-center gap-2 mb-2">
               <Button variant="ghost" onClick={() => setPicking(null)}>
                 ‹ Back
@@ -318,7 +319,7 @@ export function ColorsEditor({
                 </p>
               )}
             </div>
-          </>
+          </div>
         )
       }
     </ArgButton>

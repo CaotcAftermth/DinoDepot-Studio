@@ -22,6 +22,7 @@ import {
 import { OUTPUT_STATUS_LABELS, type OutputState } from "../model/outputs";
 import type { GithubReadiness } from "../model/githubReadiness";
 import { Badge, Card, cx, PageHeader } from "../components/ui";
+import { feedbackTarget } from "../model/feedback/targets";
 
 /**
  * The project's command centre.
@@ -45,7 +46,7 @@ export function OverviewPage() {
   } = overview;
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4" {...feedbackTarget("overview")}>
       <PageHeader
         title="Overview"
         subtitle={
@@ -85,7 +86,10 @@ export function OverviewPage() {
         </Card>
 
         <Card title={actions.some((a) => a.primary) ? "Next actions" : "Common tasks"}>
-          <div className="flex flex-col gap-1.5">
+          <div
+            className="flex flex-col gap-1.5"
+            {...feedbackTarget("overview-next-actions")}
+          >
             {actions.map((action) => (
               <ActionLink key={action.id} action={action} />
             ))}
@@ -106,7 +110,10 @@ export function OverviewPage() {
             </span>
           }
         >
-          <div className="flex flex-col divide-y divide-ink-800">
+          <div
+            className="flex flex-col divide-y divide-ink-800"
+            {...feedbackTarget("overview-attention-card")}
+          >
             {attention.map((item) => (
               <AttentionRow key={item.id} item={item} />
             ))}

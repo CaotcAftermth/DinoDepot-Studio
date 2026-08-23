@@ -5,8 +5,15 @@ import { ConfirmHost } from "../components/confirm";
 import { SyncStatus } from "../components/SyncStatus";
 import { UpdateBanner } from "../components/UpdateBanner";
 import { cx } from "../components/ui";
+import { ErrorBoundary } from "../components/ErrorBoundary";
+import {
+  FeedbackHost,
+  FEEDBACK_SHORTCUT,
+} from "../components/feedback/FeedbackHost";
+import { useFeedback } from "../components/feedback/useFeedback";
 import { isTauri } from "../services/ipc";
 import { enabledModules } from "./modules";
+import { feedbackTarget } from "../model/feedback/targets";
 
 const NAV_ITEMS = [
   { to: "/overview", label: "Overview", icon: "◆" },
@@ -55,7 +62,7 @@ export function AppShell() {
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full" {...feedbackTarget("app-shell")}>
       <aside className="w-56 shrink-0 bg-ink-900 border-r border-ink-700 flex flex-col">
         <div className="px-4 py-4 border-b border-ink-700">
           <div className="text-xs font-bold tracking-widest text-accent-400 uppercase">
@@ -101,6 +108,8 @@ export function AppShell() {
           <SyncStatus />
         </div>
 
+        <HelpRow />
+
         <UpdateBanner />
 
         <div className="px-4 py-3 border-t border-ink-700 flex items-center justify-between">
@@ -120,12 +129,43 @@ export function AppShell() {
 
       <main className="flex-1 overflow-y-auto">
         <div className="p-6 w-full">
-          <Outlet />
+          {/* Around the routed page rather than the whole shell: a page that
+              throws should leave the sidebar — and the way out of it — intact. */}
+          <ErrorBoundary name="This page">
+            <Outlet />
+          </ErrorBoundary>
         </div>
       </main>
 
       <ToastContainer />
       <ConfirmHost />
+      <FeedbackHost />
+    </div>
+  );
+}
+
+/**
+ * The discoverable way in to Feedback.
+ *
+ * A row rather than a menu: the three things a Help menu would list all live
+ * one click further in, and a menu whose every entry opens the same panel is a
+ * menu for its own sake.
+ */
+function HelpRow() {
+  const { enabled, openFeedback } = useFeedback();
+  if (!enabled) return null;
+  return (
+    <div className="px-4 py-2 border-t border-ink-700">
+      <button
+        onClick={openFeedback}
+        title={`Report a bug, suggest an improvement, or request a feature (${FEEDBACK_SHORTCUT})`}
+        className="flex items-center gap-2.5 text-xs text-ink-400 hover:text-white cursor-pointer w-full"
+      >
+        <span className="text-xs w-4 text-center opacity-70" aria-hidden>
+          ☂
+        </span>
+        Help &amp; feedback
+      </button>
     </div>
   );
 }

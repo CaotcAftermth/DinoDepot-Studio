@@ -14,6 +14,7 @@ import {
   Input,
   PageHeader,
 } from "../components/ui";
+import { feedbackTarget } from "../model/feedback/targets";
 
 type TimePreset = {
   label: string;
@@ -157,7 +158,7 @@ export function SimulatorPage() {
   }
 
   return (
-    <div>
+    <div {...feedbackTarget("passive-production-simulator")}>
       <PageHeader
         title="Simulator"
         subtitle="Expected-value estimates — chance-based results are statistical averages, not guarantees"
@@ -193,7 +194,11 @@ export function SimulatorPage() {
               ))}
             </div>
           </div>
-          <Field label="Default creature count" className="w-44">
+          <Field
+            label="Default creature count"
+            className="w-44"
+          >
+            <div {...feedbackTarget("passive-production-simulator-count")}>
             <Input
               type="number"
               min={0}
@@ -203,6 +208,7 @@ export function SimulatorPage() {
                 if (Number.isFinite(n) && n >= 0) setDefaultCount(n);
               }}
             />
+            </div>
           </Field>
           <Field label="Filter creatures or items" className="flex-1 min-w-52">
             <Input

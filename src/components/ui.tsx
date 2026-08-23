@@ -4,13 +4,16 @@ import {
   InputHTMLAttributes,
   Ref,
   SelectHTMLAttributes,
+  TextareaHTMLAttributes,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
 import { useToggled, useUiPrefsStore } from "../stores/uiPrefsStore";
+import type { FeedbackTargetProps } from "../model/feedback/targets";
 
 export function cx(...parts: (string | false | null | undefined)[]) {
   return parts.filter(Boolean).join(" ");
@@ -89,6 +92,35 @@ export function Input({
   );
 }
 
+/**
+ * Multi-line text, styled like {@link Input}.
+ *
+ * `field-sizing: content` is deliberately not used: it is not in every webview
+ * this ships to, and a box that silently does not grow is worse than one that
+ * never claimed it would. Callers set `rows` for the height they want.
+ */
+export function Textarea({
+  className,
+  ref,
+  ...props
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  ref?: Ref<HTMLTextAreaElement>;
+}) {
+  return (
+    <textarea
+      ref={ref}
+      className={cx(
+        "bg-ink-900 border border-ink-600 rounded-md px-2.5 py-1.5 text-sm text-ink-100",
+        "focus:outline-none focus:border-accent-500/60 placeholder:text-ink-400",
+        "min-w-0 resize-y leading-relaxed",
+        defaultWidth(className),
+        className,
+      )}
+      {...props}
+    />
+  );
+}
+
 export function Select({
   className,
   ...props
@@ -145,14 +177,25 @@ export function Card({
   actions,
   children,
   className,
+  feedback,
 }: {
   title?: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
   className?: string;
+  /**
+   * Marks the card as reportable, from `feedbackTarget(...)`.
+   *
+   * A prop rather than a wrapper element, so instrumenting a card cannot
+   * change what it looks like — an extra `<div>` around a grid item or a flex
+   * child is exactly the sort of thing that moves a layout by four pixels and
+   * gets blamed on something else a week later.
+   */
+  feedback?: FeedbackTargetProps;
 }) {
   return (
     <section
+      {...feedback}
       className={cx(
         "bg-ink-900 border border-ink-700 rounded-lg overflow-hidden",
         className,
@@ -187,6 +230,7 @@ export function CollapsibleCard({
   className,
   defaultOpen = true,
   prefKey,
+  feedback,
 }: {
   title?: ReactNode;
   collapsedSummary?: ReactNode;
@@ -194,6 +238,8 @@ export function CollapsibleCard({
   children: ReactNode;
   className?: string;
   defaultOpen?: boolean;
+  /** Marks the card as reportable. See {@link Card}. */
+  feedback?: FeedbackTargetProps;
   /**
    * Stable id (`rule:<ruleId>`, `cycle:<cycleId>`…) under which the fold state
    * is remembered across navigation and restarts. Must not be a list index —
@@ -216,6 +262,7 @@ export function CollapsibleCard({
 
   return (
     <section
+      {...feedback}
       className={cx(
         "bg-ink-900 border border-ink-700 rounded-lg overflow-hidden",
         className,
@@ -560,6 +607,15 @@ let openPopups = 0;
  */
 const openPopoverClosers = new Set<() => void>();
 
+export type ModalPlacement = "start" | "center" | "end";
+
+const MODAL_PLACEMENTS: ModalPlacement[] = ["start", "center", "end"];
+const MODAL_PLACEMENT_LABELS: Record<ModalPlacement, string> = {
+  start: "left",
+  center: "center",
+  end: "right",
+};
+
 /** Claims Escape for a popup while `active`, so it dismisses that and not the modal behind it. */
 export function useEscapeLayer(active: boolean) {
   useEffect(() => {
@@ -573,13 +629,22 @@ export function useEscapeLayer(active: boolean) {
 
 export function Modal({
   title,
+  subtitle,
   onClose,
   children,
   footer,
+  backdropDecoration,
+  avoidElement,
+  placementOverride,
+  onPlacementChange,
   wide,
+  medium,
   xl,
+  layer = "default",
 }: {
   title: string;
+  /** Supporting copy shown below the title when the dialog needs more hierarchy. */
+  subtitle?: string;
   onClose: () => void;
   children: ReactNode;
   /**
@@ -587,9 +652,24 @@ export function Modal({
    * modal very tall, and Save should not require scrolling to reach.
    */
   footer?: ReactNode;
+  /**
+   * Visual content between the page and the panel, such as a selected-element
+   * spotlight. It must not accept pointer input; the modal owns the backdrop.
+   */
+  backdropDecoration?: ReactNode;
+  /** Places the panel on the side with more distance from this live page element. */
+  avoidElement?: Element | null;
+  /** A user-selected position. Null leaves positioning to `avoidElement`. */
+  placementOverride?: ModalPlacement | null;
+  /** When provided, shows a header control that cycles left, center and right. */
+  onPlacementChange?: (placement: ModalPlacement) => void;
   wide?: boolean;
+  /** Between the default form width and the wide editor width. */
+  medium?: boolean;
   /** Extra-wide, for side-by-side layouts like the INI composer. */
   xl?: boolean;
+  /** Confirmations must sit above the modal whose action requested them. */
+  layer?: "default" | "confirmation";
 }) {
   // Only dismiss when the press *starts* on the backdrop — otherwise
   // selecting text inside and releasing outside would close the modal.
@@ -597,11 +677,43 @@ export function Modal({
   const panel = useRef<HTMLDivElement>(null);
   const body = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const [automaticPlacement, setAutomaticPlacement] =
+    useState<ModalPlacement>("center");
+  const placement = placementOverride ?? automaticPlacement;
+  const nextPlacement = MODAL_PLACEMENTS[
+    (MODAL_PLACEMENTS.indexOf(placement) + 1) % MODAL_PLACEMENTS.length
+  ];
 
   // `onClose` is usually an inline arrow, so read it through a ref rather than
   // re-running the key handler effect (and the stack bookkeeping) every render.
   const close = useRef(onClose);
   close.current = onClose;
+
+  useLayoutEffect(() => {
+    if (!avoidElement) {
+      setAutomaticPlacement("center");
+      return;
+    }
+
+    function place() {
+      if (!avoidElement?.isConnected || window.innerWidth < 960) {
+        setAutomaticPlacement("center");
+        return;
+      }
+      const rect = avoidElement.getBoundingClientRect();
+      setAutomaticPlacement(
+        rect.left + rect.width / 2 <= window.innerWidth / 2 ? "end" : "start",
+      );
+    }
+
+    place();
+    document.addEventListener("scroll", place, true);
+    window.addEventListener("resize", place);
+    return () => {
+      document.removeEventListener("scroll", place, true);
+      window.removeEventListener("resize", place);
+    };
+  }, [avoidElement]);
 
   useEffect(() => {
     const id = titleId;
@@ -650,7 +762,14 @@ export function Modal({
 
   return (
     <div
-      className="fixed inset-0 z-40 bg-black/60 flex items-center justify-center p-8"
+      className={cx(
+        "fixed inset-0 flex items-center p-8",
+        placement === "center" && "justify-center",
+        placement === "start" && "justify-start",
+        placement === "end" && "justify-end",
+        !backdropDecoration && "bg-black/60",
+        layer === "confirmation" ? "z-[80]" : "z-40",
+      )}
       onMouseDown={(e) => {
         pressedBackdrop.current = e.target === e.currentTarget;
       }}
@@ -659,6 +778,11 @@ export function Modal({
         pressedBackdrop.current = false;
       }}
     >
+      {backdropDecoration && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden>
+          {backdropDecoration}
+        </div>
+      )}
       <div
         ref={panel}
         role="dialog"
@@ -666,23 +790,49 @@ export function Modal({
         aria-labelledby={titleId}
         tabIndex={-1}
         className={cx(
-          "bg-ink-900 border border-ink-600 rounded-lg shadow-2xl w-full max-h-full flex flex-col focus:outline-none",
-          xl ? "max-w-6xl" : wide ? "max-w-3xl" : "max-w-lg",
+          "relative z-10 bg-ink-900 border border-ink-600 rounded-lg shadow-2xl w-full max-h-full flex flex-col focus:outline-none",
+          xl
+            ? "max-w-6xl"
+            : wide
+              ? "max-w-3xl"
+              : medium
+                ? "max-w-2xl"
+                : "max-w-lg",
         )}
         onMouseDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="flex items-center justify-between px-5 py-3 border-b border-ink-700 bg-ink-900 shrink-0 rounded-t-lg">
-          <h3 id={titleId} className="text-sm font-semibold text-white">
-            {title}
-          </h3>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="text-ink-400 hover:text-white cursor-pointer text-lg leading-none"
-          >
-            ×
-          </button>
+        <header className="flex items-start justify-between gap-4 px-5 py-4 border-b border-ink-700 bg-ink-900 shrink-0 rounded-t-lg">
+          <div className="min-w-0">
+            <h3 id={titleId} className="text-lg font-semibold leading-tight text-white">
+              {title}
+            </h3>
+            {subtitle && (
+              <p className="mt-1 text-xs leading-relaxed text-ink-400">{subtitle}</p>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            {onPlacementChange && (
+              <button
+                type="button"
+                onClick={() => onPlacementChange(nextPlacement)}
+                aria-label={`Move dialog to the ${MODAL_PLACEMENT_LABELS[nextPlacement]}`}
+                title={`Move to ${MODAL_PLACEMENT_LABELS[nextPlacement]}`}
+                className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-transparent text-ink-400 hover:border-ink-600 hover:bg-ink-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-accent-500/50"
+              >
+                <ModalPlacementIcon placement={placement} />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              title="Close"
+              className="flex size-7 cursor-pointer items-center justify-center rounded-md text-lg leading-none text-ink-400 hover:bg-ink-800 hover:text-white focus:outline-none focus:ring-2 focus:ring-accent-500/50"
+            >
+              ×
+            </button>
+          </div>
         </header>
         <div ref={body} className="p-5 overflow-y-auto min-h-0">
           {children}
@@ -694,6 +844,25 @@ export function Modal({
         )}
       </div>
     </div>
+  );
+}
+
+/** A miniature viewport with the current panel position filled in. */
+function ModalPlacementIcon({ placement }: { placement: ModalPlacement }) {
+  return (
+    <span
+      className="relative block h-3.5 w-5 rounded-[3px] border border-current/60"
+      aria-hidden
+    >
+      <span
+        className={cx(
+          "absolute bottom-0.5 top-0.5 w-1.5 rounded-[1px] bg-current",
+          placement === "start" && "left-0.5",
+          placement === "center" && "left-1/2 -translate-x-1/2",
+          placement === "end" && "right-0.5",
+        )}
+      />
+    </span>
   );
 }
 

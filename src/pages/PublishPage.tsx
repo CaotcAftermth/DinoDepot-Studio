@@ -34,6 +34,7 @@ import {
   PageHeader,
 } from "../components/ui";
 import { toast } from "../components/toast";
+import { feedbackTarget } from "../model/feedback/targets";
 
 /** The default commit message for a family, used when none was typed. */
 function defaultCommitMessage(family: OutputFamily): string {
@@ -116,7 +117,7 @@ export function PublishPage() {
   }
 
   return (
-    <div>
+    <div {...feedbackTarget("publishing")}>
       <PageHeader
         title="Publish"
         subtitle="The public site, published as one change from a shared version"

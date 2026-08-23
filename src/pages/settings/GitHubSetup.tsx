@@ -29,6 +29,7 @@ import {
   type SetupIssue,
   type SetupStep,
 } from "../../model/repoSetup";
+import { feedbackTarget } from "../../model/feedback/targets";
 
 /**
  * Connecting a project to GitHub.
@@ -156,6 +157,7 @@ export function GitHubSetup() {
       <CollapsibleCard
         title="GitHub account"
         prefKey="github:account"
+        feedback={feedbackTarget("github-account")}
         // Folded once a token is stored, and open again the moment that token
         // stops working — the reason is inside the card, so it must not be
         // the thing that is hidden. Stays folded until the check comes back,
@@ -301,6 +303,7 @@ function SetupChecklist({
     <CollapsibleCard
       title="Setup"
       prefKey="github:setup"
+      feedback={feedbackTarget("github-setup")}
       defaultOpen={Boolean(step)}
       // Only while folded: open, the ticks below say the same thing.
       collapsedSummary={
@@ -401,6 +404,7 @@ function RepositoryCard({
     <CollapsibleCard
       title={title}
       prefKey={`github:repo:${role}`}
+      feedback={feedbackTarget("github-repository")}
       // Chosen means settled: the header badge names it, and the body is a
       // form for choosing one. It reopens on a click, or on a failed connect
       // below, which is when the form matters again.

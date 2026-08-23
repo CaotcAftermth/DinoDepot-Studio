@@ -4,6 +4,62 @@ Notable changes to Dino Depot Studio, newest first. Versions follow
 [semantic versioning](https://semver.org): the middle number moves for new
 features, the last for fixes.
 
+## Unreleased
+
+### Feedback
+
+DinoDepot Studio can now be told when it is wrong, without leaving it.
+
+**Ctrl+Shift+F** anywhere, **Help & feedback** in the sidebar, or right-click
+the part that is misbehaving. Three kinds of report: a bug, a suggestion, or a
+feature request.
+
+- **Right-click knows what you clicked.** Choosing *Report a problem here* opens
+  the form with the affected area already filled in — "Production Rules ›
+  Production Cycle Editor › Quantity", not "somewhere in the rules page". Text
+  fields and selected text keep their normal menu.
+- **Select affected area** is an element picker. Hovering highlights the part
+  of the app under the pointer and names it; clicking picks it. Escape cancels,
+  and the click never reaches the control underneath — picking the Delete
+  button as the affected area does not delete anything.
+- **You can read everything before it is sent.** *Review diagnostics* shows the
+  actual values, not a list of categories: your Windows version, the page you
+  were on, the component you picked, and the recent application events with
+  file paths, credentials and email addresses already stripped out. Every
+  category can be switched off.
+- **Nothing about your project is sent unless you switch it on**, and then only
+  counts — twelve rules, six maps — never a cluster name, a creature, or a
+  player.
+- **Credentials cannot be included.** The app has no way to read one, and text
+  that looks like a pasted token, password or private key is blocked before it
+  can be saved or sent. The service checks again before filing the issue.
+- **Possible duplicates appear before you submit.** If somebody has already
+  reported it you can say so, and your report follows theirs instead of
+  becoming a second one. You can always submit anyway.
+- **My reports** lists everything you have sent, with what the maintainers did
+  about it — Submitted, Confirmed, In progress, Fixed — refreshed when you open
+  the page.
+- **Nothing is lost if you are offline.** The report is written to this computer
+  before it is sent. A failed submission stays there with Retry, Edit and Open
+  on GitHub beside it, and closing a half-written report offers to keep it as a
+  draft. If the local write itself fails, nothing is sent and the report stays
+  open instead of being described as saved.
+- **A screenshot can be attached**, never automatically. It is re-encoded on the
+  way in, which strips camera and phone metadata — including the GPS position
+  screenshots sometimes carry.
+- **A page that crashes now shows an error screen** with Retry and *Report this
+  error*, instead of taking the whole window with it. The rest of the app keeps
+  working.
+
+Reports become issues on the DinoDepot Studio repository. Your own GitHub
+sign-in is not used and is never sent: a small service holds that credential,
+and the app holds none. Set its address in **Settings › Feedback**; with none
+set, reports are still written and kept, and open in your browser with
+everything filled in.
+
+For maintainers: `docs/architecture/feedback.md`, and
+`services/feedback-api/README.md` for deployment.
+
 ## 0.5.0 — 2026-08-19
 
 The mod artwork release. Icons can now come out of the mods themselves, the

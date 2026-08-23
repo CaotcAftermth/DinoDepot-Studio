@@ -1,0 +1,15 @@
+# The in-app Feedback Center is the better route, so it is offered first.
+# Reports filed from inside DinoDepot Studio arrive with the component id, the
+# build, the operating system and a sanitized log already attached, which is
+# most of what triage would otherwise have to ask for.
+#
+# Blank issues stay enabled: somebody who has a question rather than a report
+# should not have to pick the wrong form to ask it.
+blank_issues_enabled: true
+contact_links:
+  - name: Report from inside DinoDepot Studio
+    url: https://github.com/CaotcAftermth/DinoDepot-Studio#feedback
+    about: >-
+      Press Ctrl+Shift+F in the app, or right-click the part that is wrong. The
+      report arrives with the affected component and your build already filled
+      in.

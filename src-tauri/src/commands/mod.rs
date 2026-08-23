@@ -1,5 +1,6 @@
 pub mod app_state;
 pub mod failure;
+pub mod feedback;
 pub mod git;
 pub mod github;
 pub mod github_setup;

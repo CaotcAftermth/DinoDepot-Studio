@@ -90,7 +90,11 @@ export function ConfirmHost() {
   const stacked = request.options.length > 1;
 
   return (
-    <Modal title={request.title} onClose={() => answer(null)}>
+    <Modal
+      title={request.title}
+      onClose={() => answer(null)}
+      layer="confirmation"
+    >
       <p className="text-sm text-ink-200 whitespace-pre-wrap">
         {request.message}
       </p>

@@ -65,6 +65,7 @@ import {
 } from "../components/ui";
 import { toast } from "../components/toast";
 import { confirmDialog } from "../components/confirm";
+import { feedbackTarget } from "../model/feedback/targets";
 
 const PROFILE_FILTERS = [{ name: "ARK profile", extensions: ["arkprofile"] }];
 
@@ -646,7 +647,7 @@ export function PlayerDataPage() {
   const githubReady = githubConfigComplete(github);
 
   return (
-    <div>
+    <div {...feedbackTarget("player-data")}>
       <PageHeader
         title="Player Data"
         subtitle={`${players.players.length} player${players.players.length === 1 ? "" : "s"} · ${withProfiles} with a stored profile`}

@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { cx } from "../../components/ui";
 import { SETTINGS_CATEGORIES } from "./categories";
+import { feedbackTarget } from "../../model/feedback/targets";
 
 /**
  * The category rail down the left of Settings.
@@ -20,7 +21,10 @@ export function SettingsNav({
   dirty: ReadonlySet<string>;
 }) {
   return (
-    <nav className="w-52 shrink-0 flex flex-col gap-0.5">
+    <nav
+      className="w-52 shrink-0 flex flex-col gap-0.5"
+      {...feedbackTarget("settings-nav")}
+    >
       {SETTINGS_CATEGORIES.map((category) => (
         <Link
           key={category.slug}

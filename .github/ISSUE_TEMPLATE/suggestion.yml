@@ -1,0 +1,51 @@
+name: Suggestion
+description: Something works, but could work better.
+title: "[Suggestion] "
+labels: ["suggestion", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Suggesting from inside the app (Ctrl+Shift+F) records which part of the
+        interface you meant, which saves a round trip.
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What could be improved?
+      placeholder: >-
+        Searching Content Sources only matches the start of a name, so I cannot
+        find a creature by its suffix.
+    validations:
+      required: true
+
+  - type: textarea
+    id: how
+    attributes:
+      label: How would you improve it?
+      placeholder: Match anywhere in the name, the way the blueprint picker already does.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of the app?
+      options:
+        - Not sure
+        - Overview
+        - Production Rules
+        - Passive Production Simulator
+        - Content Sources
+        - Spawn Commands
+        - Creature Remaps
+        - CurseForge
+        - Publishing
+        - Settings
+        - GitHub
+        - Player Data
+        - Welcome screen
+
+  - type: input
+    id: version
+    attributes:
+      label: DinoDepot Studio version
+      placeholder: "0.6.0"

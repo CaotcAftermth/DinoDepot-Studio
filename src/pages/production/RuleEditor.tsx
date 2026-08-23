@@ -24,6 +24,7 @@ import { EntityIcon } from "../../components/EntityIcon";
 import { displayNameFor, useCatalogIndex } from "../../stores/useCatalogIndex";
 import type { ValidationIssue } from "../../validation/types";
 import type { ProjectSettings } from "../../model/project";
+import { feedbackTarget } from "../../model/feedback/targets";
 
 function NumberField({
   label,
@@ -165,7 +166,10 @@ export function RuleEditor({
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div
+      className="flex flex-col gap-4"
+      {...feedbackTarget("production-rule-card")}
+    >
       <CollapsibleCard
         prefKey={`rule:${rule.id}`}
         title={
@@ -324,6 +328,7 @@ function CycleEditor({
   return (
     <CollapsibleCard
       prefKey={`cycle:${cycle.id}`}
+      feedback={feedbackTarget("production-rule-cycle-editor")}
       title={
         <span className="block truncate">
           {/* A named cycle answers "which one is this?" better than its
@@ -351,13 +356,15 @@ function CycleEditor({
             placeholder="e.g. Standard Resource Production"
           />
         </Field>
-        <NumberField
-          label="Interval (seconds)"
-          value={cycle.intervalSeconds}
-          min={1}
-          onChange={(v) => onChange({ intervalSeconds: v })}
-          hint={formatInterval(cycle.intervalSeconds)}
-        />
+        <div {...feedbackTarget("production-rule-cycle-interval")}>
+          <NumberField
+            label="Interval (seconds)"
+            value={cycle.intervalSeconds}
+            min={1}
+            onChange={(v) => onChange({ intervalSeconds: v })}
+            hint={formatInterval(cycle.intervalSeconds)}
+          />
+        </div>
         <SelectModeField
           label="Item select mode"
           value={cycle.itemSelectMode}
@@ -461,12 +468,14 @@ function ItemEditor({
           </Field>
 
           <div className="grid grid-cols-3 gap-3">
-            <NumberField
-              label="Quantity per dino"
-              value={item.quantityPerDino}
-              min={0}
-              onChange={(v) => onChange({ ...item, quantityPerDino: v })}
-            />
+            <div {...feedbackTarget("production-rule-cycle-quantity")}>
+              <NumberField
+                label="Quantity per dino"
+                value={item.quantityPerDino}
+                min={0}
+                onChange={(v) => onChange({ ...item, quantityPerDino: v })}
+              />
+            </div>
             <NumberField
               label="Max per cycle (0 = none)"
               value={item.maxQuantityPerCycle}

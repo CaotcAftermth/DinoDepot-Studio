@@ -1,0 +1,15 @@
+{
+  "name": "dinodepot-feedback-api",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Files DinoDepot Studio feedback as GitHub issues, so the app never holds a credential.",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}

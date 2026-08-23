@@ -39,6 +39,9 @@ const MOCK_SNAPSHOT_PREFIX = "backups/snapshots/";
  */
 const LOCAL_STATE_PREFIX = "ddstudio.localState.";
 
+/** Feedback reports. Machine-local, like the project records above it. */
+const MOCK_FEEDBACK_KEY = "ddstudio.feedback";
+
 function localStateKey(projectId: string): string {
   return `${LOCAL_STATE_PREFIX}${projectId}`;
 }
@@ -194,6 +197,47 @@ async function mockInvoke<T>(cmd: string, args: Args): Promise<T> {
       }
       return out as T;
     }
+    // Feedback history is machine-local rather than project-local, so it gets
+    // its own key rather than a slot in the mock project filesystem.
+    case "feedback_state_get":
+      return (localStorage.getItem(MOCK_FEEDBACK_KEY) ?? null) as T;
+    case "feedback_state_set": {
+      localStorage.setItem(MOCK_FEEDBACK_KEY, args.content as string);
+      return undefined as T;
+    }
+    // A real request, not a stand-in. The desktop build has to route this
+    // through Rust because the webview's CSP forbids external connections; a
+    // browser has no such restriction, so the same call can be made directly
+    // and the feedback service can be developed against without a Tauri build.
+    case "feedback_api_request": {
+      const url = `${String(args.baseUrl).replace(/\/+$/, "")}/${String(
+        args.path,
+      ).replace(/^\/+/, "")}`;
+      const method = String(args.method).toUpperCase();
+      const response = await fetch(url, {
+        method,
+        headers:
+          method === "POST"
+            ? { "content-type": "application/json", accept: "application/json" }
+            : { accept: "application/json" },
+        body: method === "POST" ? ((args.body as string) ?? "") : undefined,
+      });
+      const body = await response.text();
+      if (response.ok || response.status === 409) {
+        return { status: response.status, body } as T;
+      }
+      throw new Error(
+        JSON.stringify({
+          code: response.status === 429 ? "network.rateLimited" : "unknown",
+          message: "The feedback service could not be reached.",
+          detail: body.slice(0, 400),
+        }),
+      );
+    }
+    case "feedback_read_image":
+      throw new Error(
+        "Attaching an image is only available in the desktop app",
+      );
     case "read_text_file":
       throw new Error("read_text_file is not available in browser mock mode");
     case "save_text_file":

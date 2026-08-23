@@ -146,7 +146,7 @@ pub fn delivery_dir(app: tauri::AppHandle, project_id: String) -> Result<String,
 /// Not a security boundary — the boundary is that the frontend cannot read a
 /// token at all — but it catches the mistake at the moment it is made rather
 /// than months later in somebody's roaming profile.
-fn looks_like_credential(text: &str) -> bool {
+pub fn looks_like_credential(text: &str) -> bool {
     text.contains("github_pat_")
         || text.contains("ghp_")
         || text.contains("gho_")

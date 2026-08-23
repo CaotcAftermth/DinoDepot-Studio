@@ -1,0 +1,99 @@
+name: Bug report
+description: Something in DinoDepot Studio is broken or does not do what it says.
+title: "[Bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: >-
+        Reporting from inside the app (Ctrl+Shift+F, or right-click the part
+        that is wrong) fills most of this in for you, including the exact
+        component and your build. This form is here for when that is not an
+        option.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      placeholder: Setting the quantity to 0 removed the creature from the rule.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+      placeholder: The creature should have stayed, with a quantity of 0.
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Production Rules
+        2. Expand a creature
+        3. Open a production cycle
+        4. Change Quantity from 5 to 0
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Which part of the app?
+      options:
+        - Not sure
+        - Overview
+        - Production Rules
+        - Passive Production Simulator
+        - Content Sources
+        - Spawn Commands
+        - Creature Remaps
+        - CurseForge
+        - Publishing
+        - Settings
+        - GitHub
+        - Player Data
+        - Welcome screen
+
+  - type: input
+    id: component-id
+    attributes:
+      label: Component ID
+      description: >-
+        If you know it, from Copy debug information in the right-click menu.
+        It is what makes a report findable in the code.
+      placeholder: production-rule-cycle-quantity
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: How much did it get in the way?
+      options:
+        - Minor — cosmetic, or easy to work around
+        - Moderate — gets in the way, but there is another route
+        - Major — a part of the app is unusable
+        - Blocking — cannot carry on working
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: >-
+        Copy debug information in the app's right-click menu produces exactly
+        this. It contains no credentials and no project data.
+      placeholder: |
+        DinoDepot Studio 0.6.0
+        Windows 11 10.0.26200 x86 64-bit
+        Route: /production/:id
+      render: text
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: privacy
+    attributes:
+      label: Before you post
+      options:
+        - label: >-
+            I have checked that nothing above contains a GitHub token, a Discord
+            webhook, a server password, or a player's real name.
+          required: true

@@ -8,6 +8,7 @@ import {
 } from "../../components/EntityIcon";
 import { Badge, Button, Field, Input, Modal } from "../../components/ui";
 import { toast } from "../../components/toast";
+import { feedbackTarget } from "../../model/feedback/targets";
 
 /**
  * Renames a record keyed by normalized blueprint path. Returns the same object
@@ -116,7 +117,14 @@ export function EntryDataModal({
         </div>
       }
     >
-      <div className="flex flex-col gap-4">
+      <div
+        className="flex flex-col gap-4"
+        {...feedbackTarget(
+          kind === "creatures"
+            ? "content-source-creature-editor"
+            : "content-source-item-editor",
+        )}
+      >
         <div className="flex items-center gap-4">
           <EntityIcon bpPath={entry.bpPath} kind={kind} name={entry.name} size={72} />
           <div className="flex flex-col gap-1.5 items-start">

@@ -1,0 +1,33 @@
+# Cloudflare Workers deployment for the DinoDepot Feedback service.
+#
+# Only this file is Cloudflare-specific. The service itself is a standard
+# `fetch` handler, so moving it elsewhere is a matter of a different entry
+# file and different names for the two optional bindings.
+#
+# Nothing here is a secret. The GitHub App id, key and installation id are set
+# with `wrangler secret put`, never committed — see README.md.
+
+name = "dinodepot-feedback"
+main = "src/index.ts"
+compatibility_date = "2024-11-06"
+
+[vars]
+GITHUB_OWNER = "CaotcAftermth"
+GITHUB_REPO = "DinoDepot-Studio"
+RATE_LIMIT_PER_HOUR = "10"
+RATE_LIMIT_PER_IP_PER_HOUR = "30"
+
+# Optional. Without a KV namespace, rate limiting counts per isolate and is
+# best effort only — see src/security/rateLimit.ts. Create one with
+# `wrangler kv namespace create FEEDBACK_KV` and paste the id here.
+# [[kv_namespaces]]
+# binding = "FEEDBACK_KV"
+# id = "<paste the id wrangler prints>"
+
+# Optional. Without a bucket, attachments cannot be stored; reports are still
+# filed and the reporter is told the screenshot was not kept. Create one with
+# `wrangler r2 bucket create dinodepot-feedback-attachments`, make it publicly
+# readable, and set ATTACHMENTS_BASE_URL to its public URL.
+# [[r2_buckets]]
+# binding = "ATTACHMENTS"
+# bucket_name = "dinodepot-feedback-attachments"

@@ -27,6 +27,7 @@ import { ipc } from "../services/ipc";
 import { importRemapsText } from "../services/importers";
 import { shortClassName } from "../services/spawnCommands";
 import { useUiPrefsStore } from "../stores/uiPrefsStore";
+import { feedbackTarget } from "../model/feedback/targets";
 
 /** Remap files reference classes with a trailing _C; add it when missing. */
 function toClassRef(bpPath: string): string {
@@ -143,7 +144,7 @@ export function RemapsPage() {
   }
 
   return (
-    <div>
+    <div {...feedbackTarget("creature-remaps")}>
       <PageHeader
         title="Creature Type Remaps"
         subtitle={`${activeCount} active of ${remaps.entries.length} entries · ${totals.errors} errors · ${totals.warnings} warnings — published as a separate raw file referenced by the game INI`}

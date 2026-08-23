@@ -1,8 +1,8 @@
 mod commands;
 
 use commands::{
-    app_state, git, github, github_setup, icon_cache, icon_import, misc, mod_assets, mod_discovery,
-    package_http, package_library, project_io, project_lock, scraper, secrets,
+    app_state, feedback, git, github, github_setup, icon_cache, icon_import, misc, mod_assets,
+    mod_discovery, package_http, package_library, project_io, project_lock, scraper, secrets,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -101,6 +101,11 @@ pub fn run() {
             mod_assets::mod_texture_png,
             package_library::package_bundled_manifest,
             package_library::package_library_install_bundled,
+            // Feedback carries no credential of its own; see commands/feedback.rs.
+            feedback::feedback_state_get,
+            feedback::feedback_state_set,
+            feedback::feedback_api_request,
+            feedback::feedback_read_image,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -10,6 +10,7 @@ import { useProjectStore } from "../stores/projectStore";
 import { SecretInput } from "../components/SecretInput";
 import { GitHubSetup } from "./settings/GitHubSetup";
 import { SettingsNav } from "./settings/SettingsNav";
+import { FeedbackSettings } from "./settings/FeedbackSettings";
 import { categoryFor, dirtyCategories } from "./settings/categories";
 import { ipc } from "../services/ipc";
 import {
@@ -41,6 +42,7 @@ import {
   IconValue,
   MAP_EMOJI_PALETTE,
 } from "../components/EntityIcon";
+import { feedbackTarget } from "../model/feedback/targets";
 
 export function SettingsPage() {
   const { settings, saveSettings } = useProjectStore();
@@ -274,6 +276,7 @@ function SettingsContent({
           {active === "discord" && (
             <DiscordCategory draft={draft} update={update} />
           )}
+          {active === "feedback" && <FeedbackSettings />}
         </div>
       </div>
     </div>
@@ -305,7 +308,7 @@ function MachineLocalNote({ children }: { children: ReactNode }) {
 function ProjectCategory({ draft, update }: CategoryProps) {
   return (
     <>
-      <Card title="Project">
+      <Card title="Project" feedback={feedbackTarget("settings-project")}>
         <div className="flex flex-col gap-4">
           <Field label="Project name">
             <Input
@@ -351,7 +354,10 @@ function GitHubCategory() {
 function PublishingCategory({ draft, update }: CategoryProps) {
   return (
     <>
-      <Card title="Where published files go">
+      <Card
+        title="Where published files go"
+        feedback={feedbackTarget("settings-publishing")}
+      >
         {/* Repository-relative, and genuinely shared: every administrator
             publishes to the same layout. Which repository that layout lives
             in is machine-local — see the GitHub section. */}
@@ -431,7 +437,11 @@ function ProductionDefaultsCard({
     update({ defaults: { ...draft.defaults, ...patch } });
 
   return (
-    <Card className="self-stretch" title="Production defaults">
+    <Card
+      className="self-stretch"
+      title="Production defaults"
+      feedback={feedbackTarget("settings-defaults")}
+    >
       <div className="grid grid-cols-2 gap-3">
         <Field label="Interval (seconds)">
           <Input
@@ -492,7 +502,7 @@ function SimulatorDefaultsCard({
     update({ simulator: { ...draft.simulator, ...patch } });
 
   return (
-    <Card title="Simulator defaults">
+    <Card title="Simulator defaults" feedback={feedbackTarget("settings-simulator")}>
       <div className="grid grid-cols-2 gap-3">
         <Field label="Default hours">
           <Input
@@ -558,6 +568,7 @@ function CcmPostFormatCard({
 
   return (
     <Card
+      feedback={feedbackTarget("settings-discord")}
       // Full width with its own two columns — stacked, this was by far the
       // tallest card and left a hole beside its neighbour.
       //
@@ -652,7 +663,7 @@ function AdditionalPagesCard({
   update: (patch: Partial<ProjectSettings>) => void;
 }) {
   return (
-    <Card title="Additional pages">
+    <Card title="Additional pages" feedback={feedbackTarget("settings-modules")}>
       <p className="text-xs text-ink-400 mb-3">
         Optional functionality beyond the production studio. Anything enabled
         here appears in the sidebar below the separator.
@@ -739,6 +750,7 @@ function MapsCard({
 
   return (
     <Card
+      feedback={feedbackTarget("settings-maps")}
       title={`Maps (${maps.length}${disabledCount ? `, ${disabledCount} off` : ""})`}
       actions={
         <Button

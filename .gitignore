@@ -48,3 +48,9 @@ sidecar-assets/obj/
 # Rust build script even on a checkout that has not run `npm run build:assets`.
 sidecar-assets/publish/*
 !sidecar-assets/publish/.gitkeep
+
+# Feedback service secrets for `wrangler dev`. The GitHub App private key goes
+# in here locally and in Cloudflare's secret store in production — never in the
+# repository. See services/feedback-api/.env.example for the shape.
+services/feedback-api/.dev.vars
+.dev.vars

@@ -43,7 +43,15 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-      - name: Frontend tests
+      # The feedback service has its own tsconfig — a Worker runtime, no DOM —
+      # and the app's `include` does not reach it. It shares the report schemas
+      # and the issue formatter with the app, so a change on either side that
+      # breaks the other has to fail here rather than at deploy time.
+      - name: Type check the feedback service
+        run: npx tsc --noEmit -p services/feedback-api/tsconfig.json
+
+      # Covers both suites: `include` in vite.config.ts spans src/ and services/.
+      - name: Frontend and service tests
         run: npx vitest run
 
       - name: Rust tests

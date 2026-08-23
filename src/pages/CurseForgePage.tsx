@@ -38,6 +38,7 @@ import {
 } from "../components/ui";
 import { toast } from "../components/toast";
 import { confirmDialog } from "../components/confirm";
+import { feedbackTarget } from "../model/feedback/targets";
 
 /**
  * A scrape is only allowed to deprecate anything if it actually finished and
@@ -54,7 +55,7 @@ export function CurseForgePage() {
   useEffect(() => unsubscribe, []);
 
   return (
-    <div>
+    <div {...feedbackTarget("curseforge")}>
       <PageHeader
         title="CurseForge"
         subtitle="Custom cosmetics collection and mod update watching"
