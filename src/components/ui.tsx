@@ -280,6 +280,7 @@ export function CollapsibleCard({
   defaultOpen = true,
   prefKey,
   feedback,
+  onOpenChange,
 }: {
   title?: ReactNode;
   collapsedSummary?: ReactNode;
@@ -287,6 +288,12 @@ export function CollapsibleCard({
   children: ReactNode;
   className?: string;
   defaultOpen?: boolean;
+  /**
+   * Fired when the admin folds or unfolds this card, never on a change the
+   * owner made itself. For sections where opening one card should close its
+   * siblings — a list of cycles is only navigable one at a time.
+   */
+  onOpenChange?: (open: boolean) => void;
   /** Marks the card as reportable. See {@link Card}. */
   feedback?: FeedbackTargetProps;
   /**
@@ -306,6 +313,7 @@ export function CollapsibleCard({
   const setOpen = (next: boolean) => {
     if (prefKey) setToggled(prefKey, next !== defaultOpen);
     else setLocalOpen(next);
+    onOpenChange?.(next);
   };
   const bodyId = useId();
 
@@ -674,6 +682,56 @@ const MODAL_PLACEMENT_LABELS: Record<ModalPlacement, string> = {
   end: "right",
 };
 
+/**
+ * Makes Back dismiss a dialog instead of navigating the page behind it.
+ *
+ * A modal is modal to the pointer and the keyboard but not to history: a mouse
+ * with a Back button, or Alt+Left, moved the app to another page while the
+ * dialog stayed open on top of it. So an entry pointing at the same page is
+ * parked on the stack when a dialog opens, and the Back that pops it closes
+ * the dialog instead of going anywhere — which is what pressing Back over a
+ * dialog is asking for anyway.
+ *
+ * The entry is deliberately *not* taken off again when the dialog closes some
+ * other way. Removing it means calling `history.back()`, which is a real
+ * navigation the router also reacts to, and under React's development double
+ * mount the push and the pop interleave and land the app a page back. The cost
+ * of leaving it is one Back press that does nothing, once, and only after a
+ * dialog has been opened and closed without using Back — and the next dialog
+ * reuses the same entry rather than adding another.
+ */
+/** Marks the entry this hook parks on top of the real one. */
+interface DialogHistoryState {
+  ddDialog?: true;
+}
+
+function onDialogEntry(): boolean {
+  return Boolean((window.history.state as DialogHistoryState | null)?.ddDialog);
+}
+
+function useHistoryDismiss(onClose: () => void) {
+  const close = useRef(onClose);
+  close.current = onClose;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    // Only when there is not one there already. React's development double
+    // mount runs this effect twice, and a nested confirmation is a second
+    // dialog over the same page — neither should stack a second entry, and
+    // one entry closes whatever is open on top of it either way.
+    if (!onDialogEntry()) {
+      window.history.pushState({ ddDialog: true }, "", window.location.href);
+    }
+
+    function onPop() {
+      close.current();
+    }
+
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+}
+
 /** Claims Escape for a popup while `active`, so it dismisses that and not the modal behind it. */
 export function useEscapeLayer(active: boolean) {
   useEffect(() => {
@@ -746,6 +804,9 @@ export function Modal({
   // re-running the key handler effect (and the stack bookkeeping) every render.
   const close = useRef(onClose);
   close.current = onClose;
+
+  // Back closes this rather than moving the page underneath it.
+  useHistoryDismiss(onClose);
 
   useLayoutEffect(() => {
     if (!avoidElement) {

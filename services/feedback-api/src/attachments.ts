@@ -31,6 +31,8 @@ export interface AttachmentService {
   ): Promise<StoredAttachment>;
 }
 
+export const ATTACHMENT_ROUTE_PREFIX = "/api/attachments";
+
 /** What one attachment may weigh. The client and Rust enforce the same number. */
 export const MAX_ATTACHMENT_BYTES = 1 * 1024 * 1024;
 
@@ -150,8 +152,42 @@ function safeSegment(value: string): string {
 export function attachmentServiceFor(
   settings: Settings,
   bucket: BlobStore | undefined,
+  publicOrigin = "",
 ): AttachmentService {
-  return new BlobAttachmentService(bucket, settings.attachmentsBaseUrl);
+  const workerUrl = publicOrigin
+    ? `${publicOrigin.replace(/\/+$/, "")}${ATTACHMENT_ROUTE_PREFIX}`
+    : "";
+  return new BlobAttachmentService(
+    bucket,
+    settings.attachmentsBaseUrl || workerUrl,
+  );
+}
+
+/**
+ * Recognises only keys this service can create. Rejecting every other path
+ * keeps the bucket private without turning the Worker into a general R2 proxy.
+ */
+export function attachmentKeyFromPath(path: string): string | null {
+  const match = new RegExp(
+    `^${ATTACHMENT_ROUTE_PREFIX}/([A-Za-z0-9_-]{1,80})/([A-Za-z0-9_-]{1,80}\\.(?:png|jpg|webp))$`,
+  ).exec(path);
+  return match ? `${match[1]}/${match[2]}` : null;
+}
+
+/** Streams one public issue attachment while the underlying bucket stays private. */
+export async function serveAttachment(
+  bucket: BlobStore | undefined,
+  key: string,
+): Promise<Response> {
+  const object = await bucket?.get(key);
+  if (!object) return new Response("Not found", { status: 404 });
+
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set("etag", object.httpEtag);
+  headers.set("cache-control", "public, max-age=31536000, immutable");
+  headers.set("x-content-type-options", "nosniff");
+  return new Response(object.body, { headers });
 }
 
 export interface AttachmentOutcome {

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { newId } from "../model/ids";
 import { asStudioError, isOffline, isStudioError } from "../model/errors";
 import { STUDIO_VERSION } from "../model/studio";
+import { useProjectStore } from "./projectStore";
 import {
   FEEDBACK_CONFIG,
   canSubmitDirectly,
@@ -536,7 +537,17 @@ export const useFeedbackStore = create<FeedbackStoreState>((set, get) => ({
     // exists to prevent.
     set({ submitting: true, failure: null });
 
-    const record = existingRecord(state) ?? draftRecord(draft, new Date(), newId());
+    const record =
+      existingRecord(state) ??
+      draftRecord(
+        draft,
+        new Date(),
+        newId(),
+        // Stamped at creation, not at listing time: which project the report
+        // came out of is a fact about the report, and the open project will
+        // have changed by the time anybody reads it.
+        useProjectStore.getState().settings?.projectId ?? "",
+      );
     const withText = withDraft(record, draft);
 
     let diagnostics: FeedbackDiagnostics;

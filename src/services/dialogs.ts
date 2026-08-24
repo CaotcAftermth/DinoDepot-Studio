@@ -1,10 +1,24 @@
 import { isTauri } from "./ipc";
 
-/** Opens a native folder picker. Falls back to a prompt in browser mock mode. */
-export async function pickFolder(title: string): Promise<string | null> {
+/**
+ * Opens a native folder picker. Falls back to a prompt in browser mock mode.
+ *
+ * `defaultPath` is where the dialog starts. Worth passing whenever the answer
+ * is almost certainly inside a folder the app already knows about — otherwise
+ * the dialog opens wherever it was last used, which after any unrelated file
+ * operation is nowhere near the projects folder.
+ */
+export async function pickFolder(
+  title: string,
+  defaultPath?: string,
+): Promise<string | null> {
   if (isTauri) {
     const { open } = await import("@tauri-apps/plugin-dialog");
-    const result = await open({ directory: true, title });
+    const result = await open({
+      directory: true,
+      title,
+      defaultPath: defaultPath?.trim() || undefined,
+    });
     return typeof result === "string" ? result : null;
   }
   return window.prompt(`${title} (mock mode: type a folder path)`) || null;

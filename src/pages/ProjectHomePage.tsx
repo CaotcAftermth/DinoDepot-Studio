@@ -92,8 +92,15 @@ export function ProjectHomePage() {
   }, [loadRecentProjects]);
 
   async function handleOpen(dir?: string) {
+    // Started at the projects folder, because that is where every project this
+    // machine made already is. The dialog otherwise reopens whereever it was
+    // last used, which after importing a live file is the game's config folder.
     const target =
-      dir ?? (await pickFolder("Select an existing project folder"));
+      dir ??
+      (await pickFolder(
+        "Select an existing project folder",
+        root || (await loadProjectsRoot()),
+      ));
     if (!target) return;
     try {
       await openProject(target);

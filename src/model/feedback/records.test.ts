@@ -13,6 +13,7 @@ import {
   newReporterId,
   pruneRecords,
   recordTitle,
+  recordsForProject,
   removeRecord,
   reportFrom,
   upsertRecord,
@@ -345,5 +346,49 @@ describe("reportFrom", () => {
       },
     });
     expect(reportFrom(record, draft, diagnostics, "", "0.6.0").target).toBeNull();
+  });
+});
+
+/**
+ * A report is written while working on one cluster and is not part of the
+ * next one's history. The file stays machine-local either way — the scoping is
+ * about what My Reports lists, not about where the bytes go.
+ */
+describe("recordsForProject", () => {
+  const at = (projectId: string, localId: string) =>
+    LocalFeedbackRecordSchema.parse({ localId, type: "bug", projectId });
+
+  it("lists only the open project's reports", () => {
+    const records = [at("p1", "a"), at("p2", "b"), at("p1", "c")];
+    expect(recordsForProject(records, "p1").map((r) => r.localId)).toEqual([
+      "a",
+      "c",
+    ]);
+  });
+
+  /**
+   * The welcome screen has no project. A report written there must not attach
+   * itself to whichever project is opened next — that is the behaviour this
+   * replaced.
+   */
+  it("keeps a report written with no project out of every project", () => {
+    const records = [at("", "welcome"), at("p1", "a")];
+    expect(recordsForProject(records, "p1").map((r) => r.localId)).toEqual(["a"]);
+    expect(recordsForProject(records, "").map((r) => r.localId)).toEqual([
+      "welcome",
+    ]);
+  });
+
+  /** Records written before the field existed load as belonging to none. */
+  it("treats a record with no project id as unassigned", () => {
+    const legacy = LocalFeedbackRecordSchema.parse({ localId: "old", type: "bug" });
+    expect(legacy.projectId).toBe("");
+    expect(recordsForProject([legacy], "p1")).toEqual([]);
+  });
+
+  it("stamps a new draft with the project it was written in", () => {
+    const record = draftRecord(emptyDraft("bug"), new Date(), "id-1", "p9");
+    expect(record.projectId).toBe("p9");
+    expect(draftRecord(emptyDraft("bug")).projectId).toBe("");
   });
 });

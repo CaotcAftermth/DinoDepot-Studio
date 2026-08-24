@@ -175,15 +175,13 @@ need somewhere to live.
 npx wrangler r2 bucket create dinodepot-feedback-attachments
 ```
 
-Uncomment `[[r2_buckets]]` in `wrangler.toml`, make the bucket publicly
-readable, and set its public URL:
+Uncomment `[[r2_buckets]]` in `wrangler.toml` and deploy again. Keep the bucket
+private: the Worker serves only validated screenshot keys through
+`/api/attachments/`. `ATTACHMENTS_BASE_URL` remains an optional override when a
+production custom domain is preferred.
 
-```bash
-npx wrangler secret put ATTACHMENTS_BASE_URL
-```
-
-Without both, attachments are refused — the report is still filed, and the
-reporter is told the screenshot was not kept.
+Without the binding, attachments are refused — the report is still filed, and
+the reporter is told the screenshot was not kept.
 
 ---
 
@@ -192,6 +190,7 @@ reporter is told the screenshot was not kept.
 | Method | Path | Purpose |
 | --- | --- | --- |
 | `GET` | `/api/health` | Repository, accepted schema versions, attachment support |
+| `GET` | `/api/attachments/:report/:file` | One stored screenshot |
 | `POST` | `/api/feedback` | File a report. `409` means it was already filed |
 | `POST` | `/api/feedback/search-duplicates` | Candidate existing issues |
 | `GET` | `/api/feedback/issues/:number` | One issue's state |

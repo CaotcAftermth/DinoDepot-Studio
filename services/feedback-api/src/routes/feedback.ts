@@ -40,7 +40,11 @@ export interface RouteContext {
 // ---------------------------------------------------------------------------
 
 export async function handleHealth(context: RouteContext): Promise<Response> {
-  const attachments = attachmentServiceFor(context.settings, context.env.ATTACHMENTS);
+  const attachments = attachmentServiceFor(
+    context.settings,
+    context.env.ATTACHMENTS,
+    new URL(context.request.url).origin,
+  );
   return json({
     ok: true,
     repository: repoSlug(context.settings),
@@ -71,7 +75,11 @@ export async function handleSubmit(context: RouteContext): Promise<Response> {
     return json({ issue: existing, alreadyFiled: true, missingLabels: [] }, 409);
   }
 
-  const attachmentService = attachmentServiceFor(context.settings, context.env.ATTACHMENTS);
+  const attachmentService = attachmentServiceFor(
+    context.settings,
+    context.env.ATTACHMENTS,
+    new URL(context.request.url).origin,
+  );
   const outcome = await storeAttachments(attachmentService, report);
 
   // The report the formatter sees carries URLs rather than bytes, so the

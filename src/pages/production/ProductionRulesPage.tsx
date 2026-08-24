@@ -25,6 +25,7 @@ import {
 import { shortClassName } from "../../services/spawnCommands";
 import { EntityIcon } from "../../components/EntityIcon";
 import { RuleEditor } from "./RuleEditor";
+import { CommunityCredits } from "../../components/CommunityCredits";
 import { displayNameFor, useCatalogIndex } from "../../stores/useCatalogIndex";
 import { pickFile } from "../../services/dialogs";
 import { ipc } from "../../services/ipc";
@@ -510,9 +511,15 @@ export function ProductionRulesPage() {
               onCreaturePickerDismissed={dropPendingIfEmpty}
             />
           ) : (
-            <EmptyState title="Select a rule to edit">
-              Or add a new rule, or import your live passive production file.
-            </EmptyState>
+            <>
+              <EmptyState title="Select a rule to edit">
+                Or add a new rule, or import your live passive production file.
+              </EmptyState>
+              {/* Only while the editor column is empty. The page is for
+                  editing rules, so the moment there is one to edit this gives
+                  the space back. */}
+              <CommunityCredits />
+            </>
           )}
         </div>
 

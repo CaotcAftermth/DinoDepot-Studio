@@ -12,7 +12,14 @@ export interface KeyValueStore {
 }
 
 /** An R2 bucket, likewise. */
+export interface StoredBlob {
+  readonly body: ReadableStream;
+  readonly httpEtag: string;
+  writeHttpMetadata(headers: Headers): void;
+}
+
 export interface BlobStore {
+  get(key: string): Promise<StoredBlob | null>;
   put(
     key: string,
     value: ArrayBuffer,
@@ -50,7 +57,7 @@ export interface Env {
   /** Salt for hashing installation ids. Any long random string. */
   IDENTITY_SALT?: string;
 
-  /** Public base URL attachments are served from, if a bucket is bound. */
+  /** Optional public URL override. Defaults to this Worker's attachment route. */
   ATTACHMENTS_BASE_URL?: string;
 
   /** Optional. Without it, rate limiting is per-isolate and best effort. */

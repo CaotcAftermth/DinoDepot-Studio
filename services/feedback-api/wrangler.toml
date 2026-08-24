@@ -9,7 +9,7 @@
 
 name = "dinodepot-feedback"
 main = "src/index.ts"
-compatibility_date = "2024-11-06"
+compatibility_date = "2026-08-24"
 
 [vars]
 GITHUB_OWNER = "CaotcAftermth"
@@ -17,17 +17,13 @@ GITHUB_REPO = "DinoDepot-Studio"
 RATE_LIMIT_PER_HOUR = "10"
 RATE_LIMIT_PER_IP_PER_HOUR = "30"
 
-# Optional. Without a KV namespace, rate limiting counts per isolate and is
-# best effort only — see src/security/rateLimit.ts. Create one with
-# `wrangler kv namespace create FEEDBACK_KV` and paste the id here.
-# [[kv_namespaces]]
-# binding = "FEEDBACK_KV"
-# id = "<paste the id wrangler prints>"
+# Durable, account-wide rate limiting.
+[[kv_namespaces]]
+binding = "FEEDBACK_KV"
+id = "6a2ac2be0d0f43c1b766cef28c1e0190"
 
-# Optional. Without a bucket, attachments cannot be stored; reports are still
-# filed and the reporter is told the screenshot was not kept. Create one with
-# `wrangler r2 bucket create dinodepot-feedback-attachments`, make it publicly
-# readable, and set ATTACHMENTS_BASE_URL to its public URL.
-# [[r2_buckets]]
-# binding = "ATTACHMENTS"
-# bucket_name = "dinodepot-feedback-attachments"
+# Screenshot storage. Bucket stays private; this Worker exposes only validated
+# attachment keys through /api/attachments/.
+[[r2_buckets]]
+binding = "ATTACHMENTS"
+bucket_name = "dinodepot-feedback-attachments"

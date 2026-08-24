@@ -155,6 +155,7 @@ export function draftRecord(
   draft: FeedbackDraft,
   now = new Date(),
   localId = newId(),
+  projectId = "",
 ): LocalFeedbackRecord {
   const at = stamp(now);
   return LocalFeedbackRecordSchema.parse({
@@ -164,8 +165,23 @@ export function draftRecord(
     createdAt: at,
     updatedAt: at,
     status: "draft",
+    projectId,
     draft,
   });
+}
+
+/**
+ * The records belonging to one project, newest handling aside.
+ *
+ * Strict equality, including the empty id: a report written on the welcome
+ * screen belongs to no project and stays there rather than attaching itself to
+ * whichever project happens to open next.
+ */
+export function recordsForProject(
+  records: LocalFeedbackRecord[],
+  projectId: string,
+): LocalFeedbackRecord[] {
+  return records.filter((record) => record.projectId === projectId);
 }
 
 /**

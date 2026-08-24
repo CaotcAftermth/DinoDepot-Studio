@@ -1,4 +1,6 @@
 import { useFeedbackStore } from "../../stores/feedbackStore";
+import { useProjectStore } from "../../stores/projectStore";
+import { recordsForProject } from "../../model/feedback/records";
 import { canSubmitDirectly, effectiveConfig } from "../../model/feedback/config";
 import { STUDIO_NAME, studioRepoUrl } from "../../model/studio";
 import { openExternal } from "../../services/openExternal";
@@ -46,7 +48,10 @@ const CHOICES: Choice[] = [
 export function FeedbackLauncher() {
   const store = useFeedbackStore();
   const config = effectiveConfig(store.settings);
-  const reportCount = store.records.length;
+  // The same scope My Reports itself lists. Counting every report on the
+  // machine here meant the button promised a list that did not match it.
+  const projectId = useProjectStore((s) => s.settings?.projectId ?? "");
+  const reportCount = recordsForProject(store.records, projectId).length;
 
   return (
     <Modal title="Feedback" onClose={store.close} wide>

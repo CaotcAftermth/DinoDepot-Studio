@@ -3,7 +3,13 @@ import worker from "./index";
 import { resetAuthCache } from "./github/app";
 import { resetLabelCache } from "./github/issues";
 import { resetMemoryCounters } from "./security/rateLimit";
-import { readSettings, ConfigError, type Env, type KeyValueStore } from "./env";
+import {
+  readSettings,
+  ConfigError,
+  type BlobStore,
+  type Env,
+  type KeyValueStore,
+} from "./env";
 import { hashIdentifier, sharedKeyAccepted } from "./security/identity";
 import { consume } from "./security/rateLimit";
 import { decodeAttachment, AttachmentRejected } from "./attachments";
@@ -118,7 +124,15 @@ function stubGithub(options: {
   markerSearchStatus?: number;
 } = {}) {
   const calls: { url: string; method: string; body?: unknown }[] = [];
-  const fetchStub = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+  const fetchStub = vi.fn(async function (
+    this: unknown,
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ) {
+    // Cloudflare's native fetch throws "Illegal invocation" when detached
+    // from the global object. Keep the stub equally strict so that portability
+    // bug cannot silently return.
+    if (this !== globalThis) throw new TypeError("Illegal invocation");
     const url = String(input);
     calls.push({
       url,
@@ -693,6 +707,97 @@ describe("attachments", () => {
     expect(body.rejectedAttachments[0].fileName).toBe("shot.webp");
     const create = calls.find((call) => call.method === "POST" && call.url.endsWith("/issues"));
     expect((create?.body as { body: string }).body).toContain("Attachments not stored");
+  });
+
+  it("stores screenshots privately and streams them through the Worker", async () => {
+    const calls = stubGithub();
+    const objects = new Map<string, { bytes: Uint8Array; type: string }>();
+    const bucket: BlobStore = {
+      async put(key, value, options) {
+        objects.set(key, {
+          bytes: new Uint8Array(value),
+          type: options?.httpMetadata?.contentType ?? "application/octet-stream",
+        });
+      },
+      async get(key) {
+        const stored = objects.get(key);
+        if (!stored) return null;
+        return {
+          body: new Response(stored.bytes).body!,
+          httpEtag: '"test-etag"',
+          writeHttpMetadata(headers) {
+            headers.set("content-type", stored.type);
+          },
+        };
+      },
+    };
+    const bytes = [...PNG_HEADER, 1, 2, 3];
+    const withImage = report({
+      attachments: [
+        {
+          id: "a1",
+          fileName: "shot.png",
+          contentType: "image/png",
+          sizeBytes: bytes.length,
+          dataB64: base64(bytes),
+          url: "",
+        },
+      ],
+    });
+
+    const submitted = await worker.fetch(
+      post("/api/feedback", { report: withImage }),
+      env({ ATTACHMENTS: bucket }),
+    );
+    expect(submitted.status).toBe(200);
+    const result = (await submitted.json()) as {
+      storedAttachments: number;
+      rejectedAttachments: unknown[];
+    };
+    expect(result.storedAttachments).toBe(1);
+    expect(result.rejectedAttachments).toEqual([]);
+
+    const url =
+      "https://feedback.example.com/api/attachments/11111111-2222-4333-8444-555555555555/a1.png";
+    const create = calls.find((call) => call.method === "POST" && call.url.endsWith("/issues"));
+    expect((create?.body as { body: string }).body).toContain(url);
+
+    // Public by design: GitHub's image renderer has no feedback-service key.
+    const served = await worker.fetch(
+      new Request(url),
+      env({ ATTACHMENTS: bucket, FEEDBACK_SHARED_KEY: "private" }),
+    );
+    expect(served.status).toBe(200);
+    expect(served.headers.get("content-type")).toBe("image/png");
+    expect(served.headers.get("etag")).toBe('"test-etag"');
+    expect(served.headers.get("cache-control")).toContain("immutable");
+    expect([...new Uint8Array(await served.arrayBuffer())]).toEqual(bytes);
+
+    const health = await worker.fetch(
+      new Request("https://feedback.example.com/api/health"),
+      env({ ATTACHMENTS: bucket }),
+    );
+    expect(((await health.json()) as { attachments: boolean }).attachments).toBe(true);
+  });
+
+  it("does not expose arbitrary or missing bucket keys", async () => {
+    const bucket: BlobStore = {
+      async put() {},
+      async get() {
+        return null;
+      },
+    };
+    const missing = await worker.fetch(
+      new Request("https://feedback.example.com/api/attachments/report/image.png"),
+      env({ ATTACHMENTS: bucket }),
+    );
+    expect(missing.status).toBe(404);
+
+    const traversal = await worker.fetch(
+      new Request("https://feedback.example.com/api/attachments/report/%2e%2e%2fsecret.png"),
+      env({ ATTACHMENTS: bucket }),
+    );
+    expect(traversal.status).toBe(404);
   });
 });
 

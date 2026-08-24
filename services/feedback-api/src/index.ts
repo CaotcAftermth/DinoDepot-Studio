@@ -1,4 +1,5 @@
 import { ConfigError, readSettings, type Env } from "./env";
+import { attachmentKeyFromPath, serveAttachment } from "./attachments";
 import { GitHubFeedbackService } from "./github/issues";
 import { ApiError, failure, json, preflight } from "./http";
 import { sharedKeyAccepted } from "./security/identity";
@@ -41,6 +42,14 @@ export default {
     const path = url.pathname.replace(/\/+$/, "") || "/";
 
     try {
+      // GitHub issue Markdown must be able to fetch screenshots without a
+      // client credential. Only validated object keys are exposed; R2 itself
+      // remains private.
+      const attachmentKey = attachmentKeyFromPath(path);
+      if (attachmentKey && request.method === "GET") {
+        return await serveAttachment(env.ATTACHMENTS, attachmentKey);
+      }
+
       const settings = readSettings(env);
 
       // Checked before anything else reads the body, so an unauthorized
@@ -90,6 +99,16 @@ export default {
           },
           503,
         );
+      }
+      if (!(error instanceof ApiError)) {
+        // Keep the client response intentionally generic, but leave operators
+        // enough information to distinguish GitHub auth, network and storage
+        // failures. Worker logs are private; values and request bodies are
+        // deliberately never included here.
+        console.error("feedback_request_failed", {
+          name: error instanceof Error ? error.name : typeof error,
+          message: error instanceof Error ? error.message : "Unknown error",
+        });
       }
       return failure(error);
     }

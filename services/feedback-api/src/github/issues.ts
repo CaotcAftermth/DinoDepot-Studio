@@ -1,6 +1,6 @@
 import { ApiError } from "../http";
 import { repoSlug, type Settings } from "../env";
-import { installationToken } from "./app";
+import { installationToken, runtimeFetch } from "./app";
 import type { DuplicateCandidate, IssueSummary } from "../shared";
 
 /**
@@ -87,7 +87,7 @@ export interface CreateIssueResult {
 export class GitHubFeedbackService {
   constructor(
     private readonly settings: Settings,
-    private readonly fetchImpl: typeof fetch = fetch,
+    private readonly fetchImpl: typeof fetch = runtimeFetch,
   ) {}
 
   private async request(path: string, init: RequestInit = {}): Promise<Response> {

@@ -62,6 +62,7 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VITE_FEEDBACK_API_URL: ${{ vars.VITE_FEEDBACK_API_URL }}
           # The private half of the updater key pair. Held only here and in
           # whatever the maintainer keeps passwords in — never in the repository.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}

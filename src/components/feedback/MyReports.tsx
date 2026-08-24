@@ -12,7 +12,8 @@ import {
   sortRecords,
   type ReportFilter,
 } from "../../model/feedback/status";
-import { canRetry } from "../../model/feedback/records";
+import { canRetry, recordsForProject } from "../../model/feedback/records";
+import { useProjectStore } from "../../stores/projectStore";
 import { confirmDialog } from "../confirm";
 import { Badge, Button, EmptyState, Modal, cx } from "../ui";
 
@@ -29,7 +30,12 @@ import { Badge, Button, EmptyState, Modal, cx } from "../ui";
 export function MyReports() {
   const store = useFeedbackStore();
   const config = effectiveConfig(store.settings);
-  const visible = sortRecords(store.records).filter((record) =>
+  // Reports written in the open project only — or, with none open, the ones
+  // written with none open. The file holds every report this machine has made;
+  // showing all of them here made one cluster's list read as another's.
+  const projectId = useProjectStore((s) => s.settings?.projectId ?? "");
+  const mine = recordsForProject(store.records, projectId);
+  const visible = sortRecords(mine).filter((record) =>
     matchesFilter(record, store.filter),
   );
 
@@ -76,7 +82,7 @@ export function MyReports() {
             key={filter}
             filter={filter}
             active={store.filter === filter}
-            count={store.records.filter((r) => matchesFilter(r, filter)).length}
+            count={mine.filter((r) => matchesFilter(r, filter)).length}
             onSelect={() => store.setFilter(filter)}
           />
         ))}

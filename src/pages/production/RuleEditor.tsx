@@ -25,6 +25,7 @@ import { displayNameFor, useCatalogIndex } from "../../stores/useCatalogIndex";
 import type { ValidationIssue } from "../../validation/types";
 import type { ProjectSettings } from "../../model/project";
 import { feedbackTarget } from "../../model/feedback/targets";
+import { useUiPrefsStore } from "../../stores/uiPrefsStore";
 import { shortClassName } from "../../services/spawnCommands";
 
 function NumberField({
@@ -208,6 +209,7 @@ export function RuleEditor({
   onCreaturePickerDismissed?: () => void;
 }) {
   const index = useCatalogIndex();
+  const setFold = useUiPrefsStore((s) => s.setToggled);
   const [pickingCreature, setPickingCreature] = useState(false);
   // Typed paths are checked when the field is done being edited, so the
   // prompts don't fire on a half-typed class name.
@@ -260,6 +262,33 @@ export function RuleEditor({
       ...rule,
       cycles: rule.cycles.map((c) => (c.id === cycleId ? { ...c, ...patch } : c)),
     });
+  }
+
+  /**
+   * Leaves one cycle open and folds the rest.
+   *
+   * A rule with four cycles of six items each is a page of scrolling before
+   * the second cycle's name is on screen. Cards default to open, so "folded"
+   * is the state that differs from the default — hence the inverted flag.
+   */
+  function keepOnlyCycleOpen(cycleId: string) {
+    for (const c of rule.cycles) setFold(`cycle:${c.id}`, c.id !== cycleId);
+  }
+
+  /**
+   * The first item this rule has ever had.
+   *
+   * Up to that point the header is the only thing worth looking at — it is
+   * where the creature and the chance are set. Once there is production to
+   * read, it is a title bar taking up a third of the screen, so it folds
+   * itself out of the way exactly once and stays wherever the admin puts it
+   * afterwards.
+   */
+  function foldHeaderOnFirstItem(cycleId: string) {
+    const hadNone = rule.cycles.every((c) => c.items.length === 0);
+    if (!hadNone) return;
+    setFold(`rule:${rule.id}`, true);
+    keepOnlyCycleOpen(cycleId);
   }
 
   return (
@@ -370,27 +399,27 @@ export function RuleEditor({
             })
           }
           newItem={newItem}
+          onOpened={() => keepOnlyCycleOpen(cycle.id)}
+          onItemAdded={() => foldHeaderOnFirstItem(cycle.id)}
         />
       ))}
 
       <Button
-        onClick={() =>
-          onChange({
-            ...rule,
-            cycles: [
-              ...rule.cycles,
-              {
-                id: newId(),
-                name: "",
-                intervalSeconds: defaults.intervalSeconds,
-                itemSelectMode: 0,
-                // No blank item: "+ Add item" asks which item, so one that
-                // arrives already empty is a row to delete, not a head start.
-                items: [],
-              },
-            ],
-          })
-        }
+        onClick={() => {
+          const cycle = {
+            id: newId(),
+            name: "",
+            intervalSeconds: defaults.intervalSeconds,
+            itemSelectMode: 0 as const,
+            // No blank item: "+ Add item" asks which item, so one that
+            // arrives already empty is a row to delete, not a head start.
+            items: [],
+          };
+          onChange({ ...rule, cycles: [...rule.cycles, cycle] });
+          // The new one is the one being worked on, so it is the one left
+          // open — the others are already written.
+          keepOnlyCycleOpen(cycle.id);
+        }}
       >
         + Add production cycle
       </Button>
@@ -421,18 +450,25 @@ function CycleEditor({
   onChange,
   onDelete,
   newItem,
+  onOpened,
+  onItemAdded,
 }: {
   cycle: ProductionCycle;
   index: number;
   onChange: (patch: Partial<ProductionCycle>) => void;
   onDelete: () => void;
   newItem: () => PrimaryItem;
+  /** The admin unfolded this cycle; the rule folds the others. */
+  onOpened: () => void;
+  /** An item was added here, which is what folds the rule header the first time. */
+  onItemAdded: () => void;
 }) {
   const [pickingItem, setPickingItem] = useState(false);
 
   return (
     <CollapsibleCard
       prefKey={`cycle:${cycle.id}`}
+      onOpenChange={(open) => open && onOpened()}
       feedback={feedbackTarget("production-rule-cycle-editor")}
       title={
         <span className="block truncate">
@@ -511,6 +547,7 @@ function CycleEditor({
           onPick={(bpPath) => {
             setPickingItem(false);
             onChange({ items: [...cycle.items, { ...newItem(), bpPath }] });
+            onItemAdded();
           }}
         />
       )}

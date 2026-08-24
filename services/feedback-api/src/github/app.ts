@@ -19,6 +19,10 @@ import type { Settings } from "../env";
 
 const encoder = new TextEncoder();
 
+/** Cloudflare's global fetch must be invoked with the global object as receiver. */
+export const runtimeFetch: typeof fetch = (input, init) =>
+  globalThis.fetch(input, init);
+
 /** Base64url without padding, which is what a JWT segment is. */
 function base64url(bytes: ArrayBuffer | Uint8Array): string {
   const view = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
@@ -165,7 +169,7 @@ const TOKEN_HEADROOM_MS = 60 * 1000;
  */
 export async function installationToken(
   settings: Settings,
-  fetchImpl: typeof fetch = fetch,
+  fetchImpl: typeof fetch = runtimeFetch,
   now = Date.now(),
 ): Promise<string> {
   if (cachedInstallationToken && cachedInstallationToken.expiresAt - TOKEN_HEADROOM_MS > now) {

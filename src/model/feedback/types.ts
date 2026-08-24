@@ -333,6 +333,21 @@ export const LocalFeedbackRecordSchema = z.object({
   updatedAt: z.string().max(40).default(""),
   status: FeedbackStatusSchema.default("draft"),
   /**
+   * The project that was open when the report was written, or "" for one
+   * written with no project open.
+   *
+   * The file itself stays machine-local — a bug report is about the
+   * application, and filing it into the project would synchronize one
+   * administrator's complaints to everybody else on the cluster. This is only
+   * about what My Reports *lists*: a report written while working on one
+   * cluster is not part of the next one's history, and mixing them made the
+   * list read as somebody else's.
+   *
+   * Defaulted, so records written before this existed load as "no project"
+   * rather than failing the schema.
+   */
+  projectId: z.string().max(80).default(""),
+  /**
    * Everything the reporter entered, kept so a failed submission can be
    * retried or edited rather than retyped.
    *
