@@ -42,6 +42,12 @@ const LOCAL_STATE_PREFIX = "ddstudio.localState.";
 /** Feedback reports. Machine-local, like the project records above it. */
 const MOCK_FEEDBACK_KEY = "ddstudio.feedback";
 
+/**
+ * Where this machine keeps its projects. Machine-local too, and the desktop
+ * build keeps it in a file in application data — see `projects_root_get`.
+ */
+const MOCK_PROJECTS_ROOT_KEY = "ddstudio.projectsRoot";
+
 function localStateKey(projectId: string): string {
   return `${LOCAL_STATE_PREFIX}${projectId}`;
 }
@@ -197,6 +203,16 @@ async function mockInvoke<T>(cmd: string, args: Args): Promise<T> {
       }
       return out as T;
     }
+    case "projects_root_get":
+      return ((localStorage.getItem(MOCK_PROJECTS_ROOT_KEY) ?? "").trim() ||
+        null) as T;
+    case "projects_root_set": {
+      localStorage.setItem(
+        MOCK_PROJECTS_ROOT_KEY,
+        String(args.dir ?? "").trim(),
+      );
+      return undefined as T;
+    }
     // Feedback history is machine-local rather than project-local, so it gets
     // its own key rather than a slot in the mock project filesystem.
     case "feedback_state_get":
@@ -292,6 +308,18 @@ async function mockInvoke<T>(cmd: string, args: Args): Promise<T> {
       throw new Error("Reading mod artwork is only available in the desktop app");
     case "discord_post":
       throw new Error("Discord posting is only available in the desktop app");
+    // Moving a credential is a Credential Manager operation in the desktop
+    // build; here the mock store is the credential manager, so it is a move.
+    case "discord_webhook_adopt_legacy": {
+      const legacy = secrets().get("discord-webhook");
+      if (!legacy) {
+        throw new Error("There is no webhook from an older version to move");
+      }
+      secrets().set(`discord-webhook:${args.projectId as string}`, legacy);
+      secrets().delete("discord-webhook");
+      persistMockSecrets();
+      return undefined as T;
+    }
     case "wiki_fetch_page":
       // The wiki blocks cross-origin reads, which is why the real fetch runs
       // in Rust. The fixture import path works here.

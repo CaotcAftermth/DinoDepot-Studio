@@ -103,15 +103,15 @@ pub fn list_images(dir: String) -> Result<Vec<String>, String> {
     Ok(names)
 }
 
-/// Posts an announcement to the Discord webhook stored in the credential
-/// manager, one message per segment, in order.
+/// Posts an announcement to this project's Discord webhook, one message per
+/// segment, in order.
 ///
 /// The splitting itself lives in `discordPost.ts`, next to the template that
 /// produced the text: only the renderer knows where a line ends or a code
 /// fence opens, and a second, blunter splitter here would cut through both.
 /// This end just refuses anything Discord would reject outright.
 #[tauri::command]
-pub async fn discord_post(segments: Vec<String>) -> Result<(), String> {
+pub async fn discord_post(project_id: String, segments: Vec<String>) -> Result<(), String> {
     let messages: Vec<String> = segments
         .into_iter()
         .filter(|s| !s.trim().is_empty())
@@ -130,14 +130,15 @@ pub async fn discord_post(segments: Vec<String>) -> Result<(), String> {
         ));
     }
 
-    let entry =
-        keyring::Entry::new("DinoDepotStudio", "discord-webhook").map_err(|e| e.to_string())?;
-    let webhook = match entry.get_password() {
-        Ok(url) => url,
-        Err(keyring::Error::NoEntry) => {
-            return Err("No Discord webhook stored — add one in Settings".to_string())
+    // Per project, not per machine: a webhook points at one channel belonging
+    // to one cluster, and a shared one posted into the wrong server.
+    let webhook = match super::secrets::discord_webhook(&project_id)? {
+        Some(url) => url,
+        None => {
+            return Err(
+                "No Discord webhook stored for this project — add one in Settings".to_string(),
+            )
         }
-        Err(e) => return Err(e.to_string()),
     };
     if !webhook.starts_with("https://") {
         return Err("Stored Discord webhook is not an https:// URL".to_string());

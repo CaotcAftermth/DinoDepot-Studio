@@ -13,7 +13,14 @@ import { ProjectAccess } from "./settings/ProjectAccess";
 import { SettingsNav } from "./settings/SettingsNav";
 import { FeedbackSettings } from "./settings/FeedbackSettings";
 import { categoryFor, dirtyCategories } from "./settings/categories";
-import { ipc } from "../services/ipc";
+import {
+  adoptLegacyDiscordWebhook,
+  discardLegacyDiscordWebhook,
+  hasDiscordWebhook,
+  hasLegacyDiscordWebhook,
+  removeDiscordWebhook,
+  storeDiscordWebhook,
+} from "../services/discordWebhook";
 import {
   Badge,
   Button,
@@ -22,6 +29,7 @@ import {
   Field,
   Input,
   PageHeader,
+  Select,
   Toggle,
 } from "../components/ui";
 import { APP_MODULES } from "../app/modules";
@@ -30,14 +38,19 @@ import { chooseDialog, confirmDialog } from "../components/confirm";
 import {
   DiscordFormatSchema,
   defaultMaps,
+  type DiscordMention,
+  type DiscordMentionKind,
   type MapEntry,
   type ProjectSettings,
 } from "../model/project";
 import {
+  DISCORD_MENTION_KINDS,
   DISCORD_TOKENS,
   DISCORD_WEBHOOK_LIMIT,
   discordLimit,
+  mentionNeedsId,
   renderDiscordPost,
+  renderMention,
   SAMPLE_POST_MODS,
   splitDiscordPost,
 } from "../model/discordPost";
@@ -145,23 +158,38 @@ function useUnsavedChangesPrompt(dirty: boolean, save: () => Promise<boolean>) {
  * show at a glance that something *is* saved — "Replace" clears it for typing.
  */
 
-function DiscordWebhookCard() {
+function DiscordWebhookCard({ projectId }: { projectId: string }) {
   const [input, setInput] = useState("");
   const [hasHook, setHasHook] = useState<boolean | null>(null);
+  /** A webhook stored before webhooks were per-project, still unclaimed. */
+  const [legacy, setLegacy] = useState(false);
 
   useEffect(() => {
-    ipc<boolean>("secret_has", { key: "discord-webhook" })
-      .then(setHasHook)
-      .catch(() => setHasHook(null));
-  }, []);
+    let cancelled = false;
+    void (async () => {
+      const [mine, old] = await Promise.all([
+        hasDiscordWebhook(projectId).catch(() => null),
+        hasLegacyDiscordWebhook().catch(() => false),
+      ]);
+      if (cancelled) return;
+      setHasHook(mine);
+      // Only worth offering when this project has none of its own; otherwise
+      // the administrator is being asked to choose between two live webhooks.
+      setLegacy(old === true && mine === false);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
 
   async function save() {
     if (!input.trim()) return;
     try {
-      await ipc("secret_set", { key: "discord-webhook", value: input.trim() });
+      await storeDiscordWebhook(projectId, input.trim());
       setInput("");
       setHasHook(true);
-      toast.success("Discord webhook stored in Windows Credential Manager");
+      setLegacy(false);
+      toast.success("Discord webhook stored for this project");
     } catch (e) {
       toast.error(
         `Could not store webhook: ${e instanceof Error ? e.message : e}`,
@@ -171,13 +199,49 @@ function DiscordWebhookCard() {
 
   async function remove() {
     try {
-      await ipc("secret_delete", { key: "discord-webhook" });
+      await removeDiscordWebhook(projectId);
       setHasHook(false);
       toast.info("Discord webhook removed");
     } catch (e) {
       toast.error(
         `Could not remove webhook: ${e instanceof Error ? e.message : e}`,
       );
+    }
+  }
+
+  /** Takes over the webhook an older, machine-wide build left behind. */
+  async function adopt() {
+    try {
+      await adoptLegacyDiscordWebhook(projectId);
+      setHasHook(true);
+      setLegacy(false);
+      toast.success("The older webhook now belongs to this project");
+    } catch (e) {
+      toast.error(
+        `Could not move the webhook: ${e instanceof Error ? e.message : e}`,
+      );
+    }
+  }
+
+  async function discardLegacy() {
+    const ok = await confirmDialog({
+      title: "Discard the older webhook?",
+      message:
+        "The webhook stored by an earlier version is deleted from Windows " +
+        "Credential Manager. No project gets it.",
+      details: [
+        "Nothing in Discord changes — the webhook itself still exists there.",
+      ],
+      confirmLabel: "Discard",
+      danger: true,
+    });
+    if (!ok) return;
+    try {
+      await discardLegacyDiscordWebhook();
+      setLegacy(false);
+      toast.info("The older webhook was discarded");
+    } catch (e) {
+      toast.error(`Could not discard it: ${e instanceof Error ? e.message : e}`);
     }
   }
 
@@ -197,8 +261,21 @@ function DiscordWebhookCard() {
         Used by "Post to Discord" in the Cosmetics Collector (e.g. announcing
         new custom cosmetic mods). Create one in your Discord server: Channel
         settings → Integrations → Webhooks. Stored in Windows Credential
-        Manager.
+        Manager against <em>this</em> project — another project on this
+        computer has its own, and starts without one.
       </p>
+      {legacy && (
+        <div className="text-xs rounded-md border border-amber-flag/30 bg-amber-flag/5 text-amber-300 px-2 py-2 mb-3 flex items-center gap-2 flex-wrap">
+          <span className="flex-1 min-w-0">
+            An earlier version stored one webhook for the whole computer. Give
+            it to this project, or discard it — it is offered once.
+          </span>
+          <Button onClick={adopt}>Use it here</Button>
+          <Button variant="ghost" onClick={discardLegacy}>
+            Discard
+          </Button>
+        </div>
+      )}
       <div className="flex gap-2">
         <SecretInput
           stored={hasHook === true}
@@ -412,11 +489,12 @@ function DiscordCategory({ draft, update }: CategoryProps) {
   return (
     <>
       <MachineLocalNote>
-        the webhook below is kept in Windows Credential Manager and stored the
-        moment you press Store. The post format waits for Save.
+        the webhook below is kept in Windows Credential Manager — on this
+        computer, for this project — and stored the moment you press Store.
+        The post format waits for Save.
       </MachineLocalNote>
 
-      <DiscordWebhookCard />
+      <DiscordWebhookCard projectId={draft.projectId} />
       <CcmPostFormatCard draft={draft} update={update} />
     </>
   );
@@ -556,6 +634,83 @@ function SimulatorDefaultsCard({
  * post can be reworded without a rebuild — the Collector renders it for both
  * "Copy Discord post" and "Post to Discord".
  */
+/**
+ * Who the announcement pings, chosen rather than typed.
+ *
+ * The kind is a list because the four syntaxes differ by a character or two
+ * and the wrong one either silently fails to ping or pings the whole server;
+ * only the id is typed, and only for the two kinds that have one.
+ */
+function MentionField({
+  mention,
+  onChange,
+}: {
+  mention: DiscordMention;
+  onChange: (mention: DiscordMention) => void;
+}) {
+  const needsId = mentionNeedsId(mention.kind);
+  const id = mention.id.trim();
+  // Discord ids are snowflakes: digits, nothing else. Typing the name instead
+  // of the id is the mistake to catch, and it renders as literal text.
+  const badId = needsId && id !== "" && !/^\d+$/.test(id);
+  const rendered = renderMention(mention);
+
+  return (
+    <Field
+      label="Post notifications"
+      hint={
+        mention.kind === "none"
+          ? "Nobody is pinged. Added below the footer when set."
+          : needsId && !id
+            ? "Enter the id — until then, nothing is added to the post."
+            : `Added below the footer as ${rendered}`
+      }
+    >
+      <div className="flex gap-2">
+        <Select
+          className="w-44"
+          value={mention.kind}
+          onChange={(e) =>
+            onChange({
+              kind: e.target.value as DiscordMentionKind,
+              // The id is kept while switching between Role and User, which
+              // are the two an administrator flips between by mistake, and
+              // cleared for the kinds that have none.
+              id: mentionNeedsId(e.target.value as DiscordMentionKind)
+                ? mention.id
+                : "",
+            })
+          }
+        >
+          {DISCORD_MENTION_KINDS.map((k) => (
+            <option key={k.kind} value={k.kind}>
+              {k.label}
+              {k.syntax ? ` — ${k.syntax}` : ""}
+            </option>
+          ))}
+        </Select>
+        {needsId && (
+          <Input
+            className="mono flex-1"
+            value={mention.id}
+            onChange={(e) => onChange({ ...mention, id: e.target.value })}
+            placeholder={
+              mention.kind === "role" ? "Role ID" : "User ID"
+            }
+            aria-label={mention.kind === "role" ? "Role ID" : "User ID"}
+          />
+        )}
+      </div>
+      {badId && (
+        <span className="block text-xs text-amber-400 mt-1">
+          A Discord ID is digits only. Turn on Developer Mode in Discord, then
+          right-click the {mention.kind} and choose Copy ID.
+        </span>
+      )}
+    </Field>
+  );
+}
+
 function CcmPostFormatCard({
   draft,
   update,
@@ -637,6 +792,10 @@ function CcmPostFormatCard({
               placeholder="e.g. Add these to your CCM list before the next restart."
             />
           </Field>
+          <MentionField
+            mention={format.mention}
+            onChange={(mention) => set({ mention })}
+          />
         </div>
 
         <div>

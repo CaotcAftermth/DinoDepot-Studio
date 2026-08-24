@@ -1,4 +1,4 @@
-import type { DiscordFormat } from "./project";
+import type { DiscordFormat, DiscordMention, DiscordMentionKind } from "./project";
 
 /**
  * Rendering of the Custom Cosmetic Mod announcement from the template in
@@ -36,13 +36,58 @@ function applyTokens(text: string, values: Record<string, string>): string {
   );
 }
 
+/** What each mention kind is called in the dropdown, and what it renders as. */
+export const DISCORD_MENTION_KINDS: {
+  kind: DiscordMentionKind;
+  label: string;
+  /** True when the kind needs an id typed in beside it. */
+  needsId: boolean;
+  /** What the post ends up carrying, with `ID` standing in for the id. */
+  syntax: string;
+}[] = [
+  { kind: "none", label: "No notification", needsId: false, syntax: "" },
+  { kind: "role", label: "Role", needsId: true, syntax: "<@&ID>" },
+  { kind: "user", label: "User", needsId: true, syntax: "<@ID>" },
+  { kind: "here", label: "Here", needsId: false, syntax: "@here" },
+  { kind: "everyone", label: "Everyone", needsId: false, syntax: "@everyone" },
+];
+
+/** Whether this kind is one the administrator has to supply an id for. */
+export function mentionNeedsId(kind: DiscordMentionKind): boolean {
+  return kind === "role" || kind === "user";
+}
+
+/**
+ * The mention line, or "" when there is nothing to ping.
+ *
+ * A `role` or `user` with no id renders as nothing rather than as a broken
+ * `<@&>`: half a mention is not a ping, and Discord shows it as literal text
+ * in the middle of an announcement.
+ */
+export function renderMention(mention: DiscordMention | undefined): string {
+  if (!mention) return "";
+  const id = mention.id.trim();
+  switch (mention.kind) {
+    case "role":
+      return id ? `<@&${id}>` : "";
+    case "user":
+      return id ? `<@${id}>` : "";
+    case "here":
+      return "@here";
+    case "everyone":
+      return "@everyone";
+    default:
+      return "";
+  }
+}
+
 export interface PostContext {
   cluster?: string;
   /** Injectable for tests; defaults to today. */
   date?: Date;
 }
 
-/** Renders the full announcement. Blank header/footer lines are dropped. */
+/** Renders the announcement. Blank header/footer/mention lines are dropped. */
 export function renderDiscordPost(
   format: DiscordFormat,
   mods: PostMod[],
@@ -70,6 +115,9 @@ export function renderDiscordPost(
     applyTokens(format.header, shared).trim(),
     lines.join("\n"),
     applyTokens(format.footer, shared).trim(),
+    // Last, so the ping is the thing the reader's eye lands on after the
+    // list rather than a line they scroll past on the way into it.
+    renderMention(format.mention),
   ]
     .filter(Boolean)
     .join("\n");

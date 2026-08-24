@@ -9,12 +9,16 @@
  *
  * This is a machine preference, not project data: it says where *this* computer
  * files things, and synchronizing it to everybody editing the same cluster
- * would push one person's drive letters onto another's. It lives beside the
- * recent-projects list in the same local storage for that reason.
+ * would push one person's drive letters onto another's. It is kept in the
+ * application-data folder, beside the machine-local project records, for that
+ * reason — and, just as importantly, because it used to live in the webview's
+ * `localStorage` and was therefore forgotten whenever that store was cleared.
  *
- * Nothing here is a lock-in. The New project card still offers a folder
- * anywhere, and an existing project is opened by its own path.
+ * Nothing here is a lock-in. The location can be pointed somewhere else at any
+ * time, and an existing project is opened by its own path.
  */
+
+import { ipc } from "./ipc";
 
 /** The folder made inside whatever parent the administrator picks. */
 export const PROJECTS_FOLDER_NAME = "DinoDepot Studio Projects";
@@ -103,8 +107,8 @@ export function projectDirFor(root: string, projectName: string): string {
   return joinPath(root.trim(), segment);
 }
 
-/** The projects folder this machine has been given, or "" if never asked. */
-export function loadProjectsRoot(): string {
+/** The copy older installs wrote, kept only long enough to be adopted once. */
+function legacyRoot(): string {
   try {
     return localStorage.getItem(ROOT_KEY)?.trim() ?? "";
   } catch {
@@ -112,11 +116,30 @@ export function loadProjectsRoot(): string {
   }
 }
 
-export function saveProjectsRoot(dir: string): void {
+/** The projects folder this machine has been given, or "" if never asked. */
+export async function loadProjectsRoot(): Promise<string> {
   try {
-    localStorage.setItem(ROOT_KEY, dir.trim());
+    const stored = await ipc<string | null>("projects_root_get");
+    const trimmed = stored?.trim() ?? "";
+    if (trimmed) return trimmed;
   } catch {
-    // Storage disabled: the location is asked for again next time, which is
+    // Unreadable is treated as never-asked: the administrator is asked again,
+    // and nothing anybody made is lost.
+    return "";
+  }
+  // An install made before the location moved out of the webview still has it
+  // in the old place. Adopt it once, so upgrading is not a re-run of the very
+  // question this store exists to stop asking.
+  const legacy = legacyRoot();
+  if (legacy) void saveProjectsRoot(legacy);
+  return legacy;
+}
+
+export async function saveProjectsRoot(dir: string): Promise<void> {
+  try {
+    await ipc<void>("projects_root_set", { dir: dir.trim() });
+  } catch {
+    // Storage refused: the location is asked for again next time, which is
     // the same behaviour as a first run.
   }
 }

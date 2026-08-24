@@ -161,9 +161,25 @@ function HelpRow() {
         title={`Report a bug, suggest an improvement, or request a feature (${FEEDBACK_SHORTCUT})`}
         className="flex items-center gap-2.5 text-xs text-ink-400 hover:text-white cursor-pointer w-full"
       >
-        <span className="text-xs w-4 text-center opacity-70" aria-hidden>
-          ☂
-        </span>
+        {/* A speech bubble with lines in it — what "leave us a note" looks
+            like everywhere else. The umbrella that used to be here read as
+            shelter or weather, neither of which is what the button does. */}
+        <svg
+          viewBox="0 0 24 24"
+          width="15"
+          height="15"
+          className="w-4 shrink-0 opacity-80"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <path d="M21 12a8 8 0 0 1-8 8H7l-4 3v-5.2A8 8 0 0 1 3 12a8 8 0 0 1 8-8h2a8 8 0 0 1 8 8Z" />
+          <path d="M8 10h8" />
+          <path d="M8 14h5" />
+        </svg>
         Help &amp; feedback
       </button>
     </div>

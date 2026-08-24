@@ -119,13 +119,48 @@ export const MapEntrySchema = z.object({
 export type MapEntry = z.infer<typeof MapEntrySchema>;
 
 /**
+ * Who the announcement pings, and how that turns into Discord's own syntax.
+ *
+ * A raw mention is easy to get wrong by hand — `<@&id>` for a role and `<@id>`
+ * for a person differ by one character, and the wrong one either silently
+ * fails to ping or pings the wrong thing. So the shape is chosen from a list
+ * and only the id is typed.
+ *
+ * `none` is the default: a post that pings nobody is the safe wrong answer,
+ * where an unintended `@everyone` is not.
+ */
+export const DiscordMentionKindSchema = z.enum([
+  "none",
+  "role",
+  "user",
+  "here",
+  "everyone",
+]);
+export type DiscordMentionKind = z.infer<typeof DiscordMentionKindSchema>;
+
+export const DiscordMentionSchema = z.object({
+  kind: DiscordMentionKindSchema.default("none"),
+  /** Discord id, digits only. Used by `role` and `user`; ignored otherwise. */
+  id: z.string().default(""),
+});
+export type DiscordMention = z.infer<typeof DiscordMentionSchema>;
+
+/**
  * Template for the Custom Cosmetic Mod announcement. `line` is rendered once
- * per new mod and joined with newlines; header and footer are optional.
+ * per new mod and joined with newlines; header, footer and mention are
+ * optional.
  */
 export const DiscordFormatSchema = z.object({
   header: z.string().default("**🆕 New Custom Cosmetic Mods ({count})**"),
-  line: z.string().default("- [{name}](<{url}>) — `{id}`{updatedSuffix}"),
+  /**
+   * No `{id}` or `{updatedSuffix}` by default: both are for the administrator
+   * reconciling a CCM list, not for the channel reading the announcement, and
+   * they crowded out the mod name they followed.
+   */
+  line: z.string().default("- [{name}](<{url}>)"),
   footer: z.string().default(""),
+  /** Appended below the footer. See {@link DiscordMentionSchema}. */
+  mention: DiscordMentionSchema.default(() => DiscordMentionSchema.parse({})),
   /**
    * Whether the administrator posting by hand has Nitro, which raises the
    * per-message limit from 2000 characters to 4000 and so decides where a

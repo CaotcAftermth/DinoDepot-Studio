@@ -42,6 +42,7 @@ export function RemapsPage() {
   // Deleting a remap should take its remembered fold state with it, so a later
   // entry can never inherit one.
   const prunePrefs = useUiPrefsStore((s) => s.prune);
+  const setFold = useUiPrefsStore((s) => s.setToggled);
   useEffect(() => {
     prunePrefs(
       "remap:",
@@ -49,7 +50,14 @@ export function RemapsPage() {
     );
   }, [remaps.entries, prunePrefs]);
 
-  const [showJson, setShowJson] = useState(true);
+  /**
+   * The published-output preview, hidden until asked for.
+   *
+   * It takes 400px of a two-column layout to show a file nobody edits here,
+   * and the remap list is what the page is for. Shown on demand from the
+   * header button.
+   */
+  const [showJson, setShowJson] = useState(false);
   const [picking, setPicking] = useState<{
     entryId: string;
     field: "fromClass" | "toClass";
@@ -82,6 +90,11 @@ export function RemapsPage() {
       notes: "",
     };
     setRemaps({ ...remaps, entries: [...remaps.entries, entry] });
+    // Remap cards default to folded, which is right for a list you are reading
+    // and wrong for the one you just made — it has two empty fields in it and
+    // nothing else to say. Recorded as "differs from the default", so the rest
+    // of the list is untouched.
+    setFold(`remap:${entry.id}`, true);
     recordActivity({ kind: "remap", title: "Added a creature remap" });
   }
 

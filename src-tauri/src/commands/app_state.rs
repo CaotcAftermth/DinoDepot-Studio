@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tauri::Manager;
 
 /// Machine-local project state: where a project lives on *this* computer, which
@@ -118,6 +118,64 @@ pub fn local_state_list(app: tauri::AppHandle) -> Result<Vec<String>, String> {
     Ok(out)
 }
 
+/// The file holding this machine's projects folder, beside the project records.
+const ROOT_FILE: &str = "projects-root.txt";
+
+/// Longest path this will store. A real path is far shorter; anything longer is
+/// a mistake or a caller sending something that is not a path at all.
+const MAX_ROOT_BYTES: usize = 4096;
+
+fn projects_root_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let dir = app
+        .path()
+        .app_data_dir()
+        .map_err(|e| format!("Could not locate the application data folder: {e}"))?;
+    fs::create_dir_all(&dir).map_err(err)?;
+    Ok(dir.join(ROOT_FILE))
+}
+
+/// The stored folder, given the file it is kept in.
+///
+/// Split from the command so the reading is testable without an app handle:
+/// what matters here is that a missing, empty or unreadable file all read as
+/// "never asked" rather than as a folder path or a failure.
+fn read_projects_root(path: &Path) -> Option<String> {
+    let text = fs::read_to_string(path).ok()?;
+    let trimmed = text.trim();
+    if trimmed.is_empty() {
+        None
+    } else {
+        Some(trimmed.to_string())
+    }
+}
+
+/// Stores the folder in the file it is kept in.
+fn write_projects_root(path: &Path, dir: &str) -> Result<(), String> {
+    let value = dir.trim();
+    if value.len() > MAX_ROOT_BYTES {
+        return Err("That folder path is too long to store".into());
+    }
+    super::project_io::write_atomic(path, value.as_bytes())
+}
+
+/// Where this machine keeps its projects. `None` before it has ever been asked.
+///
+/// Machine-local like everything else here, and for the same reason: it names a
+/// drive letter that is true of this computer and nobody else's. It lives in
+/// application data rather than the webview's `localStorage` because that store
+/// is cleared out from under the app — which is exactly how the answer to
+/// "where do projects live" kept being forgotten between runs.
+#[tauri::command]
+pub fn projects_root_get(app: tauri::AppHandle) -> Result<Option<String>, String> {
+    Ok(read_projects_root(&projects_root_path(&app)?))
+}
+
+/// Remembers where this machine keeps its projects, atomically.
+#[tauri::command]
+pub fn projects_root_set(app: tauri::AppHandle, dir: String) -> Result<(), String> {
+    write_projects_root(&projects_root_path(&app)?, &dir)
+}
+
 /// Working copy of a project's delivery repository.
 ///
 /// Kept in application data rather than beside the project, for two reasons: it
@@ -182,5 +240,56 @@ mod tests {
         assert!(!looks_like_credential(
             r#"{"githubLogin":"ggfizz","source":{"owner":"ggfizz"}}"#
         ));
+    }
+
+    /// The projects folder used to live in the webview's `localStorage`, which
+    /// is cleared out from under the app — so "where do projects live" was
+    /// asked again on every launch. Surviving a restart is the whole point of
+    /// moving it here, and a file that reads back as anything other than what
+    /// was written puts it straight back to being asked.
+    #[test]
+    fn the_projects_folder_reads_back_as_written() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(ROOT_FILE);
+
+        // Never asked.
+        assert_eq!(read_projects_root(&path), None);
+
+        write_projects_root(&path, r"D:\ARK\DinoDepot Studio Projects").unwrap();
+        assert_eq!(
+            read_projects_root(&path).as_deref(),
+            Some(r"D:\ARK\DinoDepot Studio Projects")
+        );
+
+        // Overwritten in place, not appended to.
+        write_projects_root(&path, r"E:\Studio").unwrap();
+        assert_eq!(read_projects_root(&path).as_deref(), Some(r"E:\Studio"));
+    }
+
+    #[test]
+    fn surrounding_whitespace_never_becomes_part_of_the_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(ROOT_FILE);
+        write_projects_root(&path, r"  D:\ARK  ").unwrap();
+        assert_eq!(fs::read_to_string(&path).unwrap(), r"D:\ARK");
+        assert_eq!(read_projects_root(&path).as_deref(), Some(r"D:\ARK"));
+    }
+
+    /// Cleared reads as never-asked, so the card offers the question again
+    /// rather than trying to create a project in "".
+    #[test]
+    fn an_empty_file_reads_as_never_asked() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(ROOT_FILE);
+        write_projects_root(&path, "   ").unwrap();
+        assert_eq!(read_projects_root(&path), None);
+    }
+
+    #[test]
+    fn an_absurd_path_is_refused_rather_than_stored() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join(ROOT_FILE);
+        assert!(write_projects_root(&path, &"x".repeat(MAX_ROOT_BYTES + 1)).is_err());
+        assert_eq!(read_projects_root(&path), None);
     }
 }

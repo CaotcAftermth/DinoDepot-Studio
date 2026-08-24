@@ -22,15 +22,10 @@ import {
 } from "../model/discordPost";
 import { WatchedMod } from "../model/watchlist";
 import { newId } from "../model/ids";
-import {
-  cancelScrape,
-  ScraperEvent,
-  ScraperMetrics,
-  startCosmeticsScrape,
-  startWatchCheck,
-  unsubscribe,
-} from "../services/scraper";
+import { cancelScrape, ScraperEvent, startWatchCheck } from "../services/scraper";
+import { useScrapeStore } from "../stores/scrapeStore";
 import { isTauri, ipc } from "../services/ipc";
+import { postDiscord } from "../services/discordWebhook";
 import { pickFile } from "../services/dialogs";
 import { importCosmeticsText } from "../services/importers";
 import {
@@ -56,6 +51,17 @@ import { feedbackTarget } from "../model/feedback/targets";
  */
 const MIN_TRUSTWORTHY_SCRAPE = 25;
 
+/**
+ * Messages beyond which a post stops being an announcement and becomes a
+ * channel flood.
+ *
+ * The first collection has nothing to compare against, so every mod in the
+ * category is "new" — well over a thousand at the time of writing, which is
+ * sixty-odd Discord messages. The number is the point of the warning, so it is
+ * counted from the real split rather than guessed from the mod count.
+ */
+const FLOOD_MESSAGES = 10;
+
 async function copyDiscordText(content: string, success: string) {
   try {
     await navigator.clipboard.writeText(content);
@@ -71,7 +77,10 @@ export function CurseForgePage() {
   const [tab, setTab] = useState<"collector" | "watcher">("collector");
   const { hydrate } = useDraftsStore();
   useEffect(hydrate, [hydrate]);
-  useEffect(() => unsubscribe, []);
+  // Deliberately no `unsubscribe` on unmount. A collector run takes minutes,
+  // and releasing the listener when the page went away threw the log, the
+  // progress and the partial results on the floor while the sidecar kept
+  // going. The run owns its own listener now — see stores/scrapeStore.ts.
 
   return (
     <div {...feedbackTarget("curseforge")}>
@@ -112,6 +121,8 @@ export function CurseForgePage() {
 function Collector() {
   const { cosmetics, setCosmetics } = useDraftsStore();
   const settings = useProjectStore((s) => s.settings);
+  /** The webhook belongs to the project, so posting has to name it. */
+  const projectId = settings?.projectId ?? "";
   /** The post's wording lives in Settings → Discord post format. */
   const discordFormat = settings?.discord ?? DiscordFormatSchema.parse({});
   const discordPostForNewMods = (mods: ScrapedMod[]) =>
@@ -127,78 +138,38 @@ function Collector() {
     splitDiscordPost(discordPostForNewMods(mods), discordLimit(discordFormat.nitro));
   const webhookSegments = (mods: ScrapedMod[]) =>
     splitDiscordPost(discordPostForNewMods(mods), DISCORD_WEBHOOK_LIMIT);
-  const [running, setRunning] = useState(false);
-  const [log, setLog] = useState<string[]>([]);
-  const [progress, setProgress] = useState<{ page: number; total: number } | null>(null);
-  const [scraped, setScraped] = useState<Map<string, ScrapedMod> | null>(null);
+  // The run lives in its own store so that leaving the page — for Settings,
+  // for Content Sources, for anything — does not end it. Everything below is
+  // a read of whatever that run is currently doing.
+  const running = useScrapeStore((s) => s.running);
+  const log = useScrapeStore((s) => s.log);
+  const progress = useScrapeStore((s) => s.progress);
+  const metrics = useScrapeStore((s) => s.metrics);
+  const scraped = useScrapeStore((s) => s.result);
+  const collectedCount = useScrapeStore((s) => s.collectedCount);
+  const startScrape = useScrapeStore((s) => s.start);
+  const cancelRun = useScrapeStore((s) => s.cancel);
+  const clearResult = useScrapeStore((s) => s.clearResult);
+  const takeScrapeError = useScrapeStore((s) => s.takeError);
   const [showPrevious, setShowPrevious] = useState(false);
   /** Messages of a post too long to paste in one go, shown for copying. */
   const [copySplit, setCopySplit] = useState<string[] | null>(null);
   const [showOutput, setShowOutput] = useState(false);
-  const [metrics, setMetrics] = useState<ScraperMetrics | null>(null);
-  const scrapedRef = useRef(new Map<string, ScrapedMod>());
   /** Persisted with the project, so it outlives both navigation and restarts. */
   const previous = cosmetics.lastScrape;
 
-  function pushLog(message: string) {
-    setLog((prev) => [...prev.slice(-200), message]);
-  }
-
-  function handleEvent(event: ScraperEvent) {
-    switch (event.type) {
-      case "status":
-      case "stderr":
-        pushLog(event.message);
-        break;
-      case "pages":
-        setProgress({ page: 0, total: event.total });
-        pushLog(`Found ${event.total} category pages`);
-        break;
-      case "page":
-        setProgress({ page: event.page, total: event.total });
-        break;
-      case "mod":
-        scrapedRef.current.set(event.projectId, {
-          name: event.name,
-          projectId: event.projectId,
-          url: event.url,
-          updated: event.updated,
-        });
-        break;
-      case "metrics":
-        setMetrics(event);
-        pushLog(
-          `${Math.round(event.durationMs / 1000)}s · ${event.listingPages} listing pages · ` +
-            `${event.detailPagesOpened} detail pages opened · ${event.reusedFromKnown} reused` +
-            (event.detailFailures > 0 ? ` · ${event.detailFailures} failed` : ""),
-        );
-        break;
-      case "done":
-        pushLog(`Scrape complete — ${event.count} mods collected`);
-        setScraped(new Map(scrapedRef.current));
-        break;
-      case "error":
-        pushLog(`ERROR: ${event.message}`);
-        toast.error(`Scraper error: ${event.message}`);
-        break;
-      case "exit":
-        setRunning(false);
-        break;
-    }
-  }
+  // A scraper error raised while this page was elsewhere is still worth
+  // saying, so it is held by the run and shown the next time anyone looks.
+  useEffect(() => {
+    const message = takeScrapeError();
+    if (message) toast.error(`Scraper error: ${message}`);
+  }, [running, log, takeScrapeError]);
 
   async function run() {
-    scrapedRef.current = new Map();
-    setScraped(null);
-    setLog([]);
-    setProgress(null);
-    setMetrics(null);
-    setRunning(true);
     try {
       // Everything already recorded, so the sidecar can skip detail pages for
       // mods whose listing row still matches what we have.
-      await startCosmeticsScrape(
-        handleEvent,
+      await startScrape(
         cosmetics.entries.map((e) => ({
           modId: e.modId,
           name: e.name,
@@ -207,19 +178,12 @@ function Collector() {
         })),
       );
     } catch (e) {
-      setRunning(false);
       toast.error(`${e instanceof Error ? e.message : e}`);
     }
   }
 
   async function cancel() {
-    try {
-      await cancelScrape();
-      pushLog("Cancelled by user");
-    } catch {
-      /* already finished */
-    }
-    setRunning(false);
+    await cancelRun();
   }
 
   async function importCcmFile() {
@@ -272,6 +236,23 @@ function Collector() {
     const trustworthy = scraped.size >= MIN_TRUSTWORTHY_SCRAPE;
     return { added, changed, missing, returned, trustworthy };
   }, [scraped, cosmetics]);
+
+  /**
+   * Nothing was here before this scrape, so the diff is the whole CurseForge
+   * category rather than a list of changes.
+   *
+   * Read from the draft rather than from a flag, so importing a live CCM file
+   * counts as having collected before — which is exactly what it is.
+   */
+  const firstCollection = cosmetics.entries.length === 0;
+  /** How many Discord messages the current diff would actually become. */
+  const floodMessages = useMemo(
+    () => (diff && firstCollection ? webhookSegments(diff.added).length : 0),
+    // `webhookSegments` closes over the post format, which is settings, not
+    // state that changes while this card is on screen.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [diff, firstCollection],
+  );
 
   function applyScrape() {
     if (!scraped || !diff) return;
@@ -330,7 +311,7 @@ function Collector() {
         changedCount: diff.changed.length,
       },
     });
-    setScraped(null);
+    clearResult();
     recordActivity({
       kind: "cosmetics",
       title: `Cosmetics scan completed — ${scraped.size} entries`,
@@ -376,15 +357,26 @@ function Collector() {
     const ok = await confirmDialog({
       title: "Post to Discord?",
       message:
-        `${mods.length} new cosmetic mod(s) will be posted to the stored webhook` +
+        `${mods.length} new cosmetic mod(s) will be posted to this project's webhook` +
         (segments.length > 1
           ? ` as ${segments.length} messages — the list is longer than Discord's ${DISCORD_WEBHOOK_LIMIT.toLocaleString()}-character limit.`
           : "."),
+      // A first collection is the whole CurseForge category, not an
+      // announcement, and posting it fills the channel. Said here as well as
+      // on the results card, because this is the last point it can be stopped.
+      details:
+        segments.length >= FLOOD_MESSAGES
+          ? [
+              `${segments.length} separate messages will be sent, a few seconds apart.`,
+              "If this is your first collection, skip it — the channel only wants what changed from here on.",
+            ]
+          : undefined,
       confirmLabel: "Post",
+      danger: segments.length >= FLOOD_MESSAGES,
     });
     if (!ok) return;
     try {
-      await ipc("discord_post", { segments });
+      await postDiscord(projectId, segments);
       toast.success(
         segments.length === 1
           ? "Posted to Discord"
@@ -451,7 +443,7 @@ function Collector() {
                 <span>
                   Page {progress.page} of {progress.total}
                 </span>
-                <span>{scrapedRef.current.size} mods</span>
+                <span>{collectedCount} mods</span>
               </div>
               <div className="h-2 bg-ink-800 rounded-full overflow-hidden">
                 <div
@@ -530,6 +522,16 @@ function Collector() {
               {diff.added.length > 20 && (
                 <div className="text-xs text-ink-400">
                   …and {diff.added.length - 20} more new mods
+                </div>
+              )}
+              {firstCollection && floodMessages >= FLOOD_MESSAGES && (
+                <div className="text-xs rounded-md border border-amber-flag/30 bg-amber-flag/5 text-amber-300 px-2 py-1.5 mt-1">
+                  This is the first collection for this project, so every mod
+                  in the category counts as new — posting it would send{" "}
+                  {floodMessages} messages to your channel. Apply it to the
+                  draft and skip the Discord post; from the next run onwards,
+                  only what actually changed is announced. Importing your live
+                  CCM file first also avoids this.
                 </div>
               )}
               {!diff.trustworthy && (
@@ -1209,6 +1211,12 @@ function EnabledModIdsModal({ onClose }: { onClose: () => void }) {
 function Watcher() {
   const { catalog, setCatalog, watchlist, setWatchlist } = useDraftsStore();
   const [running, setRunning] = useState(false);
+  /**
+   * A collector sweep and a watch check share one sidecar and one event
+   * stream, so starting a check would take the stream away from a run that is
+   * still going. The collector run is the long one; the check waits.
+   */
+  const collectorRunning = useScrapeStore((s) => s.running);
   const [idsOpen, setIdsOpen] = useState(false);
   const [log, setLog] = useState<string[]>([]);
   const { ids: enabledIds } = useEnabledModIds();
@@ -1428,7 +1436,16 @@ function Watcher() {
             <Button onClick={() => setIdsOpen(true)}>
               Enabled mod IDs ({enabledIds.length})…
             </Button>
-            <Button variant="primary" onClick={checkNow} disabled={running || !isTauri}>
+            <Button
+              variant="primary"
+              onClick={checkNow}
+              disabled={running || collectorRunning || !isTauri}
+              title={
+                collectorRunning
+                  ? "A cosmetics collector run is in progress — it and a watch check share one browser."
+                  : undefined
+              }
+            >
               {running ? "Checking…" : "Check now"}
             </Button>
             {running && (

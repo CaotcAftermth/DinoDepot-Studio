@@ -6,6 +6,7 @@ import { useDraftsStore } from "../stores/draftsStore";
 import { EntityIcon } from "./EntityIcon";
 import { buildPickerRows } from "../model/pickerResults";
 import { plural } from "../model/text";
+import { shortClassName } from "../services/spawnCommands";
 
 /**
  * Modal picker for creature/item blueprint paths from the catalog, with a
@@ -90,9 +91,21 @@ export function BlueprintPicker({
             onClick={() => onPick(entry.bpPath)}
             className="text-left py-1.5 px-2 hover:bg-ink-800 rounded cursor-pointer group"
           >
+            {/* Name and variant count read as one phrase on the left; where
+                the entry came from is a property of the row, so it sits at
+                the far edge and lines up down the list instead of pushing the
+                name around as source names change length. */}
             <div className="flex items-center gap-2">
               <EntityIcon bpPath={entry.bpPath} kind={kind} />
-              <span className="text-sm text-ink-100">{entry.name}</span>
+              <span className="text-sm text-ink-100 truncate">
+                {entry.name}
+              </span>
+              {hiddenVariants > 0 && (
+                <span className="text-xs text-ink-400 shrink-0">
+                  (+{plural(hiddenVariants, "variant")})
+                </span>
+              )}
+              <span className="flex-1" />
               <Badge
                 tone={
                   source.kind === "official"
@@ -106,18 +119,22 @@ export function BlueprintPicker({
               >
                 {source.name}
               </Badge>
-              {hiddenVariants > 0 && (
-                <span className="text-xs text-ink-400">
-                  +{plural(hiddenVariants, "variant")}
-                </span>
-              )}
             </div>
             {matchedVia.length > 0 && (
               <div className="text-xs text-accent-400">
                 matched {matchedVia.join(", ")}
               </div>
             )}
-            <div className="mono text-ink-400 truncate">{entry.bpPath}</div>
+            {/* The class, not the whole path: display names repeat across
+                mods and the class is what actually distinguishes two rows,
+                while the full path is four times the width and is only ever
+                read when something looks wrong. It stays one hover away. */}
+            <div
+              className="mono text-xs text-ink-500 truncate"
+              title={entry.bpPath}
+            >
+              {shortClassName(entry.bpPath)}
+            </div>
           </button>
         ))}
         {results.length === 0 && (

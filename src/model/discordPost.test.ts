@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
+  DISCORD_MENTION_KINDS,
   DISCORD_LIMIT_NITRO,
   DISCORD_LIMIT_STANDARD,
   DISCORD_WEBHOOK_LIMIT,
   discordLimit,
+  mentionNeedsId,
   renderDiscordPost,
+  renderMention,
   splitDiscordPost,
   type PostMod,
 } from "./discordPost";
@@ -19,11 +22,28 @@ const mods: PostMod[] = [
 ];
 
 describe("renderDiscordPost", () => {
+  /**
+   * The stock line is the mod name linked to its page and nothing else. The
+   * project id and the updated date are both for the administrator
+   * reconciling a CCM list, not for the channel reading the announcement, and
+   * they crowded out the name they followed.
+   */
   it("renders the stock format", () => {
     const out = renderDiscordPost(format(), mods);
     expect(out).toBe(
       "**🆕 New Custom Cosmetic Mods (2)**\n" +
-        "- [Hat Pack](<https://cf/hat>) — `111` (updated 2 days ago)\n" +
+        "- [Hat Pack](<https://cf/hat>)\n" +
+        "- [Cape Pack](<https://cf/cape>)",
+    );
+  });
+
+  it("still renders the id and the updated date when asked for", () => {
+    const out = renderDiscordPost(
+      format({ header: "", line: "- [{name}](<{url}>) — `{id}`{updatedSuffix}" }),
+      mods,
+    );
+    expect(out).toBe(
+      "- [Hat Pack](<https://cf/hat>) — `111` (updated 2 days ago)\n" +
         "- [Cape Pack](<https://cf/cape>) — `222`",
     );
   });
@@ -108,7 +128,7 @@ describe("splitDiscordPost", () => {
     for (const segment of segments) {
       expect(segment.length).toBeLessThanOrEqual(2000);
       for (const line of segment.split("\n")) {
-        if (line.startsWith("- ")) expect(line).toMatch(/^- \[.+\]\(<.+>\) — `\d+`/);
+        if (line.startsWith("- ")) expect(line).toMatch(/^- \[.+\]\(<.+>\)$/);
       }
     }
   });
@@ -158,5 +178,78 @@ describe("discordLimit", () => {
     expect(discordLimit(false)).toBe(DISCORD_LIMIT_STANDARD);
     expect(discordLimit(true)).toBe(DISCORD_LIMIT_NITRO);
     expect(DISCORD_WEBHOOK_LIMIT).toBe(2000);
+  });
+});
+
+/**
+ * The four mention syntaxes differ by a character or two, and getting one
+ * wrong either silently fails to ping or pings the entire server. The whole
+ * point of choosing the kind from a list is that this table decides the
+ * syntax, so this is where it is pinned down.
+ */
+describe("renderMention", () => {
+  it("writes each kind the way Discord reads it", () => {
+    expect(renderMention({ kind: "role", id: "123" })).toBe("<@&123>");
+    expect(renderMention({ kind: "user", id: "456" })).toBe("<@456>");
+    expect(renderMention({ kind: "here", id: "" })).toBe("@here");
+    expect(renderMention({ kind: "everyone", id: "" })).toBe("@everyone");
+    expect(renderMention({ kind: "none", id: "" })).toBe("");
+  });
+
+  it("ignores an id the kind has no use for", () => {
+    expect(renderMention({ kind: "here", id: "123" })).toBe("@here");
+    expect(renderMention({ kind: "everyone", id: "123" })).toBe("@everyone");
+  });
+
+  /**
+   * Half a mention is not a ping — Discord renders `<@&>` as literal text in
+   * the middle of an announcement, which is worse than pinging nobody.
+   */
+  it("renders nothing for a role or user with no id", () => {
+    expect(renderMention({ kind: "role", id: "   " })).toBe("");
+    expect(renderMention({ kind: "user", id: "" })).toBe("");
+  });
+
+  it("trims an id pasted with whitespace around it", () => {
+    expect(renderMention({ kind: "role", id: "  123  " })).toBe("<@&123>");
+  });
+
+  it("agrees with the table the dropdown is built from", () => {
+    for (const k of DISCORD_MENTION_KINDS) {
+      const rendered = renderMention({ kind: k.kind, id: "123" });
+      expect(rendered).toBe(k.syntax.replace("ID", "123"));
+      expect(mentionNeedsId(k.kind)).toBe(k.needsId);
+    }
+  });
+});
+
+describe("a mention inside the post", () => {
+  it("goes below the footer", () => {
+    const out = renderDiscordPost(
+      format({
+        header: "",
+        line: "{name}",
+        footer: "Add these before the restart.",
+        mention: { kind: "role", id: "789" },
+      }),
+      mods,
+    );
+    expect(out).toBe(
+      "Hat Pack\nCape Pack\nAdd these before the restart.\n<@&789>",
+    );
+  });
+
+  it("goes below the list when there is no footer", () => {
+    const out = renderDiscordPost(
+      format({ header: "", line: "{name}", mention: { kind: "here", id: "" } }),
+      mods,
+    );
+    expect(out).toBe("Hat Pack\nCape Pack\n@here");
+  });
+
+  it("adds nothing by default", () => {
+    expect(renderDiscordPost(format({ header: "", line: "{name}" }), mods)).toBe(
+      "Hat Pack\nCape Pack",
+    );
   });
 });

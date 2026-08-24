@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CreatureRule,
   PrimaryItem,
@@ -25,6 +25,7 @@ import { displayNameFor, useCatalogIndex } from "../../stores/useCatalogIndex";
 import type { ValidationIssue } from "../../validation/types";
 import type { ProjectSettings } from "../../model/project";
 import { feedbackTarget } from "../../model/feedback/targets";
+import { shortClassName } from "../../services/spawnCommands";
 
 function NumberField({
   label,
@@ -57,6 +58,75 @@ function NumberField({
         }}
       />
     </Field>
+  );
+}
+
+/**
+ * A cap where zero means "no cap".
+ *
+ * Rendered empty with an "Unlimited" placeholder rather than as a literal `0`,
+ * because `0` reads as "produce none of this" — the opposite of what it does.
+ * The stored value is still 0, which is what the published file wants; only
+ * the way it is shown changes.
+ */
+function MaxField({
+  label,
+  value,
+  onChange,
+  labelled,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  /** Screen-reader label when the visible one is a column heading. */
+  labelled?: string;
+}) {
+  const unlimited = !(value > 0);
+  return (
+    <Field label={label}>
+      <Input
+        type="number"
+        min={0}
+        // An empty box is the unlimited state, so blanking the field has to
+        // mean the same thing as typing 0 rather than leaving NaN behind.
+        value={unlimited ? "" : String(value)}
+        placeholder="Unlimited"
+        aria-label={labelled ?? label}
+        className={cx(unlimited && "text-ink-500")}
+        onChange={(e) => {
+          const raw = e.target.value.trim();
+          if (raw === "") return onChange(0);
+          const n = Number(raw);
+          if (Number.isFinite(n)) onChange(Math.max(0, n));
+        }}
+      />
+    </Field>
+  );
+}
+
+/**
+ * Icon, name and class for one catalog entry, as the sub-item rows show it.
+ *
+ * The primary item used to show its raw path in a full-width text field above
+ * a separate row of numbers, which made the same item look like a different
+ * kind of thing depending on which list it was in.
+ */
+function ItemIdentity({ bpPath }: { bpPath: string }) {
+  const catalogIndex = useCatalogIndex();
+  return (
+    <div className="min-w-0 flex items-center gap-1.5">
+      <EntityIcon bpPath={bpPath} kind="items" />
+      <div className="min-w-0">
+        <div className="text-xs text-ink-300 truncate">
+          {bpPath
+            ? displayNameFor(catalogIndex, "items", bpPath)
+            : "(no item selected)"}
+        </div>
+        <div className="mono text-xs text-ink-500 truncate" title={bpPath}>
+          {bpPath ? shortClassName(bpPath) : "—"}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -115,6 +185,8 @@ export function RuleEditor({
   onSelectCreature,
   onDelete,
   onDuplicate,
+  awaitingCreature = false,
+  onCreaturePickerDismissed,
 }: {
   rule: CreatureRule;
   issues: ValidationIssue[];
@@ -127,6 +199,13 @@ export function RuleEditor({
   onSelectCreature: (bpPath: string) => Promise<"repick" | void>;
   onDelete: () => void;
   onDuplicate: () => void;
+  /**
+   * True while this rule is one the admin has just created and has not yet
+   * given a creature. The picker opens on top of it without being asked for.
+   */
+  awaitingCreature?: boolean;
+  /** The picker closed. The page decides whether the rule survives. */
+  onCreaturePickerDismissed?: () => void;
 }) {
   const index = useCatalogIndex();
   const [pickingCreature, setPickingCreature] = useState(false);
@@ -137,6 +216,24 @@ export function RuleEditor({
   /** Applies a choice, reopening the picker when the admin wants another go. */
   async function chooseCreature(bpPath: string) {
     if ((await onSelectCreature(bpPath)) === "repick") setPickingCreature(true);
+  }
+
+  // A rule with no creature is not a rule yet, so the question is asked the
+  // moment one is created or duplicated. Keyed on the rule id as well, so
+  // duplicating twice in a row asks again for the second copy.
+  useEffect(() => {
+    if (awaitingCreature) setPickingCreature(true);
+  }, [awaitingCreature, rule.id]);
+
+  /**
+   * Closing the picker.
+   *
+   * Told to the page rather than handled here: whether an abandoned rule is
+   * deleted depends on the rules list, which is the page's to change.
+   */
+  function closeCreaturePicker() {
+    setPickingCreature(false);
+    onCreaturePickerDismissed?.();
   }
   const creatureName = rule.dinoType
     ? displayNameFor(index, "creatures", rule.dinoType)
@@ -188,10 +285,14 @@ export function RuleEditor({
         }
         actions={
           <>
+            {/* The label states what the rule *is*, not what the switch
+                would do — a switch already reads as its own verb, and
+                "Enabled" beside an off switch is a sentence nobody can
+                parse in one look. */}
             <Toggle
               checked={rule.enabled}
               onChange={(v) => onChange({ ...rule, enabled: v })}
-              label="Enabled"
+              label={rule.enabled ? "Enabled" : "Disabled"}
             />
             <Button onClick={onDuplicate}>Duplicate</Button>
             <Button variant="danger" onClick={onDelete}>
@@ -283,7 +384,9 @@ export function RuleEditor({
                 name: "",
                 intervalSeconds: defaults.intervalSeconds,
                 itemSelectMode: 0,
-                items: [newItem()],
+                // No blank item: "+ Add item" asks which item, so one that
+                // arrives already empty is a row to delete, not a head start.
+                items: [],
               },
             ],
           })
@@ -299,7 +402,7 @@ export function RuleEditor({
           // Variants collapse onto their parent here: a rule on the parent
           // already covers them, so listing every one only gets in the way.
           variantToggle
-          onClose={() => setPickingCreature(false)}
+          onClose={closeCreaturePicker}
           onPick={(bpPath) => {
             setPickingCreature(false);
             void chooseCreature(bpPath);
@@ -325,6 +428,8 @@ function CycleEditor({
   onDelete: () => void;
   newItem: () => PrimaryItem;
 }) {
+  const [pickingItem, setPickingItem] = useState(false);
+
   return (
     <CollapsibleCard
       prefKey={`cycle:${cycle.id}`}
@@ -390,12 +495,25 @@ function CycleEditor({
         ))}
       </div>
 
-      <Button
-        className="mt-3"
-        onClick={() => onChange({ items: [...cycle.items, newItem()] })}
-      >
+      <Button className="mt-3" onClick={() => setPickingItem(true)}>
         + Add item
       </Button>
+
+      {/* The item comes first here, as it does for an alternate or a consumed
+          input. Adding a blank row and then hunting for the Pick button was
+          the same job in two more steps. */}
+      {pickingItem && (
+        <BlueprintPicker
+          kind="items"
+          title="Pick an item"
+          variantToggle
+          onClose={() => setPickingItem(false)}
+          onPick={(bpPath) => {
+            setPickingItem(false);
+            onChange({ items: [...cycle.items, { ...newItem(), bpPath }] });
+          }}
+        />
+      )}
     </CollapsibleCard>
   );
 }
@@ -455,39 +573,34 @@ function ItemEditor({
 
       {expanded && (
         <div className="px-3 pb-3 flex flex-col gap-4">
-          <Field label="Item blueprint path">
-            <div className="flex gap-2">
-              <Input
-                className="mono"
-                value={item.bpPath}
-                onChange={(e) => onChange({ ...item, bpPath: e.target.value })}
-                placeholder="/Game/…/PrimalItemResource_X.PrimalItemResource_X"
-              />
-              <Button onClick={() => setPicking(true)}>Pick…</Button>
-            </div>
-          </Field>
-
-          <div className="grid grid-cols-3 gap-3">
+          {/* Laid out exactly like an alternate or a consumed input: it is
+              the same three numbers against the same kind of item, and the
+              old full-width path field made it look like something else. */}
+          <div className="grid grid-cols-[1fr_90px_90px_90px_auto] gap-2 items-end">
+            <ItemIdentity bpPath={item.bpPath} />
             <div {...feedbackTarget("production-rule-cycle-quantity")}>
               <NumberField
-                label="Quantity per dino"
+                label="Qty/dino"
                 value={item.quantityPerDino}
                 min={0}
                 onChange={(v) => onChange({ ...item, quantityPerDino: v })}
               />
             </div>
-            <NumberField
-              label="Max per cycle (0 = none)"
+            <MaxField
+              label="Max/cycle"
+              labelled="Max per cycle"
               value={item.maxQuantityPerCycle}
-              min={0}
               onChange={(v) => onChange({ ...item, maxQuantityPerCycle: v })}
             />
-            <NumberField
-              label="Max in terminal (0 = none)"
+            <MaxField
+              label="Max/terminal"
+              labelled="Max in terminal"
               value={item.maxQuantityInTerminal}
-              min={0}
               onChange={(v) => onChange({ ...item, maxQuantityInTerminal: v })}
             />
+            <Button className="mb-0.5" onClick={() => setPicking(true)}>
+              {item.bpPath ? "Change…" : "Pick…"}
+            </Button>
           </div>
 
           <SubItemsSection
@@ -571,7 +684,6 @@ function SubItemsSection({
   onChanceChange: (v: number) => void;
   onSubsChange: (subs: SubItem[]) => void;
 }) {
-  const catalogIndex = useCatalogIndex();
   const [picking, setPicking] = useState(false);
   const style = SUB_SECTION_TONES[tone];
 
@@ -618,17 +730,7 @@ function SubItemsSection({
                 key={sub.id}
                 className="grid grid-cols-[1fr_90px_90px_90px_28px] gap-2 items-end"
               >
-                <div className="min-w-0 flex items-center gap-1.5">
-                  <EntityIcon bpPath={sub.bpPath} kind="items" />
-                  <div className="min-w-0">
-                    <div className="text-xs text-ink-300 truncate">
-                      {displayNameFor(catalogIndex, "items", sub.bpPath)}
-                    </div>
-                    <div className="mono text-ink-400 truncate" title={sub.bpPath}>
-                      {sub.bpPath}
-                    </div>
-                  </div>
-                </div>
+                <ItemIdentity bpPath={sub.bpPath} />
                 <Field label="Qty">
                   <Input
                     type="number"
@@ -645,40 +747,30 @@ function SubItemsSection({
                     }}
                   />
                 </Field>
-                <Field label="Max/cycle">
-                  <Input
-                    type="number"
-                    min={0}
-                    value={sub.maxQuantityPerCycle}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (!Number.isFinite(n)) return;
-                      onSubsChange(
-                        subs.map((s) =>
-                          s.id === sub.id ? { ...s, maxQuantityPerCycle: n } : s,
-                        ),
-                      );
-                    }}
-                  />
-                </Field>
-                <Field label="Max/term">
-                  <Input
-                    type="number"
-                    min={0}
-                    value={sub.maxQuantityInTerminal}
-                    onChange={(e) => {
-                      const n = Number(e.target.value);
-                      if (!Number.isFinite(n)) return;
-                      onSubsChange(
-                        subs.map((s) =>
-                          s.id === sub.id
-                            ? { ...s, maxQuantityInTerminal: n }
-                            : s,
-                        ),
-                      );
-                    }}
-                  />
-                </Field>
+                <MaxField
+                  label="Max/cycle"
+                  labelled={`Max per cycle for ${sub.bpPath || "this item"}`}
+                  value={sub.maxQuantityPerCycle}
+                  onChange={(v) =>
+                    onSubsChange(
+                      subs.map((s) =>
+                        s.id === sub.id ? { ...s, maxQuantityPerCycle: v } : s,
+                      ),
+                    )
+                  }
+                />
+                <MaxField
+                  label="Max/terminal"
+                  labelled={`Max in terminal for ${sub.bpPath || "this item"}`}
+                  value={sub.maxQuantityInTerminal}
+                  onChange={(v) =>
+                    onSubsChange(
+                      subs.map((s) =>
+                        s.id === sub.id ? { ...s, maxQuantityInTerminal: v } : s,
+                      ),
+                    )
+                  }
+                />
                 <button
                   className="text-ink-400 hover:text-red-400 pb-2 cursor-pointer"
                   onClick={() =>

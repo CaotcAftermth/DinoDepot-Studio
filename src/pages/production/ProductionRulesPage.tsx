@@ -30,6 +30,8 @@ import { pickFile } from "../../services/dialogs";
 import { ipc } from "../../services/ipc";
 import { importProductionText } from "../../services/importers";
 import { plural } from "../../model/text";
+import { OutputPreviewModal } from "../../components/OutputPreviewModal";
+import { OUTPUT_FAMILY_LABELS } from "../../model/history";
 import { useUiPrefsStore } from "../../stores/uiPrefsStore";
 import { feedbackTarget } from "../../model/feedback/targets";
 
@@ -61,6 +63,15 @@ export function ProductionRulesPage() {
   }, [ruleId]);
   const [search, setSearch] = useState("");
   const [showJson, setShowJson] = useState(false);
+  const [showOutput, setShowOutput] = useState(false);
+  /**
+   * A rule created a moment ago and not yet given a creature.
+   *
+   * The creature picker opens on top of it, and if it closes with nothing
+   * chosen the rule goes with it — a rule with no creature publishes nothing,
+   * validates as an error, and sorts to the bottom of the list forever.
+   */
+  const [pendingRuleId, setPendingRuleId] = useState<string | null>(null);
 
   const issues = useMemo(
     () => validateProduction(production, index),
@@ -104,9 +115,24 @@ export function ProductionRulesPage() {
   }, [production.rules, search, index]);
 
   const selected = production.rules.find((r) => r.id === selectedId) ?? null;
+  /**
+   * The published shape of the selected rule alone.
+   *
+   * The panel sits beside one rule's editor, so showing the whole file meant
+   * scrolling a thousand lines to check the creature actually on screen. The
+   * whole file is still one button away, under Preview output.
+   */
   const jsonPreview = useMemo(
-    () => (showJson ? productionToText(production) : ""),
-    [showJson, production],
+    () =>
+      showJson && selected
+        ? productionToText({ ...production, rules: [selected] })
+        : "",
+    [showJson, production, selected],
+  );
+  /** Every rule, exactly as Publish would write it. */
+  const outputPreview = useMemo(
+    () => (showOutput ? productionToText(production) : ""),
+    [showOutput, production],
   );
   const totals = countIssues(issues);
 
@@ -130,7 +156,47 @@ export function ProductionRulesPage() {
     };
     setProduction({ ...production, rules: [...production.rules, rule] });
     setSelectedId(rule.id);
+    // Every rule needs a creature, so the question is asked immediately rather
+    // than leaving an empty card for the admin to work out what to do with.
+    setPendingRuleId(rule.id);
     recordActivity({ kind: "production", title: "Added a production rule" });
+  }
+
+  /**
+   * Removes the just-created rule when the picker closed without a creature.
+   *
+   * Reads the store rather than the render's `production`, because the choice
+   * that led here may already have written to it — picking a creature that
+   * turned out to be a duplicate moves a cycle onto the existing rule, and the
+   * copy left behind is exactly what has to go.
+   */
+  function dropPendingIfEmpty() {
+    const id = pendingRuleId;
+    if (!id) return;
+    setPendingRuleId(null);
+    const current = useDraftsStore.getState().production;
+    const rule = current.rules.find((r) => r.id === id);
+    if (!rule || rule.dinoType.trim()) return;
+    setProduction({
+      ...current,
+      rules: current.rules.filter((r) => r.id !== id),
+    });
+    setSelectedId((prev) => (prev === id ? null : prev));
+  }
+
+  /**
+   * A creature choice, plus the bookkeeping for a rule that is still pending.
+   *
+   * "repick" leaves the rule pending on purpose: the admin asked to choose
+   * again, and the picker is about to reopen.
+   */
+  async function chooseCreatureFor(
+    rule: CreatureRule,
+    rawPath: string,
+  ): Promise<"repick" | void> {
+    const result = await selectCreature(rule, rawPath);
+    if (result === "repick") return result;
+    dropPendingIfEmpty();
   }
 
   function updateRule(next: CreatureRule) {
@@ -273,7 +339,11 @@ export function ProductionRulesPage() {
   function duplicateRule(rule: CreatureRule) {
     const copy: CreatureRule = structuredClone(rule);
     copy.id = newId();
-    copy.enabled = false;
+    // Enabled, like every other rule: the copy is made to be used, and one
+    // that arrives switched off is a second step nobody asked for. It cannot
+    // publish anything until it has a creature anyway, and the picker opens on
+    // top of it before the admin sees the card at all.
+    copy.enabled = true;
     copy.dinoType = "";
     copy.cycles.forEach((c) => {
       c.id = newId();
@@ -285,11 +355,14 @@ export function ProductionRulesPage() {
     });
     setProduction({ ...production, rules: [...production.rules, copy] });
     setSelectedId(copy.id);
+    // A copy with no creature is as useless as a new rule with none, and is
+    // dropped the same way if the picker closes empty.
+    setPendingRuleId(copy.id);
     recordActivity({
       kind: "production",
       title: `Duplicated the ${displayNameFor(index, "creatures", rule.dinoType)} rule`,
     });
-    toast.info("Rule duplicated (disabled, creature cleared) — pick the new creature");
+    toast.info("Rule duplicated — pick the creature it is for");
   }
 
   async function importFromFile() {
@@ -334,6 +407,7 @@ export function ProductionRulesPage() {
         actions={
           <>
             <Button onClick={importFromFile}>Import live file…</Button>
+            <Button onClick={() => setShowOutput(true)}>Preview output</Button>
             <Button onClick={() => setShowJson(!showJson)}>
               {showJson ? "Hide JSON" : "Show JSON"}
             </Button>
@@ -401,6 +475,14 @@ export function ProductionRulesPage() {
                         {warnings > 0 && <Badge tone="warn">{warnings}</Badge>}
                       </div>
                     </div>
+                    {/* Pushed to the card's right edge so the tags line up
+                        down the list instead of trailing whatever length the
+                        creature's name happens to be. */}
+                    {!rule.enabled && (
+                      <span className="ml-auto shrink-0">
+                        <Badge tone="error">Disabled</Badge>
+                      </span>
+                    )}
                   </div>
                 </button>
               );
@@ -421,9 +503,11 @@ export function ProductionRulesPage() {
               issues={issuesByRule.get(selected.id) ?? []}
               defaults={settings.defaults}
               onChange={updateRule}
-              onSelectCreature={(bpPath) => selectCreature(selected, bpPath)}
+              onSelectCreature={(bpPath) => chooseCreatureFor(selected, bpPath)}
               onDelete={() => deleteRule(selected)}
               onDuplicate={() => duplicateRule(selected)}
+              awaitingCreature={pendingRuleId === selected.id}
+              onCreaturePickerDismissed={dropPendingIfEmpty}
             />
           ) : (
             <EmptyState title="Select a rule to edit">
@@ -436,11 +520,14 @@ export function ProductionRulesPage() {
         {showJson && (
           <div className="min-w-0">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold text-ink-300 uppercase tracking-wide">
-                Published JSON preview
+              <span className="text-xs font-semibold text-ink-300 uppercase tracking-wide truncate">
+                {selected
+                  ? `${displayNameFor(index, "creatures", selected.dinoType)} — published JSON`
+                  : "Published JSON preview"}
               </span>
               <Button
                 variant="ghost"
+                disabled={!jsonPreview}
                 onClick={() => {
                   navigator.clipboard.writeText(jsonPreview);
                   toast.success("JSON copied to clipboard");
@@ -450,11 +537,22 @@ export function ProductionRulesPage() {
               </Button>
             </div>
             <pre className="mono bg-ink-950 border border-ink-700 rounded-lg p-3 overflow-auto max-h-[calc(100vh-220px)] text-ink-200 whitespace-pre">
-              {jsonPreview}
+              {jsonPreview || "Select a rule to see the JSON it publishes."}
             </pre>
           </div>
         )}
       </div>
+
+      {/* The same preview the Publish page opens, from the page the rules are
+          written on — the one place an admin is when they want to check what
+          the whole file ends up looking like. */}
+      {showOutput && (
+        <OutputPreviewModal
+          label={OUTPUT_FAMILY_LABELS.production}
+          content={outputPreview}
+          onClose={() => setShowOutput(false)}
+        />
+      )}
     </div>
   );
 }

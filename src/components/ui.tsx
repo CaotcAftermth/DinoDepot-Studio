@@ -172,6 +172,55 @@ export function Field({
   );
 }
 
+/**
+ * A `?` beside a control, explaining it on hover or focus.
+ *
+ * Drawn rather than left to the browser's `title`, which waits a second before
+ * appearing, cannot be reached from the keyboard at all, and paints itself in
+ * the operating system's colours in the middle of a dark card. Clicking it
+ * pins the bubble open, which is what a touch screen has instead of a hover.
+ */
+export function HelpDot({
+  text,
+  label = "What this means",
+  className,
+}: {
+  text: string;
+  /** What a screen reader announces the button as, before reading `text`. */
+  label?: string;
+  className?: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const id = useId();
+  return (
+    <span className={cx("relative inline-flex shrink-0", className)}>
+      <button
+        type="button"
+        aria-label={label}
+        aria-describedby={open ? id : undefined}
+        aria-expanded={open}
+        className="w-7 h-7 rounded-full border border-ink-600 bg-ink-800 text-ink-300 text-xs font-semibold leading-none hover:bg-ink-700 hover:text-ink-100 cursor-help"
+        onPointerEnter={() => setOpen(true)}
+        onPointerLeave={() => setOpen(false)}
+        onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
+        onClick={() => setOpen((v) => !v)}
+      >
+        ?
+      </button>
+      {open && (
+        <span
+          id={id}
+          role="tooltip"
+          className="absolute left-1/2 bottom-full z-30 mb-2 w-64 -translate-x-1/2 rounded-md border border-ink-600 bg-ink-900 px-3 py-2 text-xs font-normal normal-case leading-relaxed tracking-normal text-ink-200 shadow-lg"
+        >
+          {text}
+        </span>
+      )}
+    </span>
+  );
+}
+
 export function Card({
   title,
   actions,
@@ -519,7 +568,10 @@ export function Badge({
   return (
     <span
       className={cx(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium border",
+        // `rounded-md`, the same corner every button and input in the app
+        // uses. A pill next to a square-cornered card and a square-cornered
+        // button reads as something borrowed from a different interface.
+        "inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium border",
         badgeTones[tone],
       )}
     >

@@ -219,10 +219,17 @@ a token leaks is the place somebody forgot to call the redactor.
 that renders untrusted project content — could previously ask for the GitHub
 token and receive it. It can now learn only that a credential exists.
 
-Credential keys are an allowlist, not a sanitizer: `discord-webhook`, the legacy
-`github-token`, and `github-account:<id>`. Credentials are filed per GitHub
-account; the legacy key is read as a fallback so an upgrade does not log everyone
-out, and is never written.
+Credential keys are an allowlist, not a sanitizer: `github-account:<id>`,
+`discord-webhook:<projectId>`, and the two legacy keys `github-token` and
+`discord-webhook`. Credentials are filed per GitHub account and per project.
+
+The GitHub legacy key is read as a fallback so an upgrade does not log everyone
+out. The Discord one is **not**: a webhook points at one channel in one server,
+which belongs to one cluster, so falling back to a machine-wide entry is what
+made a freshly created project report a webhook it had never been given — and
+post its announcements into somebody else's channel. It is offered once, in
+Settings → Discord, and either moved into a named project or discarded. Neither
+legacy key is ever written.
 
 ### Security hardening
 

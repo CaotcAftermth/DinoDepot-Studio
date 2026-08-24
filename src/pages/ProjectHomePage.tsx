@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjectStore, type RecentProject } from "../stores/projectStore";
 import { pickFolder } from "../services/dialogs";
-import { Badge, Button, Card, Field, Input } from "../components/ui";
+import { Badge, Button, Card, Field, HelpDot, Input } from "../components/ui";
 import { toast, ToastContainer } from "../components/toast";
 import { chooseDialog, confirmDialog, ConfirmHost } from "../components/confirm";
 import { ipc, isTauri } from "../services/ipc";
@@ -35,23 +35,39 @@ export function ProjectHomePage() {
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [newCluster, setNewCluster] = useState("");
-  /** The folder every project is made inside. Empty until first asked for. */
-  const [root, setRoot] = useState(loadProjectsRoot);
-  /** Set only when this one project is going somewhere outside that folder. */
-  const [customDir, setCustomDir] = useState("");
+  /**
+   * The folder every project is made inside. Empty until first asked for, and
+   * empty for the moment it takes to read it back off disk — the New project
+   * card is not on screen yet when that read starts.
+   */
+  const [root, setRoot] = useState("");
   const [suggestion, setSuggestion] = useState<NameSuggestion>(suggestNames);
   const [busy, setBusy] = useState(false);
   /** Folders in the list that no longer hold a project. */
   const [missing, setMissing] = useState<Record<string, boolean>>({});
   const { enabled: feedbackEnabled, openFeedback } = useFeedback();
 
-  const targetDir = customDir || projectDirFor(root, newName.trim());
+  const targetDir = projectDirFor(root, newName.trim());
   /**
    * What the card shows for the destination. An unnamed project still has a
    * folder to show — its parent — so the naming is visibly what decides it.
    */
   const shownDir =
     targetDir || (root ? joinPath(root, folderNameFor(newName.trim()) || "…") : "");
+
+  // Machine-local, and read from disk rather than the webview's storage, which
+  // is why it is asked for asynchronously instead of straight out of `useState`.
+  useEffect(() => {
+    let cancelled = false;
+    void loadProjectsRoot().then((stored) => {
+      if (cancelled || !stored) return;
+      // `current ||` so a folder chosen while the read was in flight wins.
+      setRoot((current) => current || stored);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // The stored list is only ever a list of *paths*, so a folder that has been
   // moved, renamed or deleted still looks like a project until it is checked.
@@ -200,16 +216,25 @@ export function ProjectHomePage() {
     if (!parent) return "";
     const chosen = projectsRootIn(parent);
     setRoot(chosen);
-    saveProjectsRoot(chosen);
-    // A location just chosen deliberately outranks a one-off folder picked
-    // before it.
-    setCustomDir("");
+    await saveProjectsRoot(chosen);
     return chosen;
   }
 
-  /** The projects folder, asking for it if this machine has never been told. */
+  /**
+   * The projects folder, asking for it if this machine has never been told.
+   *
+   * Reads the stored answer itself rather than trusting `root` to have arrived:
+   * the welcome screen is clickable before the first read comes back, and
+   * asking again would make a second projects folder beside the real one.
+   */
   async function ensureRoot(): Promise<string> {
-    return root || (await chooseRoot());
+    if (root) return root;
+    const stored = await loadProjectsRoot();
+    if (stored) {
+      setRoot(stored);
+      return stored;
+    }
+    return chooseRoot();
   }
 
   function startCreate() {
@@ -261,7 +286,7 @@ export function ProjectHomePage() {
       toast.error("Enter a project name first");
       return;
     }
-    if (!root && !customDir) {
+    if (!root) {
       toast.error(
         `Choose where the "${PROJECTS_FOLDER_NAME}" folder should go first`,
       );
@@ -385,43 +410,28 @@ export function ProjectHomePage() {
                   onChange={(e) => setNewCluster(e.target.value)}
                 />
               </Field>
+              {/* Where the project lands: the path once there is one, and the
+                  one button that changes it. What the folder *is* stays in the
+                  `?` rather than a paragraph nobody reads twice. */}
               <div>
                 <span className="block text-xs font-semibold text-ink-300 uppercase tracking-wide mb-1">
                   Folder
                 </span>
-                <div className="text-sm text-ink-100 break-all mono">
-                  {shownDir || "Not chosen yet"}
-                </div>
-                <p className="text-xs text-ink-400 mt-1">
-                  {customDir
-                    ? "This project only. The next one goes back to your projects folder."
-                    : root
-                      ? "Every project you make is a folder in here, named after the project. Projects already made stay where they are."
-                      : `A folder named "${PROJECTS_FOLDER_NAME}" is made where you choose, and every project after this one goes inside it.`}
-                </p>
-                <div className="flex gap-2 mt-2">
+                {shownDir && (
+                  <div className="text-sm text-ink-100 break-all mono mb-2">
+                    {shownDir}
+                  </div>
+                )}
+                <div className="flex items-center gap-2">
                   <Button onClick={() => void chooseRoot()}>
                     {root
                       ? "Use a different projects folder…"
                       : "Choose where projects live…"}
                   </Button>
-                  {customDir ? (
-                    <Button variant="ghost" onClick={() => setCustomDir("")}>
-                      Use the projects folder
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="ghost"
-                      onClick={async () => {
-                        const dir = await pickFolder(
-                          "Choose a folder for this project",
-                        );
-                        if (dir) setCustomDir(dir);
-                      }}
-                    >
-                      Somewhere else…
-                    </Button>
-                  )}
+                  <HelpDot
+                    label="What the projects folder is"
+                    text={`A folder named "${PROJECTS_FOLDER_NAME}" is made where you choose, and every project after this one goes inside it.`}
+                  />
                 </div>
               </div>
               <div className="flex gap-2 justify-end">

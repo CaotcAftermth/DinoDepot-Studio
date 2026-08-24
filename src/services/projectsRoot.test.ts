@@ -1,17 +1,41 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   folderNameFor,
   joinPath,
   lastSegment,
+  loadProjectsRoot,
   PROJECTS_FOLDER_NAME,
   projectDirFor,
   projectsRootIn,
+  saveProjectsRoot,
 } from "./projectsRoot";
 import {
   FIRST_WORDS,
   SECOND_WORDS,
   suggestNames,
 } from "../model/nameSuggestions";
+
+/** What the fake backend has stored, and whether it is willing to answer. */
+let stored: string | null = null;
+let backendFails = false;
+let calls: { cmd: string; args: Record<string, unknown> }[] = [];
+
+vi.mock("./ipc", () => ({
+  isTauri: false,
+  ipc: async (cmd: string, args: Record<string, unknown> = {}) => {
+    calls.push({ cmd, args });
+    if (backendFails) throw new Error("application data folder is unreadable");
+    switch (cmd) {
+      case "projects_root_get":
+        return stored;
+      case "projects_root_set":
+        stored = String(args.dir ?? "");
+        return undefined;
+      default:
+        throw new Error(`unexpected command ${cmd}`);
+    }
+  },
+}));
 
 /**
  * A project name becomes a folder name without the administrator seeing the
@@ -148,5 +172,87 @@ describe("name suggestions", () => {
         expect(folderNameFor(project)).toBe(project);
       }
     }
+  });
+});
+
+/**
+ * The location survives a restart or it is not a preference at all — an
+ * administrator who is asked again on every launch ends up with a second
+ * projects folder beside the real one. It lived in `localStorage` and was
+ * cleared out from under the app, so the store itself is worth pinning down.
+ */
+describe("remembering the projects folder", () => {
+  const ROOT_KEY = "ddstudio.projectsRoot";
+  let legacy: Record<string, string> = {};
+
+  beforeEach(() => {
+    stored = null;
+    backendFails = false;
+    calls = [];
+    legacy = {};
+    // The suite runs without a DOM; the legacy read only has to be reachable.
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => legacy[k] ?? null,
+      setItem: (k: string, v: string) => {
+        legacy[k] = v;
+      },
+      removeItem: (k: string) => {
+        delete legacy[k];
+      },
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("is empty before the machine has ever been asked", async () => {
+    await expect(loadProjectsRoot()).resolves.toBe("");
+  });
+
+  it("reads back what was saved", async () => {
+    await saveProjectsRoot(`D:\ARK\${PROJECTS_FOLDER_NAME}`);
+    await expect(loadProjectsRoot()).resolves.toBe(
+      `D:\ARK\${PROJECTS_FOLDER_NAME}`,
+    );
+    expect(calls.map((c) => c.cmd)).toEqual([
+      "projects_root_set",
+      "projects_root_get",
+    ]);
+  });
+
+  it("trims what it stores and what it returns", async () => {
+    await saveProjectsRoot("  D:\ARK\Projects  ");
+    expect(stored).toBe("D:\ARK\Projects");
+    stored = "  D:\ARK\Projects  ";
+    await expect(loadProjectsRoot()).resolves.toBe("D:\ARK\Projects");
+  });
+
+  /**
+   * An install made before the location moved out of the webview still has the
+   * answer in the old place. Adopting it is the difference between upgrading
+   * and being asked the question this store exists to stop asking.
+   */
+  it("adopts the copy an older install left behind", async () => {
+    legacy[ROOT_KEY] = `E:\Studio\${PROJECTS_FOLDER_NAME}`;
+    await expect(loadProjectsRoot()).resolves.toBe(
+      `E:\Studio\${PROJECTS_FOLDER_NAME}`,
+    );
+    // Written through, so the next run does not depend on the old store still
+    // being there.
+    expect(stored).toBe(`E:\Studio\${PROJECTS_FOLDER_NAME}`);
+  });
+
+  it("prefers the stored answer over the old copy", async () => {
+    stored = "D:\New";
+    legacy[ROOT_KEY] = "E:\Old";
+    await expect(loadProjectsRoot()).resolves.toBe("D:\New");
+  });
+
+  /** A backend that cannot answer must read as "never asked", not as a crash. */
+  it("treats an unreadable store as a first run", async () => {
+    backendFails = true;
+    await expect(loadProjectsRoot()).resolves.toBe("");
+    await expect(saveProjectsRoot("D:\ARK")).resolves.toBeUndefined();
   });
 });
