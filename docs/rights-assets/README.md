@@ -20,6 +20,10 @@ The desktop cache lives in app data under `asset-cache/` and `registry-cache/`, 
 
 Real permission records and immutable permission terms are private inputs maintained outside this repository. This repository contains only a schema and an intentionally unusable redacted example. The tool does not generate or edit legal wording.
 
+## Deployment status
+
+On 2026-08-27, maintainers created `dinodepot-assets`, applied `r2-cors.json`, and uploaded only the disabled registry manifests with the index last. No artwork was uploaded. `assets.dinodepot.app` remains unavailable because the authenticated Cloudflare account does not contain the `dinodepot.app` zone; custom-domain attachment and CDN purge therefore remain blocked.
+
 ## Maintainer preparation
 
 Store the exact external terms file as `DDS-ICON-PERMISSION-vN.N.md`. Its filename must equal the permission record's `terms.version` plus `.md`, and its SHA-256 must equal `terms.sha256`.
