@@ -89,28 +89,31 @@ export const FEEDBACK_CONFIG: FeedbackConfig = {
 };
 
 /**
- * The configuration in force, once the administrator's own settings are laid
- * over the build's.
+ * The configuration in force for this build.
  *
- * The API address is overridable at runtime so pointing a build at a service
- * does not mean rebuilding it — the address is not a secret, and asking an
- * administrator to recompile to file a bug would defeat the point.
+ * An official build's managed service is authoritative: allowing a stored
+ * address to replace it would let reports, diagnostics, and screenshots be
+ * redirected away from DinoDepot by accident. A runtime address remains
+ * available for development and self-hosted builds that ship without one.
  */
 export function effectiveConfig(
   overrides: Partial<Pick<FeedbackConfig, "enabled" | "apiBaseUrl">> = {},
 ): FeedbackConfig {
-  // The persisted shape predates build-time configuration and therefore
-  // always contains `apiBaseUrl: ""`. Empty means "no runtime override", not
-  // "erase the URL compiled into this build".
+  const buildUrl = FEEDBACK_CONFIG.apiBaseUrl.trim().replace(/\/+$/, "");
   const runtimeUrl = overrides.apiBaseUrl?.trim() ?? "";
-  const apiBaseUrl = (runtimeUrl || FEEDBACK_CONFIG.apiBaseUrl)
-    .trim()
-    .replace(/\/+$/, "");
+  const apiBaseUrl = isUsableApiUrl(buildUrl)
+    ? buildUrl
+    : runtimeUrl.trim().replace(/\/+$/, "");
   return {
     ...FEEDBACK_CONFIG,
     enabled: overrides.enabled ?? FEEDBACK_CONFIG.enabled,
     apiBaseUrl: isUsableApiUrl(apiBaseUrl) ? apiBaseUrl : "",
   };
+}
+
+/** Whether this build owns the service address rather than local settings. */
+export function hasManagedFeedbackService(): boolean {
+  return isUsableApiUrl(FEEDBACK_CONFIG.apiBaseUrl.trim().replace(/\/+$/, ""));
 }
 
 /**

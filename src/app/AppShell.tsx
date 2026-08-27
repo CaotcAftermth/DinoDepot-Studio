@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { NavLink, Navigate, Outlet } from "react-router-dom";
 import { useProjectStore } from "../stores/projectStore";
 import { ToastContainer } from "../components/toast";
@@ -14,6 +15,8 @@ import { useFeedback } from "../components/feedback/useFeedback";
 import { isTauri } from "../services/ipc";
 import { enabledModules } from "./modules";
 import { feedbackTarget } from "../model/feedback/targets";
+import { isExampleProject } from "../model/exampleProject";
+import { ExampleProjectBar } from "../components/ExampleProjectExperience";
 
 const NAV_ITEMS = [
   { to: "/overview", label: "Overview", icon: "◆" },
@@ -56,6 +59,12 @@ function NavItem({
 export function AppShell() {
   const { dir, settings, closeProject } = useProjectStore();
   const modules = enabledModules(settings);
+  const example = isExampleProject(settings);
+  const [exampleDevEditing, setExampleDevEditing] = useState(false);
+
+  // DEV access is deliberately temporary. Closing or switching projects locks
+  // the example again instead of leaving an invisible machine preference on.
+  useEffect(() => setExampleDevEditing(false), [settings?.projectId]);
 
   if (!dir || !settings) {
     return <Navigate to="/" replace />;
@@ -128,6 +137,13 @@ export function AppShell() {
       </aside>
 
       <main className="flex-1 overflow-y-auto">
+        {example && (
+          <ExampleProjectBar
+            projectId={settings.projectId}
+            devEditing={exampleDevEditing}
+            onDevEditingChange={setExampleDevEditing}
+          />
+        )}
         <div className="p-6 w-full">
           {/* Around the routed page rather than the whole shell: a page that
               throws should leave the sidebar — and the way out of it — intact. */}

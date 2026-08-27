@@ -6,6 +6,7 @@ import { asStudioError } from "../../model/errors";
 import { bindingSlug } from "../../model/localState";
 import { collaboratorsUrl } from "../../model/repoSetup";
 import { feedbackTarget } from "../../model/feedback/targets";
+import { isExampleProject } from "../../model/exampleProject";
 import { openExternal } from "../../services/openExternal";
 import {
   inviteRepositoryCollaborator,
@@ -40,6 +41,8 @@ function roleLabel(role: string): string {
 /** GitHub-backed project membership. No access list is copied into project files. */
 export function ProjectAccess() {
   const local = useProjectStore((state) => state.local);
+  const settings = useProjectStore((state) => state.settings);
+  const example = isExampleProject(settings);
   const targets = useMemo(() => projectAccessTargets(local), [local]);
   const [states, setStates] = useState<Record<string, AccessState>>({});
   const [loading, setLoading] = useState(false);
@@ -50,7 +53,7 @@ export function ProjectAccess() {
   const refresh = useCallback(async () => {
     const accountId = local?.githubAccountId ?? "";
     const version = ++request.current;
-    if (!accountId || targets.length === 0) {
+    if (example || !accountId || targets.length === 0) {
       setStates({});
       return;
     }
@@ -77,7 +80,7 @@ export function ProjectAccess() {
       setStates(next);
       setLoading(false);
     }
-  }, [local?.githubAccountId, targets]);
+  }, [example, local?.githubAccountId, targets]);
 
   useEffect(() => {
     void refresh();
@@ -147,6 +150,8 @@ export function ProjectAccess() {
     await refresh();
     setInviting(false);
   }
+
+  if (example) return <MockProjectAccess />;
 
   if (!local?.githubAccountId) {
     return (
@@ -259,11 +264,13 @@ function RepositoryAccessPanel({
   currentLogin,
   state,
   loading,
+  mock = false,
 }: {
   target: ProjectAccessTarget;
   currentLogin: string;
   state?: AccessState;
   loading: boolean;
+  mock?: boolean;
 }) {
   const access = state?.access;
   const collaborators = [...(access?.collaborators ?? [])].sort((a, b) => {
@@ -285,12 +292,14 @@ function RepositoryAccessPanel({
               Your role: {roleLabel(access.currentPermission)}
             </Badge>
           )}
-          <Button
-            variant="ghost"
-            onClick={() => void openExternal(collaboratorsUrl(target.binding))}
-          >
-            Manage access on GitHub ↗
-          </Button>
+          {!mock && (
+            <Button
+              variant="ghost"
+              onClick={() => void openExternal(collaboratorsUrl(target.binding))}
+            >
+              Manage access on GitHub ↗
+            </Button>
+          )}
         </div>
       </header>
 
@@ -373,5 +382,93 @@ function RepositoryAccessPanel({
         )}
       </div>
     </section>
+  );
+}
+
+const MOCK_ACCESS_TARGETS: ProjectAccessTarget[] = [
+  {
+    role: "source",
+    label: "Private project repository",
+    binding: {
+      githubId: "example-private",
+      owner: "DinoDepot-Demo",
+      name: "Example-Cluster-Config",
+      remoteUrl: "",
+      branch: "main",
+      isPrivate: true,
+      hasPages: false,
+    },
+  },
+  {
+    role: "delivery",
+    label: "Public site repository",
+    binding: {
+      githubId: "example-public",
+      owner: "DinoDepot-Demo",
+      name: "Example-Cluster-Site",
+      remoteUrl: "",
+      branch: "main",
+      isPrivate: false,
+      hasPages: true,
+    },
+  },
+];
+
+const MOCK_ACCESS: RepositoryAccess = {
+  currentPermission: "admin",
+  canAdmin: true,
+  managementAvailable: true,
+  managementProblem: "",
+  collaborators: [
+    { login: "ExampleOwner", avatarUrl: "", htmlUrl: "", roleName: "admin" },
+    { login: "RexOps", avatarUrl: "", htmlUrl: "", roleName: "admin" },
+  ],
+  invitations: [
+    {
+      id: "example-invitation",
+      login: "BuildHerder",
+      avatarUrl: "",
+      htmlUrl: "",
+      permission: "write",
+      createdAt: "2026-08-24T12:00:00.000Z",
+    },
+  ],
+};
+
+function MockProjectAccess() {
+  return (
+    <>
+      <p className="col-span-full -mb-2 text-xs text-cyan-300">
+        Example data only. No GitHub account, repository, or invitation is contacted.
+      </p>
+      <Card title="Project administrators" feedback={feedbackTarget("project-access")}>
+        <p className="mb-3 text-xs text-ink-400">
+          This private-project and public-site pair demonstrates access shared across both repositories.
+        </p>
+        <div className="flex flex-col gap-4">
+          {MOCK_ACCESS_TARGETS.map((target) => (
+            <RepositoryAccessPanel
+              key={target.binding.githubId}
+              target={target}
+              currentLogin="ExampleOwner"
+              state={{ access: MOCK_ACCESS }}
+              loading={false}
+              mock
+            />
+          ))}
+        </div>
+      </Card>
+      <Card title="Invite a project administrator">
+        <p className="text-xs text-ink-400">
+          Example invitation controls are disabled so this project cannot contact GitHub.
+        </p>
+        <div className="mt-3 flex items-end gap-2">
+          <Field label="GitHub username" className="flex-1">
+            <Input value="BuildHerder" disabled readOnly />
+          </Field>
+          <Button variant="primary" disabled>Invite to project</Button>
+        </div>
+      </Card>
+    </>
   );
 }

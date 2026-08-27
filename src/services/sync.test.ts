@@ -114,6 +114,7 @@ function localState(over: Partial<LocalProjectState> = {}): LocalProjectState {
   return LocalProjectStateSchema.parse({
     ...newLocalProjectState("project-1", "C:\\proj", "GG Fizz"),
     githubAccountId: "9",
+    githubLogin: "ggfizz",
     source: {
       githubId: "123",
       owner: "ggfizz",
@@ -217,6 +218,7 @@ describe("the first sync of a new project", () => {
     expect(decoded.projectId).toBe("11111111-2222-4333-8444-555555555555");
     expect(decoded.schemaVersion).toBe(2);
     expect(decoded.operationId).not.toBe("");
+    expect(decoded.actor).toBe("ggfizz");
     expect(decoded.actions).toHaveLength(2);
     expect(decoded.actions[0].fields).toEqual(["displayName", "interval"]);
   });

@@ -141,15 +141,16 @@ The set is: `bug`, `suggestion`, `feature-request`, `source:in-app`,
 
 ## 4. Point the app at it
 
-Either per machine — **Settings → Feedback → Feedback service address**, then
-**Test**, which confirms the service answers *and* that it files into the
-repository this build belongs to — or for everybody, at build time:
+For official builds, set the address at build time:
 
 ```bash
 VITE_FEEDBACK_API_URL=https://dinodepot-feedback.example.workers.dev npm run build
 ```
 
-The setting wins over the build-time value when both are present.
+That managed address is fixed for the release and cannot be replaced in the
+app. Development and self-hosted builds that omit it retain **Settings →
+Feedback → Feedback service address** and **Test**, which confirms the service
+answers *and* files into the repository this build belongs to.
 
 ---
 

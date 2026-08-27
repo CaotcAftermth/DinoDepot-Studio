@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import {
   CreatureRule,
   PrimaryItem,
@@ -27,6 +27,13 @@ import type { ProjectSettings } from "../../model/project";
 import { feedbackTarget } from "../../model/feedback/targets";
 import { useUiPrefsStore } from "../../stores/uiPrefsStore";
 import { shortClassName } from "../../services/spawnCommands";
+import { NormalizedNumberInput } from "../../components/NormalizedNumberInput";
+import {
+  formatChance,
+  formatDuration,
+  parseChanceInput,
+  parseDurationInput,
+} from "../../model/productionInput";
 
 function NumberField({
   label,
@@ -57,6 +64,50 @@ function NumberField({
           const n = Number(e.target.value);
           if (Number.isFinite(n)) onChange(n);
         }}
+      />
+    </Field>
+  );
+}
+
+function ChanceField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <Field label={label} hint={formatChance(value)}>
+      <NormalizedNumberInput
+        value={value}
+        onCommit={onChange}
+        parse={parseChanceInput}
+        inputMode="decimal"
+        placeholder="0.1 or 10%"
+      />
+    </Field>
+  );
+}
+
+function DurationField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (value: number) => void;
+}) {
+  return (
+    <Field label={label} hint={formatDuration(value)}>
+      <NormalizedNumberInput
+        value={value}
+        onCommit={onChange}
+        parse={parseDurationInput}
+        placeholder="60, 1min, or 1hr"
+        spellCheck={false}
       />
     </Field>
   );
@@ -154,26 +205,6 @@ function SelectModeField({
       </Select>
     </Field>
   );
-}
-
-/** 0.25 -> "25%" — QoL readout under the decimal chance inputs. */
-function formatChance(value: number): string {
-  if (!Number.isFinite(value)) return "—";
-  const pct = Math.round(value * 100 * 100) / 100;
-  return `${pct}%`;
-}
-
-function formatInterval(seconds: number): string {
-  if (!(seconds > 0)) return "—";
-  if (seconds < 60) return `${seconds}s`;
-  if (seconds < 3600) {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return s ? `${m}m ${s}s` : `${m}m`;
-  }
-  const h = Math.floor(seconds / 3600);
-  const m = Math.round((seconds % 3600) / 60);
-  return m ? `${h}h ${m}m` : `${h}h`;
 }
 
 // ---------------------------------------------------------------------------
@@ -349,14 +380,10 @@ export function RuleEditor({
               <Button onClick={() => setPickingCreature(true)}>Pick…</Button>
             </div>
           </Field>
-          <NumberField
+          <ChanceField
             label="Chance to produce"
             value={rule.chanceToProduce}
-            step="0.05"
-            min={0}
-            max={1}
             onChange={(v) => onChange({ ...rule, chanceToProduce: v })}
-            hint={formatChance(rule.chanceToProduce)}
           />
         </div>
         <Field label="Notes" hint="Internal only — never published">
@@ -477,7 +504,7 @@ function CycleEditor({
           {cycle.name.trim() || `Cycle ${index + 1}`}
           <span className="text-ink-400 font-normal">
             {" "}
-            · every {formatInterval(cycle.intervalSeconds)} ·{" "}
+            · every {formatDuration(cycle.intervalSeconds)} ·{" "}
             {SELECT_MODE_LABELS[cycle.itemSelectMode]} of {cycle.items.length} item
             {cycle.items.length === 1 ? "" : "s"}
           </span>
@@ -498,12 +525,10 @@ function CycleEditor({
           />
         </Field>
         <div {...feedbackTarget("production-rule-cycle-interval")}>
-          <NumberField
+          <DurationField
             label="Interval (seconds)"
             value={cycle.intervalSeconds}
-            min={1}
             onChange={(v) => onChange({ intervalSeconds: v })}
-            hint={formatInterval(cycle.intervalSeconds)}
           />
         </div>
         <SelectModeField
@@ -570,6 +595,7 @@ function ItemEditor({
 }) {
   const catalogIndex = useCatalogIndex();
   const [expanded, setExpanded] = useState(false);
+  const bodyId = useId();
   const [picking, setPicking] = useState(false);
   const name = item.bpPath
     ? displayNameFor(catalogIndex, "items", item.bpPath)
@@ -580,6 +606,9 @@ function ItemEditor({
       <button
         className="w-full flex items-center justify-between px-3 py-2 cursor-pointer"
         onClick={() => setExpanded(!expanded)}
+        data-collapse-key={`item:${item.id}`}
+        aria-expanded={expanded}
+        aria-controls={bodyId}
       >
         <span className="flex items-center gap-2 text-sm">
           <span className={cx("transition-transform", expanded && "rotate-90")}>
@@ -609,11 +638,11 @@ function ItemEditor({
       </button>
 
       {expanded && (
-        <div className="px-3 pb-3 flex flex-col gap-4">
+        <div id={bodyId} className="px-3 pb-3 flex flex-col gap-4">
           {/* Laid out exactly like an alternate or a consumed input: it is
               the same three numbers against the same kind of item, and the
               old full-width path field made it look like something else. */}
-          <div className="grid grid-cols-[1fr_90px_90px_90px_auto] gap-2 items-end">
+          <div className="grid grid-cols-[1fr_90px_104px_104px_auto] gap-2 items-end">
             <ItemIdentity bpPath={item.bpPath} />
             <div {...feedbackTarget("production-rule-cycle-quantity")}>
               <NumberField
@@ -751,21 +780,17 @@ function SubItemsSection({
               value={selectMode}
               onChange={onModeChange}
             />
-            <NumberField
+            <ChanceField
               label="Activation chance"
               value={chance}
-              step="0.05"
-              min={0}
-              max={1}
               onChange={onChanceChange}
-              hint={formatChance(chance)}
             />
           </div>
           <div className="flex flex-col gap-2">
             {subs.map((sub) => (
               <div
                 key={sub.id}
-                className="grid grid-cols-[1fr_90px_90px_90px_28px] gap-2 items-end"
+                className="grid grid-cols-[1fr_90px_104px_104px_28px] gap-2 items-end"
               >
                 <ItemIdentity bpPath={sub.bpPath} />
                 <Field label="Qty">

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { useDraftsStore } from "../stores/draftsStore";
 import { useProjectStore } from "../stores/projectStore";
 import { fmt, simulate, SimConfig, SimRuleResult } from "../simulator/engine";
@@ -358,6 +358,7 @@ function RuleBreakdown({
   onToggle: () => void;
 }) {
   const index = useCatalogIndex();
+  const bodyId = useId();
   const name = displayNameFor(index, "creatures", ruleResult.dinoType);
 
   const netSummary = useMemo(() => {
@@ -378,6 +379,8 @@ function RuleBreakdown({
         <button
           className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer text-left"
           onClick={onToggle}
+          aria-expanded={expanded}
+          aria-controls={bodyId}
         >
           <span
             className={cx(
@@ -412,7 +415,7 @@ function RuleBreakdown({
       </div>
 
       {expanded && (
-        <div className="px-3 pb-3 flex flex-col gap-3 border-t border-ink-700/60 pt-2">
+        <div id={bodyId} className="px-3 pb-3 flex flex-col gap-3 border-t border-ink-700/60 pt-2">
           {ruleResult.cycles.map((cycle) => (
             <div key={cycle.cycleId}>
               <div className="text-xs text-ink-400 mb-1">

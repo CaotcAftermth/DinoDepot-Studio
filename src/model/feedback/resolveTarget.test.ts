@@ -103,6 +103,36 @@ describe("findFeedbackTarget", () => {
     expect(found?.snapshot.context).toEqual({ field: "New project" });
   });
 
+  it("never names a section from its live output text", () => {
+    const shell = node(feedbackTarget("app-shell"));
+    const page = child(shell, "DIV", "", feedbackTarget("overview"));
+    const card = child(
+      page,
+      "SECTION",
+      "Publishing0 of 4 synchronizedNo destination setPassive ProductionNever published",
+    );
+    const found = findFeedbackTarget(card);
+    expect(found?.snapshot.name).toBe("Section");
+    expect(found?.snapshot.hierarchy).toEqual(["Overview", "Section"]);
+  });
+
+  it("uses a registered Overview card name instead of counts and status", () => {
+    const shell = node(feedbackTarget("app-shell"));
+    const page = child(shell, "DIV", "", feedbackTarget("overview"));
+    const card = child(
+      page,
+      "A",
+      "Production rules2All valid",
+      feedbackTarget("overview-production-summary"),
+    );
+    const found = findFeedbackTarget(card);
+    expect(found?.snapshot.name).toBe("Production Rules Summary");
+    expect(found?.snapshot.hierarchy).toEqual([
+      "Overview",
+      "Production Rules Summary",
+    ]);
+  });
+
   it("never reads an input value while naming a field", () => {
     const page = tree(PRODUCTION_RULES);
     const input = child(page, "INPUT", "secret project value", {
@@ -113,6 +143,37 @@ describe("findFeedbackTarget", () => {
     expect(found?.snapshot.name).toBe("Creature count");
     expect(found?.snapshot.name).not.toContain("private");
     expect(found?.snapshot.name).not.toContain("secret project value");
+  });
+
+  it("uses Field labels to distinguish controls with the same placeholder", () => {
+    const page = tree(feedbackTarget("settings-defaults"));
+    const chanceWrapper = child(page, "LABEL", "", {
+      [FEEDBACK_ATTR.fieldName]: "Chance to produce",
+    });
+    const chance = child(chanceWrapper, "INPUT", "", {
+      placeholder: "0.1 or 10%",
+    });
+    const activationWrapper = child(page, "LABEL", "", {
+      [FEEDBACK_ATTR.fieldName]: "Activation chance",
+    });
+    const activation = child(activationWrapper, "INPUT", "", {
+      placeholder: "0.1 or 10%",
+    });
+
+    expect(findFeedbackTarget(chance)?.snapshot.name).toBe("Chance to produce");
+    expect(findFeedbackTarget(activation)?.snapshot.name).toBe(
+      "Activation chance",
+    );
+  });
+
+  it("uses a Field label when the control has no placeholder", () => {
+    const page = tree(feedbackTarget("settings-simulator"));
+    const wrapper = child(page, "LABEL", "", {
+      [FEEDBACK_ATTR.fieldName]: "Default hours",
+    });
+    const input = child(wrapper, "INPUT", "");
+
+    expect(findFeedbackTarget(input)?.snapshot.name).toBe("Default hours");
   });
 
   it("uses a generic name when visible text contains a machine path", () => {
@@ -179,6 +240,15 @@ describe("hierarchy", () => {
       "Production Cycle Editor",
       "Production Cycle Quantity",
     ]);
+  });
+
+  it("omits the application shell and repeated area from a page path", () => {
+    const card = tree(
+      feedbackTarget("app-shell"),
+      feedbackTarget("overview"),
+      feedbackTarget("overview-publishing-summary"),
+    );
+    expect(snapshotFor(card).hierarchy).toEqual(["Overview", "Publishing Summary"]);
   });
 
   it("does not repeat a wrapper that shares its child's name", () => {

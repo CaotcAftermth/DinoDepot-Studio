@@ -38,6 +38,7 @@ export const TRAILER = {
   project: "DinoDepot-Project",
   schema: "DinoDepot-Schema",
   operation: "DinoDepot-Operation",
+  actor: "DinoDepot-Actor",
   actionsVersion: "DinoDepot-Actions-Version",
   action: "DinoDepot-Action",
 } as const;
@@ -132,6 +133,8 @@ export interface CommitEnvelope {
   projectId: string;
   schemaVersion: number;
   operationId: string;
+  /** GitHub username of the administrator sharing this change. */
+  actor?: string;
   actions: StructuredAction[];
   /** Overrides the generated subject. Used by Publish, which writes its own. */
   subject?: string;
@@ -146,12 +149,17 @@ export interface CommitEnvelope {
  */
 export function encodeCommitMessage(envelope: CommitEnvelope): string {
   const subject = envelope.subject?.trim() || commitSubject(envelope.actions);
+  // A trailer is one line by definition. GitHub usernames cannot contain a
+  // newline, but keeping this boundary safe costs nothing and prevents a bad
+  // local record from manufacturing another trailer.
+  const actor = envelope.actor?.replace(/[\r\n]+/g, " ").trim() ?? "";
   const lines = [
     subject,
     "",
     `${TRAILER.project}: ${envelope.projectId}`,
     `${TRAILER.schema}: ${envelope.schemaVersion}`,
     `${TRAILER.operation}: ${envelope.operationId}`,
+    ...(actor ? [`${TRAILER.actor}: ${actor}`] : []),
     `${TRAILER.actionsVersion}: ${ACTION_SCHEMA_VERSION}`,
     ...envelope.actions.map(
       (action) => `${TRAILER.action}: ${JSON.stringify(compact(action))}`,
@@ -181,6 +189,8 @@ export interface DecodedCommit {
   projectId: string;
   schemaVersion: number | null;
   operationId: string;
+  /** GitHub username recorded by Studio, when known. */
+  actor: string;
   /** Null when the commit carries no version — i.e. it is not one of ours. */
   actionsVersion: number | null;
   actions: StructuredAction[];
@@ -213,6 +223,7 @@ export function decodeCommitMessage(message: string): DecodedCommit {
     projectId: "",
     schemaVersion: null,
     operationId: "",
+    actor: "",
     actionsVersion: null,
     actions: [],
     unreadableActions: 0,
@@ -236,6 +247,9 @@ export function decodeCommitMessage(message: string): DecodedCommit {
         break;
       case TRAILER.operation:
         result.operationId = value;
+        break;
+      case TRAILER.actor:
+        result.actor = value;
         break;
       case TRAILER.actionsVersion:
         result.actionsVersion = Number.isInteger(Number(value)) ? Number(value) : null;

@@ -88,7 +88,13 @@ export function toHistoryEntry(commit: CommitSummary, now = new Date()): History
     shortSha: commit.sha.slice(0, 7),
     at: commit.at,
     when: formatActivityTime(new Date(commit.at).toISOString(), now),
-    author: commit.author,
+    // Studio's trailer carries the authenticated GitHub username. The Git
+    // author remains a useful fallback for older Studio versions and changes
+    // made directly through GitHub.
+    author:
+      (decoded.isDinoDepot ? decoded.actor : "") ||
+      commit.author ||
+      "Unknown administrator",
     title: decoded.subject || "Changed the project",
     details: decoded.actions.map(describeAction),
     undescribed: decoded.unreadableActions,
@@ -156,4 +162,70 @@ export function restoreSubject(entry: HistoryEntry): string {
     undefined,
     { month: "short", day: "numeric" },
   )}`;
+}
+
+/** Username as shown in history. Studio actors come from its connected GitHub login. */
+export function historyAuthorLabel(entry: HistoryEntry): string {
+  const author = entry.author.trim() || "Unknown administrator";
+  return entry.fromStudio &&
+    /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/.test(author)
+    ? `@${author}`
+    : author;
+}
+
+/** Complete readable details, including changes from a newer Studio. */
+export function historyDetailText(entry: HistoryEntry): string {
+  return [
+    ...entry.details,
+    ...(entry.undescribed > 0
+      ? [`${entry.undescribed} more this version cannot describe`]
+      : []),
+  ].join(" · ");
+}
+
+/** Searches every value an administrator can see or reasonably paste. */
+export function filterHistory(entries: HistoryEntry[], query: string): HistoryEntry[] {
+  const terms = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+  if (terms.length === 0) return entries;
+  return entries.filter((entry) => {
+    const text = [
+      entry.title,
+      ...entry.details,
+      entry.author,
+      historyAuthorLabel(entry),
+      historyDetailText(entry),
+      entry.kind,
+      entry.sha,
+      entry.shortSha,
+      new Date(entry.at).toISOString(),
+      new Date(entry.at).toLocaleString(),
+      entry.when,
+      entry.fromStudio ? "Studio" : "outside Studio",
+    ]
+      .join("\n")
+      .toLocaleLowerCase();
+    return terms.every((term) => text.includes(term));
+  });
+}
+
+/** CSV for the history modal's Download action. */
+export function historyToCsv(entries: HistoryEntry[]): string {
+  const rows = entries.map((entry) => [
+    new Date(entry.at).toISOString(),
+    historyAuthorLabel(entry),
+    entry.title,
+    historyDetailText(entry),
+    entry.fromStudio ? "DinoDepot Studio" : "Outside Studio",
+    entry.shortSha,
+  ]);
+  return [
+    ["Timestamp", "Administrator", "Summary", "Details", "Source", "Version"],
+    ...rows,
+  ]
+    .map((row) => row.map(csvCell).join(","))
+    .join("\r\n");
+}
+
+function csvCell(value: string): string {
+  return `"${value.replace(/"/g, '""')}"`;
 }

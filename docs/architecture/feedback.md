@@ -406,8 +406,8 @@ See `services/feedback-api/README.md` for the full sequence. In outline:
    (attachments).
 4. `wrangler deploy`.
 5. Create the labels — `labelSetupCommands()` prints the commands.
-6. Paste the URL into **Settings › Feedback**, or ship it as
-   `VITE_FEEDBACK_API_URL`.
+6. Ship the URL as `VITE_FEEDBACK_API_URL`. Development and self-hosted builds
+   without a packaged URL may instead set one in **Settings › Feedback**.
 
 Only `wrangler.toml` is Cloudflare-specific. The service is a standard `fetch`
 handler; the two optional bindings are described as interfaces it defines
@@ -421,9 +421,11 @@ rather than imported platform types.
 turning it off renders no feedback panels, installs no feedback shortcuts or
 context menu, and hides every visible entry point.
 
-The API address resolves in this order: the administrator's setting, then
-`VITE_FEEDBACK_API_URL` at build time, then empty. Empty is a working
-configuration — the browser fallback needs no service at all.
+The API address resolves in this order: `VITE_FEEDBACK_API_URL` at build time,
+then the administrator's setting only when the build has no managed address,
+then empty. Empty is a working configuration — the browser fallback needs no
+service at all. A managed build shows connection status but does not expose an
+address editor, because changing it would redirect diagnostics and screenshots.
 
 An address must be HTTPS with no credentials and no query string, checked in
 both TypeScript and Rust.

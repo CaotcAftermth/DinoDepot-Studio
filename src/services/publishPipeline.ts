@@ -295,6 +295,7 @@ async function pushArtifact(
       projectId: context.projectId,
       schemaVersion: 0,
       operationId,
+      actor: context.local.githubLogin,
       subject: "Published the cluster viewer",
       actions: [
         StructuredActionSchema.parse({

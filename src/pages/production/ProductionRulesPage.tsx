@@ -35,6 +35,7 @@ import { OutputPreviewModal } from "../../components/OutputPreviewModal";
 import { OUTPUT_FAMILY_LABELS } from "../../model/history";
 import { useUiPrefsStore } from "../../stores/uiPrefsStore";
 import { feedbackTarget } from "../../model/feedback/targets";
+import { EXAMPLE_TOUR_SELECTION_ATTR } from "../../model/exampleProject";
 
 export function ProductionRulesPage() {
   const { production, setProduction, catalog, setCatalog, hydrate } =
@@ -446,6 +447,8 @@ export function ProductionRulesPage() {
                 <button
                   key={rule.id}
                   onClick={() => setSelectedId(rule.id)}
+                  aria-pressed={rule.id === selectedId}
+                  {...{ [EXAMPLE_TOUR_SELECTION_ATTR]: `rule:${rule.id}` }}
                   className={cx(
                     "text-left px-3 py-2 rounded-lg border cursor-pointer",
                     rule.id === selectedId

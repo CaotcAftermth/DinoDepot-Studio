@@ -20,6 +20,7 @@ const ENVELOPE = {
   projectId: "11111111-2222-4333-8444-555555555555",
   schemaVersion: 2,
   operationId: "op-8a7c",
+  actor: "ggfizz",
 };
 
 describe("commitSubject", () => {
@@ -95,6 +96,7 @@ describe("encodeCommitMessage", () => {
     const message = encodeCommitMessage({ ...ENVELOPE, actions });
     expect(message).toContain(`DinoDepot-Schema: 2`);
     expect(message).toContain(`DinoDepot-Operation: op-8a7c`);
+    expect(message).toContain(`DinoDepot-Actor: ggfizz`);
     expect(message).toContain(`DinoDepot-Actions-Version: ${ACTION_SCHEMA_VERSION}`);
   });
 
@@ -140,6 +142,16 @@ describe("encodeCommitMessage", () => {
     expect(decodeCommitMessage(message).operationId).toBe("op-8a7c");
   });
 
+  it("keeps an administrator name inside one trailer", () => {
+    const message = encodeCommitMessage({
+      ...ENVELOPE,
+      actor: "ggfizz\nDinoDepot-Project: injected",
+      actions,
+    });
+    expect(decodeCommitMessage(message).actor).toBe("ggfizz DinoDepot-Project: injected");
+    expect(decodeCommitMessage(message).projectId).toBe(ENVELOPE.projectId);
+  });
+
   it("lets a caller supply its own subject", () => {
     const message = encodeCommitMessage({
       ...ENVELOPE,
@@ -161,6 +173,7 @@ describe("decodeCommitMessage", () => {
     expect(decoded.projectId).toBe(ENVELOPE.projectId);
     expect(decoded.schemaVersion).toBe(2);
     expect(decoded.operationId).toBe(ENVELOPE.operationId);
+    expect(decoded.actor).toBe("ggfizz");
     expect(decoded.actionsVersion).toBe(ACTION_SCHEMA_VERSION);
     expect(decoded.actions).toEqual(actions);
     expect(decoded.isDinoDepot).toBe(true);
@@ -176,6 +189,7 @@ describe("decodeCommitMessage", () => {
     expect(decoded.isDinoDepot).toBe(false);
     expect(decoded.subject).toBe("Update players.json");
     expect(decoded.actions).toEqual([]);
+    expect(decoded.actor).toBe("");
   });
 
   it("keeps what it understands from a newer action vocabulary", () => {

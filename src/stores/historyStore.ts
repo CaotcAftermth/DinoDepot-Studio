@@ -2,6 +2,8 @@ import { create } from "zustand";
 import { ipc } from "../services/ipc";
 import { asStudioError } from "../model/errors";
 import { buildHistory, type CommitSummary, type HistoryEntry } from "../model/history.git";
+import { formatActivityTime } from "../model/activity";
+import { exampleProjectActivityEvents, isExampleProject } from "../model/exampleProject";
 import { useProjectStore } from "./projectStore";
 
 /**
@@ -31,6 +33,10 @@ interface HistoryState {
   restore(entry: HistoryEntry): Promise<boolean>;
 }
 
+// Only newest request may update shared rows. Opening expanded history can
+// overlap Overview's initial 20-row request on a slow disk.
+let loadGeneration = 0;
+
 export const useHistoryStore = create<HistoryState>((set, get) => ({
   entries: [],
   loading: false,
@@ -38,9 +44,33 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
   restoring: "",
 
   async load(limit = 20) {
+    const generation = ++loadGeneration;
     const project = useProjectStore.getState();
     if (!project.dir) {
-      set({ entries: [], problem: "" });
+      set({ entries: [], loading: false, problem: "" });
+      return;
+    }
+    if (isExampleProject(project.settings)) {
+      const now = new Date();
+      const entries: HistoryEntry[] = exampleProjectActivityEvents(now).map((event) => {
+        const author = event.title.startsWith("RexOps") ? "RexOps" : "ExampleOwner";
+        const withoutAuthor = event.title.replace(/^(RexOps|ExampleOwner)\s+/, "");
+        return {
+          sha: `example-${event.id}`,
+          shortSha: event.id.slice(0, 7),
+          at: new Date(event.at).getTime(),
+          when: formatActivityTime(event.at, now),
+          author,
+          title: withoutAuthor.charAt(0).toUpperCase() + withoutAuthor.slice(1),
+          details: event.detail ? [event.detail] : [],
+          undescribed: 0,
+          kind: event.kind,
+          fromStudio: true,
+          isHead: true,
+          isPublish: event.kind === "publish",
+        };
+      });
+      set({ entries: entries.slice(0, limit), loading: false, problem: "" });
       return;
     }
     set({ loading: true });
@@ -50,20 +80,24 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
         branch: project.local?.source?.branch || "main",
         limit,
       });
-      set({ entries: buildHistory(commits, limit), problem: "" });
+      if (generation === loadGeneration) {
+        set({ entries: buildHistory(commits, limit), problem: "" });
+      }
     } catch (e) {
       // A project with no repository behind it has no history, which is the
       // normal state of a new one — not something to report as a fault. Only a
       // project that *is* connected gets an error message.
       const connected = Boolean(useProjectStore.getState().local?.source?.owner);
-      set({
-        entries: [],
-        problem: connected
-          ? asStudioError(e, "unknown", "The project history could not be read.").message
-          : "",
-      });
+      if (generation === loadGeneration) {
+        set({
+          entries: [],
+          problem: connected
+            ? asStudioError(e, "unknown", "The project history could not be read.").message
+            : "",
+        });
+      }
     } finally {
-      set({ loading: false });
+      if (generation === loadGeneration) set({ loading: false });
     }
   },
 

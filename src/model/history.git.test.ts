@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { encodeCommitMessage, StructuredActionSchema } from "./commitActions";
 import {
   buildHistory,
+  filterHistory,
+  historyAuthorLabel,
+  historyToCsv,
   isRestorable,
   restoreSubject,
   summarizeEntry,
@@ -42,6 +45,19 @@ describe("turning a commit into a row", () => {
   it("describes each change from the trailers", () => {
     const entry = toHistoryEntry(commit(), NOW);
     expect(entry.details).toEqual(["Changed interval on creature Rex"]);
+  });
+
+  it("uses Studio's authenticated GitHub username when recorded", () => {
+    const message = encodeCommitMessage({
+      projectId: "p1",
+      schemaVersion: 2,
+      operationId: "op-1",
+      actor: "ggfizz",
+      actions: [action("creature.updated", { id: "r1", label: "Rex" })],
+    });
+    const entry = toHistoryEntry(commit({ message, author: "DinoDepot Studio" }), NOW);
+    expect(entry.author).toBe("ggfizz");
+    expect(historyAuthorLabel(entry)).toBe("@ggfizz");
   });
 
   it("shows the time the way the activity list always has", () => {
@@ -186,6 +202,47 @@ describe("summarising a row", () => {
 
   it("is empty when there is nothing to say", () => {
     expect(summarizeEntry(toHistoryEntry(commit({ message: "Initial commit" }), NOW))).toBe("");
+  });
+});
+
+describe("expanded history", () => {
+  const entries = [
+    toHistoryEntry(
+      commit({
+        sha: "abc1234def",
+        author: "DinoDepot Studio",
+        message: encodeCommitMessage({
+          projectId: "p1",
+          schemaVersion: 2,
+          operationId: "op-1",
+          actor: "ggfizz",
+          actions: [action("creature.updated", { label: "Rex", fields: ["interval"] })],
+        }),
+      }),
+      NOW,
+    ),
+    toHistoryEntry(
+      commit({
+        sha: "def5678abc",
+        author: "Other Admin",
+        message: "Update players.json",
+      }),
+      NOW,
+    ),
+  ];
+
+  it("searches administrator, details and version together", () => {
+    expect(filterHistory(entries, "ggfizz interval")).toEqual([entries[0]]);
+    expect(filterHistory(entries, "def5678")).toEqual([entries[1]]);
+    expect(filterHistory(entries, "not present")).toEqual([]);
+  });
+
+  it("downloads readable, escaped CSV", () => {
+    const csv = historyToCsv(entries);
+    expect(csv).toContain('"Administrator","Summary","Details"');
+    expect(csv).toContain('"@ggfizz"');
+    expect(csv).toContain('"Changed interval on creature Rex"');
+    expect(csv.split("\r\n")).toHaveLength(3);
   });
 });
 

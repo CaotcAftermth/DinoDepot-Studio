@@ -60,6 +60,13 @@ import {
   MAP_EMOJI_PALETTE,
 } from "../components/EntityIcon";
 import { feedbackTarget } from "../model/feedback/targets";
+import { NormalizedNumberInput } from "../components/NormalizedNumberInput";
+import {
+  formatChance,
+  formatDuration,
+  parseChanceInput,
+  parseDurationInput,
+} from "../model/productionInput";
 
 export function SettingsPage() {
   const { settings, saveSettings } = useProjectStore();
@@ -526,21 +533,28 @@ function ProductionDefaultsCard({
       feedback={feedbackTarget("settings-defaults")}
     >
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Interval (seconds)">
-          <Input
-            type="number"
+        <Field
+          label="Interval (seconds)"
+          hint={formatDuration(draft.defaults.intervalSeconds)}
+        >
+          <NormalizedNumberInput
             value={draft.defaults.intervalSeconds}
-            onChange={(e) => set({ intervalSeconds: numOr(e.target.value, 300) })}
+            onCommit={(intervalSeconds) => set({ intervalSeconds })}
+            parse={parseDurationInput}
+            placeholder="60, 1min, or 1hr"
+            spellCheck={false}
           />
         </Field>
-        <Field label="Chance to produce">
-          <Input
-            type="number"
-            step="0.05"
-            min="0"
-            max="1"
+        <Field
+          label="Chance to produce"
+          hint={formatChance(draft.defaults.chanceToProduce)}
+        >
+          <NormalizedNumberInput
             value={draft.defaults.chanceToProduce}
-            onChange={(e) => set({ chanceToProduce: numOr(e.target.value, 1) })}
+            onCommit={(chanceToProduce) => set({ chanceToProduce })}
+            parse={parseChanceInput}
+            inputMode="decimal"
+            placeholder="0.1 or 10%"
           />
         </Field>
         <Field label="Quantity per dino">

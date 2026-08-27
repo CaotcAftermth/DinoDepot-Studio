@@ -18,9 +18,18 @@ import {
   PROJECTS_FOLDER_NAME,
   projectDirFor,
   projectsRootIn,
-  SANDBOX_PROJECT_NAME,
   saveProjectsRoot,
 } from "../services/projectsRoot";
+import {
+  EXAMPLE_PROJECT_CLUSTER,
+  EXAMPLE_PROJECT_NAME,
+  isExampleProjectName,
+  markExampleOfficialCatalog,
+  needsExampleOfficialCatalogUpgrade,
+  upgradeExampleProjectFiles,
+} from "../model/exampleProject";
+
+const RECENT_PROJECT_LIMIT = 5;
 
 export function ProjectHomePage() {
   const navigate = useNavigate();
@@ -46,6 +55,9 @@ export function ProjectHomePage() {
   /** Folders in the list that no longer hold a project. */
   const [missing, setMissing] = useState<Record<string, boolean>>({});
   const { enabled: feedbackEnabled, openFeedback } = useFeedback();
+  const shownRecents = recents
+    .filter((recent) => !isExampleProjectName(recent.name))
+    .slice(0, RECENT_PROJECT_LIMIT);
 
   const targetDir = projectDirFor(root, newName.trim());
   /**
@@ -75,7 +87,9 @@ export function ProjectHomePage() {
     let cancelled = false;
     void (async () => {
       await loadRecentProjects().catch(() => {});
-      const rows = useProjectStore.getState().recents;
+      const rows = useProjectStore
+        .getState()
+        .recents.slice(0, RECENT_PROJECT_LIMIT);
       const found = await Promise.all(
         rows.map((r) =>
           ipc<boolean>("project_exists", { dir: r.dir }).catch(() => true),
@@ -249,38 +263,51 @@ export function ProjectHomePage() {
     setCreating(true);
   }
 
-  /**
-   * A project to experiment in, in the ordinary projects folder.
-   *
-   * Deliberately not special: it is created and opened exactly like any other
-   * project, so anything learned in it transfers. Opened again once it exists
-   * rather than being made a second time.
-   */
-  async function handleSandbox() {
+  /** Opens the one reserved example, creating it only on first use. */
+  async function upgradeOpenedExample(dir: string) {
+    const state = useProjectStore.getState();
+    if (state.dir !== dir || !needsExampleOfficialCatalogUpgrade(state.settings)) return;
+    try {
+      const upgraded = upgradeExampleProjectFiles(state.files);
+      for (const [fileName, content] of Object.entries(upgraded)) {
+        await useProjectStore.getState().saveFile(
+          fileName as keyof typeof upgraded,
+          content,
+        );
+      }
+      await useProjectStore.getState().updateSettings(markExampleOfficialCatalog);
+      toast.info("Example project updated to Official ASA catalog entries.");
+    } catch (error) {
+      toast.error(
+        `Example opened, but its Official ASA examples could not be updated: ${error instanceof Error ? error.message : error}`,
+      );
+    }
+  }
+
+  async function handleExampleProject() {
     const base = await ensureRoot();
     if (!base) return;
-    const dir = projectDirFor(base, SANDBOX_PROJECT_NAME);
     setBusy(true);
     try {
+      const dir = projectDirFor(base, EXAMPLE_PROJECT_NAME);
       const exists = await ipc<boolean>("project_exists", { dir }).catch(
         () => false,
       );
       if (exists) {
         await handleOpen(dir);
+        await upgradeOpenedExample(dir);
         return;
       }
-      // Created empty for now. Seeding it with example sources, creatures and
-      // rules comes later; what matters today is that the welcome screen has
-      // somewhere to send an administrator who has nothing to open yet.
       await createProject(
         dir,
-        SANDBOX_PROJECT_NAME,
-        `${SANDBOX_PROJECT_NAME} Cluster`,
+        EXAMPLE_PROJECT_NAME,
+        EXAMPLE_PROJECT_CLUSTER,
+        { example: true },
       );
       navigate("/overview");
     } catch (e) {
       toast.error(
-        `Could not open the sandbox: ${e instanceof Error ? e.message : e}`,
+        `Could not open the example project: ${e instanceof Error ? e.message : e}`,
       );
     } finally {
       setBusy(false);
@@ -344,23 +371,23 @@ export function ProjectHomePage() {
               <Button onClick={() => handleOpen()} disabled={busy}>
                 Open project folder…
               </Button>
-              <Button onClick={() => void handleSandbox()} disabled={busy}>
-                Sandbox project
+              <Button onClick={() => void handleExampleProject()} disabled={busy}>
+                Example project
               </Button>
             </div>
             <p className="text-xs text-ink-400 mt-2">
-              The sandbox is an ordinary project to try things in — made in your
-              projects folder the first time you open it, and safe to break.
-              Nothing reaches a server until you publish it yourself.
+              Explore real Official ASA catalog entries with a guided walkthrough. The example
+              is created once in your projects folder and never connects to a
+              repository or publishes anything unless you configure it yourself.
             </p>
 
-            {recents.length > 0 && (
+            {shownRecents.length > 0 && (
               <div className="mt-5">
                 <div className="text-xs font-semibold text-ink-300 uppercase tracking-wide mb-2">
                   Recent projects
                 </div>
                 <div className="flex flex-col gap-1">
-                  {recents.map((r) => (
+                  {shownRecents.map((r) => (
                     <div
                       key={r.dir}
                       className="group flex items-center gap-1 rounded-md hover:bg-ink-800"

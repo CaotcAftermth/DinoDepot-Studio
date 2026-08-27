@@ -45,6 +45,8 @@ export const FEEDBACK_ATTR = {
   name: "data-feedback-name",
   area: "data-feedback-area",
   context: "data-feedback-context",
+  /** Stable visible label supplied by the shared Field wrapper. */
+  fieldName: "data-feedback-field-name",
   /** Marks a subtree the inspector must never offer, e.g. its own chrome. */
   ignore: "data-feedback-ignore",
 } as const;
@@ -148,8 +150,32 @@ export const FEEDBACK_TARGETS = {
   "app-shell": { name: "Application Shell", area: "app" },
   // --- Overview ----------------------------------------------------------
   overview: { name: "Overview", area: "overview" },
+  "overview-health-summary": { name: "Project Health", area: "overview" },
+  "overview-production-summary": {
+    name: "Production Rules Summary",
+    area: "overview",
+  },
+  "overview-remaps-summary": { name: "Creature Remaps Summary", area: "overview" },
+  "overview-cosmetics-summary": { name: "Cosmetics Summary", area: "overview" },
+  "overview-watched-mods-summary": { name: "Watched Mods Summary", area: "overview" },
+  "overview-content-sources-summary": {
+    name: "Content Sources Summary",
+    area: "overview",
+  },
+  "overview-publishing-summary": { name: "Publishing Summary", area: "overview" },
+  "overview-publishing-destination": {
+    name: "Publishing Destination",
+    area: "overview",
+  },
+  "overview-output-production": { name: "Passive Production Output", area: "overview" },
+  "overview-output-remaps": { name: "Creature Type Remaps Output", area: "overview" },
+  "overview-output-cosmetics": { name: "Custom Cosmetics Output", area: "overview" },
+  "overview-output-viewer-data": { name: "Cluster Viewer Data Output", area: "overview" },
+  "overview-output-viewer-page": { name: "Cluster Viewer Page Output", area: "overview" },
+  "overview-output-players": { name: "Player Data Output", area: "overview" },
   "overview-attention-card": { name: "Needs Attention", area: "overview" },
-  "overview-next-actions": { name: "Next Actions", area: "overview" },
+  "overview-next-actions": { name: "Overview Actions", area: "overview" },
+  "overview-recent-activity": { name: "Recent Activity", area: "overview" },
   // --- Production Rules --------------------------------------------------
   "production-rules": { name: "Production Rules", area: "production-rules" },
   "production-rule-card": { name: "Creature Rule", area: "production-rules" },

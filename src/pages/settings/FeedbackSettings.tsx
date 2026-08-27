@@ -6,6 +6,7 @@ import {
   FEEDBACK_CONFIG,
   canSubmitDirectly,
   effectiveConfig,
+  hasManagedFeedbackService,
   isUsableApiUrl,
 } from "../../model/feedback/config";
 import { feedbackTarget } from "../../model/feedback/targets";
@@ -20,11 +21,10 @@ import { toast } from "../../components/toast";
 /**
  * Where the Feedback Center is pointed, and whether it is on.
  *
- * The service address is here rather than baked into the build for a practical
- * reason: it is not a secret, it changes when the service is redeployed
- * somewhere else, and asking an administrator to recompile the application in
- * order to file a bug report would be an odd requirement for a bug reporting
- * feature.
+ * Official releases ship with a managed service address. It is shown as a
+ * connected capability, not an editable destination, because changing it
+ * would redirect diagnostics and screenshots. Development and self-hosted
+ * builds without a managed address retain the editor.
  *
  * With no address set, everything still works — the report is written, kept,
  * and opened on GitHub with the text filled in. That is a real route, not a
@@ -34,6 +34,7 @@ import { toast } from "../../components/toast";
 export function FeedbackSettings() {
   const store = useFeedbackStore();
   const config = effectiveConfig(store.settings);
+  const managedService = hasManagedFeedbackService();
   // The scope My Reports itself lists. The history file holds every report
   // this machine has made; a count of all of them promised a list that did
   // not match it.
@@ -141,7 +142,21 @@ export function FeedbackSettings() {
             </span>
           </Field>
 
-          {settled ? (
+          {managedService ? (
+            <Field label="Managed feedback service" interactiveLabel>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-sm text-ink-200">
+                  Connected to DinoDepot Feedback
+                </span>
+                <Badge tone="ok">Managed by this build</Badge>
+              </div>
+              <span className="block text-xs text-ink-400 mt-1">
+                Reports, diagnostics, and screenshots are sent to DinoDepot's
+                managed service. This release fixes the destination, so it cannot
+                be changed here.
+              </span>
+            </Field>
+          ) : settled ? (
             <Field label="Feedback service address" interactiveLabel>
               <div className="flex items-center gap-2">
                 <span className="mono text-sm text-ink-200 truncate flex-1 min-w-0">

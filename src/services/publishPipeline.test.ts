@@ -76,6 +76,7 @@ function localState(over: Partial<LocalProjectState> = {}): LocalProjectState {
   return LocalProjectStateSchema.parse({
     ...newLocalProjectState("p1", "C:\\proj", "GG Fizz"),
     githubAccountId: "9",
+    githubLogin: "ggfizz",
     source: {
       githubId: "1",
       owner: "ggfizz",
@@ -180,6 +181,7 @@ describe("a normal publish", () => {
     await publishProject(context().ctx);
     const decoded = decodeCommitMessage(commits[0]);
     expect(decoded.subject).toBe("Published the cluster viewer");
+    expect(decoded.actor).toBe("ggfizz");
     expect(decoded.actions[0].type).toBe("site.published");
   });
 

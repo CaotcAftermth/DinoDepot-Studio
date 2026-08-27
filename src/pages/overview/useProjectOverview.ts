@@ -11,6 +11,10 @@ import { buildOutputStates } from "../../model/outputs";
 import { githubReadiness } from "../../model/githubReadiness";
 import { buildOverview, type OverviewModel } from "../../model/projectOverview";
 import { recentActivity, type ActivityEvent } from "../../model/activity";
+import {
+  exampleProjectActivityEvents,
+  isExampleProject,
+} from "../../model/exampleProject";
 
 /** How many events Overview's Recent Activity shows. */
 const ACTIVITY_SHOWN = 8;
@@ -112,8 +116,19 @@ export function useProjectOverview(): ProjectOverview {
   );
 
   const activity = useMemo(
-    () => recentActivity(activityFile, ACTIVITY_SHOWN),
-    [activityFile],
+    () => {
+      if (!isExampleProject(settings)) return recentActivity(activityFile, ACTIVITY_SHOWN);
+      const mock = exampleProjectActivityEvents();
+      const mockIds = new Set(mock.map((event) => event.id));
+      return recentActivity(
+        {
+          ...activityFile,
+          events: [...activityFile.events.filter((event) => !mockIds.has(event.id)), ...mock],
+        },
+        ACTIVITY_SHOWN,
+      );
+    },
+    [activityFile, settings],
   );
 
   return {

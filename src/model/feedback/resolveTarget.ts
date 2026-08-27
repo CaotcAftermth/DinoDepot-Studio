@@ -77,6 +77,10 @@ const SEMANTIC_ROLES = new Set([
   "textbox",
 ]);
 
+/** Elements whose own visible text normally is their stable interface name. */
+const TEXT_NAMED_TAGS = new Set(["A", "BUTTON", "SUMMARY"]);
+const TEXT_NAMED_ROLES = new Set(["button", "link", "menuitem", "option", "tab"]);
+
 function isSemanticNode(node: TargetNode): boolean {
   const tag = (node.tagName ?? "").toUpperCase();
   const role = (node.getAttribute("role") ?? "").toLowerCase();
@@ -95,6 +99,17 @@ function fallbackName(node: TargetNode): string {
   return "Control";
 }
 
+/** Field label supplied by the nearest shared Field wrapper, if present. */
+function enclosingFieldName(node: TargetNode): string | null {
+  let current: TargetNode | null = node.parentElement;
+  for (let depth = 0; current && depth < 8; depth++) {
+    const name = current.getAttribute(FEEDBACK_ATTR.fieldName);
+    if (name) return name;
+    current = current.parentElement;
+  }
+  return null;
+}
+
 /**
  * A stable, visible name for an unregistered semantic control.
  *
@@ -102,11 +117,14 @@ function fallbackName(node: TargetNode): string {
  * rendered button text describe the interface; a field value is project data.
  */
 function semanticName(node: TargetNode): string {
+  const tag = (node.tagName ?? "").toUpperCase();
+  const role = (node.getAttribute("role") ?? "").toLowerCase();
   const candidates = [
     node.getAttribute("aria-label"),
     node.getAttribute("title"),
+    enclosingFieldName(node),
     node.getAttribute("placeholder"),
-    node.textContent,
+    TEXT_NAMED_TAGS.has(tag) || TEXT_NAMED_ROLES.has(role) ? node.textContent : null,
   ];
   for (const candidate of candidates) {
     const clean = String(candidate ?? "").replace(/\s+/g, " ").trim();
@@ -252,7 +270,9 @@ export function snapshotFor(
   let current: TargetNode | null = node;
   for (let depth = 0; current && depth < MAX_DEPTH; depth++) {
     const currentId = idOf(current);
-    if (currentId) {
+    // Application Shell surrounds every page. Keep it when selected directly,
+    // but omit it from every more-specific path where it adds no location.
+    if (currentId && (currentId !== "app-shell" || id === "app-shell")) {
       const currentName = nameOf(current, currentId);
       // A wrapper that repeats its child's name adds a line and no
       // information; the page target and its own page card often collide
@@ -266,7 +286,7 @@ export function snapshotFor(
   // An area label at the front so the trail reads as a location even when the
   // page itself was never given a target of its own.
   const label = areaLabel(area);
-  if (label && trail[0] !== label) trail.unshift(label);
+  if (label && !trail.includes(label)) trail.unshift(label);
 
   return {
     id,

@@ -319,6 +319,7 @@ export async function syncProject(context: SyncContext): Promise<SyncOutcome> {
         projectId: context.projectId,
         schemaVersion: context.schemaVersion,
         operationId,
+        actor: context.local.githubLogin,
         actions,
       });
 

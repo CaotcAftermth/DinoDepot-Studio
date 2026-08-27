@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { recordActivity, useDraftsStore } from "../stores/draftsStore";
 import { useProjectStore } from "../stores/projectStore";
 import {
@@ -672,6 +672,7 @@ function CatalogHealthBanner({
     [modSources],
   );
   const [open, setOpen] = useState(false);
+  const detailsId = useId();
 
   const total =
     duplicateClasses.length + duplicateIds.length + duplicateUrls.length;
@@ -681,6 +682,9 @@ function CatalogHealthBanner({
     <div className="mb-4 border border-amber-flag/30 bg-amber-flag/5 rounded-lg px-4 py-2.5">
       <button
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-controls={detailsId}
+        data-collapse-key="content-catalog-health"
         className="w-full flex items-center justify-between gap-3 cursor-pointer text-left"
       >
         <span className="text-sm text-amber-300">
@@ -700,7 +704,7 @@ function CatalogHealthBanner({
         </span>
       </button>
       {open && (
-        <div className="mt-3 pt-3 border-t border-amber-flag/20 text-xs space-y-2">
+        <div id={detailsId} className="mt-3 pt-3 border-t border-amber-flag/20 text-xs space-y-2">
           <p className="text-ink-400">
             Nothing was changed. Delete whichever entry is wrong, or move the
             class into the mod that really provides it.
@@ -2294,6 +2298,7 @@ function VariantGroup({
   rowProps: (row: RowData) => EntryRowProps;
 }) {
   const [open, setOpen] = useState(false);
+  const detailsId = useId();
   const primary = rows.find((r) => r.entry.name === base) ?? rows[0];
   // Prefer the resolved base creature's icon so a group of modded variants
   // still shows the vanilla artwork.
@@ -2303,6 +2308,9 @@ function VariantGroup({
     <div>
       <button
         onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-controls={detailsId}
+        data-collapse-key={`content-variants-${kind}-${baseBpPath ?? base}`}
         className="w-full flex items-center gap-2 py-1.5 cursor-pointer hover:bg-ink-850 rounded px-1"
       >
         <span className={cx("text-xs transition-transform", open && "rotate-90")}>
@@ -2316,7 +2324,7 @@ function VariantGroup({
         )}
       </button>
       {open && (
-        <div className="ml-7 flex flex-col divide-y divide-ink-800/60 border-l border-ink-700 pl-3 mb-1">
+        <div id={detailsId} className="ml-7 flex flex-col divide-y divide-ink-800/60 border-l border-ink-700 pl-3 mb-1">
           {rows.map((row) => (
             <EntryRow key={row.entry.id} {...rowProps(row)} />
           ))}

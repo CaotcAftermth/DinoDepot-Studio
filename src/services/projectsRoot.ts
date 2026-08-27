@@ -23,9 +23,6 @@ import { ipc } from "./ipc";
 /** The folder made inside whatever parent the administrator picks. */
 export const PROJECTS_FOLDER_NAME = "DinoDepot Studio Projects";
 
-/** The name of the throwaway project offered on the welcome screen. */
-export const SANDBOX_PROJECT_NAME = "Sandbox";
-
 const ROOT_KEY = "ddstudio.projectsRoot";
 
 /** Longest folder segment a project name is allowed to become. */

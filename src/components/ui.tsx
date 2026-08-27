@@ -162,7 +162,10 @@ export function Field({
 }) {
   const Tag = interactiveLabel ? "div" : "label";
   return (
-    <Tag className={cx("block", className)}>
+    <Tag
+      className={cx("block", className)}
+      data-feedback-field-name={typeof label === "string" ? label : undefined}
+    >
       <span className="block text-xs font-semibold text-ink-300 uppercase tracking-wide mb-1">
         {label}
       </span>
@@ -335,6 +338,7 @@ export function CollapsibleCard({
             Delete button is never one stray click away from a collapse. */}
         <button
           type="button"
+          data-collapse-key={prefKey}
           onClick={() => setOpen(!open)}
           aria-expanded={open}
           aria-controls={bodyId}

@@ -27,6 +27,12 @@ import {
 } from "../services/projectSession";
 import { newLocalProjectState } from "../model/localState";
 import { withManagedOfficialSettings } from "../services/officialContent";
+import {
+  exampleProjectFiles,
+  isExampleProject,
+  isExampleProjectName,
+  markExampleProject,
+} from "../model/exampleProject";
 
 export interface RecentProject {
   dir: string;
@@ -60,11 +66,19 @@ function loadRecents(): RecentProject[] {
     name: String((entry as RecentProject)?.name ?? ""),
     openedAt: String((entry as RecentProject)?.openedAt ?? ""),
     projectId: String((entry as RecentProject)?.projectId ?? ""),
-  }));
+  })).filter((entry) => !isExampleRecent(entry));
+}
+
+/** Includes numbered copies produced by older builds; none belong in recents. */
+function isExampleRecent(entry: Pick<RecentProject, "name">): boolean {
+  return isExampleProjectName(entry.name);
 }
 
 function saveRecents(recents: RecentProject[]) {
-  localStorage.setItem(RECENTS_KEY, JSON.stringify(recents.slice(0, 8)));
+  localStorage.setItem(
+    RECENTS_KEY,
+    JSON.stringify(recents.filter((entry) => !isExampleRecent(entry)).slice(0, 8)),
+  );
 }
 
 /**
@@ -134,7 +148,12 @@ interface ProjectState {
   saveHealth: SaveHealth;
   recents: RecentProject[];
 
-  createProject(dir: string, name: string, cluster: string): Promise<void>;
+  createProject(
+    dir: string,
+    name: string,
+    cluster: string,
+    options?: { example?: boolean },
+  ): Promise<void>;
   /** Reads a folder and reports what would happen, without changing anything. */
   inspect(dir: string): Promise<ProjectInspection>;
   /** Opens a project. `force` takes over a lock another instance holds. */
@@ -261,16 +280,29 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   saveHealth: HEALTHY,
   recents: loadRecents(),
 
-  async createProject(dir, name, cluster) {
+  async createProject(dir, name, cluster, options = {}) {
     await ipc("create_project_dir", { dir });
     const projectId = newId();
     // The managed Core Content pin is written with the very first settings
     // file, so no later asynchronous "add it if missing" pass can race an
     // administrator's own dependency write.
-    const settings = withManagedOfficialSettings(
+    let settings = withManagedOfficialSettings(
       defaultProjectSettings(name, cluster, projectId),
     );
+    if (options.example) settings = markExampleProject(settings);
     const content = `${JSON.stringify(settings, null, 2)}\n`;
+
+    // Seed files land before project.json, which is the backend's definition
+    // of "this folder is a project". A failed seed therefore cannot appear as
+    // a complete example that opens with half its teaching data missing.
+    const seededFiles = options.example ? exampleProjectFiles() : {};
+    for (const [fileName, seededContent] of Object.entries(seededFiles)) {
+      await ipc("save_project_file", {
+        dir,
+        fileName,
+        content: seededContent,
+      });
+    }
     await ipc("save_project_file", {
       dir,
       fileName: PROJECT_FILE.settings,
@@ -279,12 +311,12 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
 
     const local = newLocalProjectState(projectId, dir, name);
     await saveLocalState(local);
-    pushRecent(dir, name, projectId);
+    if (!options.example) pushRecent(dir, name, projectId);
     set({
       dir,
       settings,
       local,
-      files: { [PROJECT_FILE.settings]: content },
+      files: { ...seededFiles, [PROJECT_FILE.settings]: content },
       mode: "editable",
       readOnlyReason: "",
       lastMigration: null,
@@ -309,7 +341,9 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     const inspection = await inspectProject(dir);
     const opened = await openInspectedProject(inspection, options);
 
-    pushRecent(dir, opened.settings.name, opened.settings.projectId);
+    if (!isExampleProject(opened.settings)) {
+      pushRecent(dir, opened.settings.name, opened.settings.projectId);
+    }
     set({
       dir: opened.dir,
       settings: opened.settings,
@@ -433,6 +467,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     if (records.length === 0) return;
     const recents = records
       .filter((r) => r.localPath)
+      .filter((r) => !isExampleRecent(r))
       .slice(0, 8)
       .map((r) => ({
         dir: r.localPath,
