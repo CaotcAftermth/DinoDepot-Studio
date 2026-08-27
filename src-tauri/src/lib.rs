@@ -2,7 +2,8 @@ mod commands;
 
 use commands::{
     app_state, feedback, git, github, github_setup, icon_cache, icon_import, misc, mod_assets,
-    mod_discovery, package_http, package_library, project_io, project_lock, scraper, secrets,
+    mod_discovery, package_http, package_library, project_io, project_lock, rights_asset_cache,
+    scraper, secrets,
 };
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -76,6 +77,13 @@ pub fn run() {
             icon_cache::icon_cache_put,
             icon_cache::icon_cache_stats,
             icon_cache::icon_cache_clear,
+            rights_asset_cache::asset_cache_get,
+            rights_asset_cache::asset_cache_fetch_and_put,
+            rights_asset_cache::asset_cache_purge,
+            rights_asset_cache::registry_cache_get,
+            rights_asset_cache::registry_cache_put,
+            rights_asset_cache::registry_cache_delete,
+            rights_asset_cache::registry_fetch,
             github::github_test,
             github::github_get_file,
             github::github_put_file,

@@ -1,0 +1,25 @@
+{
+  "permissionId": "REDACTED-EXAMPLE-NOT-EVIDENCE",
+  "mod": {
+    "id": 0,
+    "name": "Redacted example",
+    "projectUrl": "https://example.invalid/mod"
+  },
+  "grantor": {
+    "displayName": "REDACTED",
+    "platform": "REDACTED"
+  },
+  "terms": {
+    "version": "DDS-ICON-PERMISSION-v1.0",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "scope": ["creature-icons"],
+    "desktopApp": true,
+    "webViewer": true,
+    "maxResolution": "160x160",
+    "formatConversion": ["webp"]
+  },
+  "requestedAt": "REDACTED",
+  "approvedAt": "REDACTED",
+  "authorityConfirmed": true,
+  "status": "active"
+}

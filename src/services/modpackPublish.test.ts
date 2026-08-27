@@ -26,7 +26,7 @@ describe("content-addressed modpack publication", () => {
       "versions/1.0.0/manifest.json",
     ]);
     expect(assembled.registryVersion?.manifest).toBe(
-      "000000-Your_Mod_Name/versions/1.0.0/manifest.json",
+      "0-Your_Mod_Name/versions/1.0.0/manifest.json",
     );
     expect(assembled.registryVersion?.integrity).toMatch(/^[a-f0-9]{64}$/);
   });
@@ -37,7 +37,7 @@ describe("content-addressed modpack publication", () => {
 
     const assembled = await assemblePack(pack, "");
 
-    expect(assembled.missingIcons).toEqual(["Missing.png"]);
+    expect(assembled.missingIcons).toEqual([]);
     expect(assembled.registryEntry).not.toBeNull();
     expect(assembled.files.map((file) => file.path)).toEqual([
       "modpack.json",
@@ -45,10 +45,10 @@ describe("content-addressed modpack publication", () => {
       "versions/1.0.0/manifest.json",
     ]);
     const legacy = JSON.parse(assembled.files[0].text ?? "") as { icons: object };
-    expect(Object.values(legacy.icons)).toEqual(["🦖"]);
+    expect(Object.values(legacy.icons)).toEqual([]);
   });
 
-  it("stores identical icon bytes once while retaining logical names", async () => {
+  it("emits no artwork even when legacy icon bytes are available", async () => {
     const png = Uint8Array.from([
       0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
     ]);
@@ -66,18 +66,14 @@ describe("content-addressed modpack publication", () => {
     );
     const manifest = JSON.parse(manifestFile?.text ?? "") as {
       formatVersion: number;
-      assets: { path: string; blob: string }[];
+      assets: unknown[];
     };
 
-    expect(manifest.formatVersion).toBe(3);
-    expect(manifest.assets.map((asset) => asset.path)).toEqual([
-      "assets/A.png",
-      "assets/B.png",
-    ]);
-    expect(new Set(manifest.assets.map((asset) => asset.blob)).size).toBe(1);
+    expect(manifest.formatVersion).toBe(4);
+    expect(manifest.assets).toEqual([]);
     expect(
-      assembled.files.filter((file) => file.path.startsWith("assets/sha256/")),
-    ).toHaveLength(1);
+      assembled.files.filter((file) => /\.(?:png|webp)$/i.test(file.path)),
+    ).toHaveLength(0);
   });
 
   it("merges exact versions without discarding history", () => {

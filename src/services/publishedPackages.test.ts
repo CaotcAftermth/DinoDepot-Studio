@@ -30,7 +30,7 @@ interface ManifestFile {
 }
 
 interface Manifest {
-  formatVersion: 2 | 3;
+  formatVersion: 2 | 3 | 4;
   packageId: string;
   version: string;
   content: ManifestFile;
@@ -48,6 +48,9 @@ function verify(manifestPath: string, expectedIntegrity: string): string[] {
   }
   const manifest = JSON.parse(raw.toString("utf8")) as Manifest;
   const dir = path.dirname(manifestPath);
+  if (manifest.formatVersion === 4 && (manifest.assets ?? []).length !== 0) {
+    problems.push("package v4 contains assets");
+  }
 
   for (const file of [manifest.content, ...(manifest.assets ?? [])]) {
     const isV3Asset = manifest.formatVersion === 3 && file !== manifest.content;
@@ -66,7 +69,11 @@ function verify(manifestPath: string, expectedIntegrity: string): string[] {
       ? path.join(dir, "..", "..", storedPath ?? "")
       : path.join(dir, file.path);
     if (!existsSync(filePath)) {
-      problems.push(`missing file ${file.path}`);
+      // v2/v3 artwork is optional quarantined compatibility input. Data must
+      // remain installable after those binaries are removed.
+      if (file === manifest.content || manifest.formatVersion === 4) {
+        problems.push(`missing file ${file.path}`);
+      }
       continue;
     }
     const bytes = readFileSync(filePath);
@@ -83,7 +90,9 @@ function verify(manifestPath: string, expectedIntegrity: string): string[] {
   const assets = new Set(
     (manifest.assets ?? []).map((asset) => asset.path.toLowerCase()),
   );
-  for (const [key, value] of Object.entries(content.icons ?? {})) {
+  for (const [key, value] of Object.entries(
+    manifest.formatVersion === 4 ? (content.icons ?? {}) : {},
+  )) {
     if (typeof value !== "string" || !value.startsWith("file:")) continue;
     if (!assets.has(value.slice(5).toLowerCase())) {
       problems.push(`icon ${key} references an asset absent from the manifest`);
@@ -109,6 +118,16 @@ describe("published official package", () => {
         (entry) => entry.version === index.package.version,
       ),
     ).toBe(true);
+  });
+
+  it("publishes current official content as data-only package v4", () => {
+    const manifest = JSON.parse(
+      readFileSync(path.join(root, "Official_Icons", index.package.versions.find(
+        (entry) => entry.version === index.package.version,
+      )!.manifest), "utf8"),
+    ) as Manifest;
+    expect(manifest.formatVersion).toBe(4);
+    expect(manifest.assets ?? []).toEqual([]);
   });
 
   it.each(index.package.versions.map((entry) => [entry.version, entry] as const))(

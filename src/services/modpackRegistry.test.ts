@@ -4,11 +4,7 @@ import {
   ModpackSchema,
   type RegistryEntry,
 } from "../model/modpack";
-import {
-  fetchPackIcons,
-  fetchRegistry,
-  registryPackUrl,
-} from "./modpackRegistry";
+import { fetchRegistry, registryPackUrl } from "./modpackRegistry";
 
 function json(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), {
@@ -66,7 +62,7 @@ describe("unindexed registry compatibility", () => {
   });
 });
 
-describe("legacy icon directory compatibility", () => {
+describe("legacy registry compatibility", () => {
   it("exposes the exact compatibility URL used for cache reconstruction", () => {
     const registry = defaultModpackRegistry();
     expect(
@@ -81,45 +77,6 @@ describe("legacy icon directory compatibility", () => {
     );
   });
 
-  it("falls back from lowercase icons to the existing uppercase directory", async () => {
-    const registry = defaultModpackRegistry();
-    const pack = ModpackSchema.parse({
-      meta: { id: "pack", name: "Pack" },
-      icons: { "/m/c.c": "file:Creature.png" },
-    });
-    const entry: RegistryEntry = {
-      id: "pack",
-      name: "Pack",
-      version: "1.0.0",
-      updatedAt: "",
-      author: "",
-      description: "",
-      curseforgeId: "",
-      dir: "123-Pack",
-      file: "",
-      creatureCount: 0,
-      itemCount: 0,
-    };
-    const fetch = vi.fn(async (input: string | URL | Request) => {
-      const url = String(input);
-      if (url.includes("/icons/")) return new Response(null, { status: 404 });
-      if (url.includes("/Icons/")) {
-        return new Response(new Uint8Array([0x89, 0x50, 0x4e, 0x47]), {
-          status: 200,
-          headers: { "content-type": "image/png" },
-        });
-      }
-      return new Response(null, { status: 404 });
-    });
-    vi.stubGlobal("fetch", fetch);
-
-    const result = await fetchPackIcons(registry, entry, pack);
-
-    expect(result.missing).toEqual([]);
-    expect(result.icons).toEqual([
-      { name: "Creature.png", contentB64: "iVBORw==" },
-    ]);
-  });
 });
 
 describe("published modpack registry index", () => {

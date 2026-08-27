@@ -1,5 +1,4 @@
 import {
-  iconBaseName,
   ModpackSchema,
   PACK_FILE,
   PACK_ICONS_DIR,
@@ -11,9 +10,8 @@ import {
   type RegistryVersion,
 } from "../model/modpack";
 import { ipc } from "./ipc";
-import type { FetchedIcon, PackIconFetchResult } from "./modpackRegistry";
+import type { PackIconFetchResult } from "./modpackRegistry";
 import {
-  packageBytesToBase64,
   packageHttpGet,
   packageHttpText,
 } from "./packageHttp";
@@ -38,7 +36,7 @@ export interface PackSource {
   pack: Modpack;
   /** Where it came from, for the confirmation line. */
   from: string;
-  /** Icon images, fetched only once the admin commits to installing. */
+  /** Quarantined legacy artwork report; compatibility sources return no bytes. */
   icons: () => Promise<PackIconFetchResult>;
 }
 
@@ -249,7 +247,7 @@ export async function packFromUrl(
   input: string,
   registry: ModpackRegistry,
 ): Promise<PackSource> {
-  const { packUrl, iconsBase } = resolvePackUrls(input, registry);
+  const { packUrl } = resolvePackUrls(input, registry);
 
   let res: Awaited<ReturnType<typeof packageHttpGet>>;
   try {
@@ -276,7 +274,7 @@ export async function packFromUrl(
   return {
     pack,
     from: packUrl,
-    icons: () => fetchIconsFrom(iconsBase, pack),
+    icons: async () => ({ icons: [], missing: packIconFiles(pack) }),
   };
 }
 
@@ -290,8 +288,11 @@ export async function packFromFile(path: string): Promise<PackSource> {
     throw new Error("That file is not valid JSON");
   }
   const pack = parsePack(raw, path);
-  const dir = path.replace(/[/\\][^/\\]+$/, "");
-  return { pack, from: path, icons: () => readIconsBeside(dir, pack) };
+  return {
+    pack,
+    from: path,
+    icons: async () => ({ icons: [], missing: packIconFiles(pack) }),
+  };
 }
 
 function parsePack(raw: unknown, where: string): Modpack {
@@ -304,74 +305,4 @@ function parsePack(raw: unknown, where: string): Modpack {
     );
   }
   return parsed.data;
-}
-
-/**
- * Icon images under a base URL. A missing icon costs that one image rather
- * than the install — the entry still lands, with its category emoji.
- */
-export async function fetchIconsFrom(
-  base: string,
-  pack: Modpack,
-): Promise<PackIconFetchResult> {
-  const icons: FetchedIcon[] = [];
-  const missing: string[] = [];
-  for (const wanted of packIconFiles(pack)) {
-    const name = iconBaseName(wanted);
-    const bases = [base];
-    if (/\/icons$/i.test(base)) {
-      bases.push(base.replace(/\/icons$/i, "/Icons"));
-    }
-    let found = false;
-    for (const candidate of bases) {
-      try {
-        const res = await packageHttpGet(
-          `${candidate}/${encodeURIComponent(name)}`,
-        );
-        if (res.status < 200 || res.status >= 300) continue;
-        icons.push({ name, contentB64: packageBytesToBase64(res.bytes) });
-        found = true;
-        break;
-      } catch {
-        /* try the compatibility spelling */
-      }
-    }
-    if (!found) missing.push(name);
-  }
-  return { icons, missing };
-}
-
-/**
- * Icon images beside a pack file: in its `icons/` folder, or failing that
- * loose next to it, which is how a hand-assembled pack usually arrives.
- */
-async function readIconsBeside(
-  dir: string,
-  pack: Modpack,
-): Promise<PackIconFetchResult> {
-  const sep = dir.includes("\\") && !dir.includes("/") ? "\\" : "/";
-  const icons: FetchedIcon[] = [];
-  const missing: string[] = [];
-  for (const wanted of packIconFiles(pack)) {
-    const name = iconBaseName(wanted);
-    let found = false;
-    for (const folder of [
-      `${dir}${sep}${PACK_ICONS_DIR}`,
-      `${dir}${sep}Icons`,
-      dir,
-    ]) {
-      try {
-        const contentB64 = await ipc<string>("read_file_b64", {
-          path: `${folder}${sep}${name}`,
-        });
-        icons.push({ name, contentB64 });
-        found = true;
-        break;
-      } catch {
-        /* try the next place it could reasonably be */
-      }
-    }
-    if (!found) missing.push(name);
-  }
-  return { icons, missing };
 }

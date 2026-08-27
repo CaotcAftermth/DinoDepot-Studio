@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+throw new Error(
+  "Artwork-bearing official packages are retired. Run npm run build:official-data instead.",
+);
+
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";

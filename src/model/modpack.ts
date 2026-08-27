@@ -12,6 +12,7 @@ import {
 import { CreatureInfoSchema, type CreatureInfo } from "./creatureInfo";
 import { normalizeCurseforgeId } from "./catalogDuplicates";
 import { STUDIO_REPO } from "./studio";
+import { assignCanonicalIconKeys } from "./iconKey";
 
 /**
  * Modpacks: one mod's catalogued content as a single shareable file.
@@ -28,7 +29,7 @@ import { STUDIO_REPO } from "./studio";
  * new home for the data.
  */
 
-export const MODPACK_FORMAT = 1;
+export const MODPACK_FORMAT = 2;
 
 /**
  * The registry the app reads published packs from. Overridable in Settings so
@@ -82,7 +83,7 @@ export const ModpackMetaSchema = z.object({
 export type ModpackMeta = z.infer<typeof ModpackMetaSchema>;
 
 export const ModpackSchema = z.object({
-  formatVersion: z.number().int().min(1).default(MODPACK_FORMAT),
+  formatVersion: z.number().int().min(1).default(1),
   meta: ModpackMetaSchema,
   iniNotes: z.string().default(""),
   iniSettings: z.array(IniSettingSchema).default([]),
@@ -99,6 +100,33 @@ export const ModpackSchema = z.object({
   variantParents: z.record(z.string(), z.string()).default({}),
   itemInfo: z.record(z.string(), ItemInfoSchema).default({}),
   creatureInfo: z.record(z.string(), CreatureInfoSchema).default({}),
+}).superRefine((pack, context) => {
+  if (pack.formatVersion < 2) return;
+  if (!/^(?:0|[1-9][0-9]*)$/.test(pack.meta.curseforgeId)) {
+    context.addIssue({
+      code: "custom",
+      path: ["meta", "curseforgeId"],
+      message: "Data-only modpacks require the authoritative numeric Mod ID",
+    });
+  }
+  if (Object.keys(pack.icons).length > 0) {
+    context.addIssue({
+      code: "custom",
+      path: ["icons"],
+      message: "Modpack format 2 is data-only and cannot contain icon references",
+    });
+  }
+  for (const [kind, entries] of [["creatures", pack.creatures], ["items", pack.items]] as const) {
+    entries.forEach((entry, index) => {
+      if (!entry.iconKey) {
+        context.addIssue({
+          code: "custom",
+          path: [kind, index, "iconKey"],
+          message: "Data-only modpack entries require iconKey",
+        });
+      }
+    });
+  }
 });
 export type Modpack = z.infer<typeof ModpackSchema>;
 
@@ -119,8 +147,8 @@ export const RegistryEntrySchema = z.object({
   description: z.string().default(""),
   curseforgeId: z.string().default(""),
   /**
-   * Folder inside the registry holding `modpack.json` and `icons/`. Preferred
-   * layout — a pack with icons cannot be a single file.
+   * Folder inside the registry holding the data-only `modpack.json` and exact
+   * version package. Numeric CurseForge/ASA Mod ID remains authoritative.
    */
   dir: z.string().default(""),
   /**
@@ -141,7 +169,7 @@ export const RegistryEntrySchema = z.object({
         integrity: z.string().regex(/^[a-f0-9]{64}$/i).default(""),
         publishedAt: z.string().default(""),
         /** Storage format of this exact version; absent historical rows are v2. */
-        packageFormat: z.union([z.literal(2), z.literal(3)]).optional(),
+        packageFormat: z.union([z.literal(2), z.literal(3), z.literal(4)]).optional(),
         /** Earliest Studio release that understands this package format. */
         minStudioVersion: z.string().optional(),
       }),
@@ -191,6 +219,7 @@ export const PACK_ICONS_DIR = "icons";
  * actually reference it. Emoji and remote URLs need no file and are skipped.
  */
 export function packIconFiles(pack: Modpack): string[] {
+  if (pack.formatVersion >= 2) return [];
   const files = new Set<string>();
   for (const value of Object.values(pack.icons)) {
     if (value.startsWith("file:")) files.add(value.slice(5));
@@ -314,6 +343,12 @@ export function sourceToModpack(
   meta: Partial<ModpackMeta> = {},
 ): Modpack {
   const paths = sourcePaths(source);
+  const modId = source.curseforgeId.trim();
+  if (!/^(?:0|[1-9][0-9]*)$/.test(modId)) {
+    throw new Error(`${source.name} needs its numeric ASA Mod ID before export`);
+  }
+  const creatures = assignCanonicalIconKeys(source.creatures, `mod:${modId}:creature`);
+  const items = assignCanonicalIconKeys(source.items, `mod:${modId}:item`);
   return ModpackSchema.parse({
     formatVersion: MODPACK_FORMAT,
     meta: {
@@ -333,17 +368,9 @@ export function sourceToModpack(
     // The Build INI composer's working state is this cluster's in-progress
     // choices, not documentation of the mod — it stays behind.
     iniSettings: source.iniSettings.map((s) => ({ ...s, added: false })),
-    creatures: source.creatures,
-    items: source.items,
-    // Local icons are rewritten to bare file names: the exporting project may
-    // keep them in nested folders, but the v1 compatibility alias carries them
-    // flat in icons/. V2 keeps the same bytes inside its managed package root.
-    icons: Object.fromEntries(
-      Object.entries(slice(catalog.icons, paths)).map(([key, value]) => [
-        key,
-        value.startsWith("file:") ? `file:${iconBaseName(value.slice(5))}` : value,
-      ]),
-    ),
+    creatures,
+    items,
+    icons: {},
     notes: slice(catalog.notes, paths),
     maps: slice(catalog.maps, paths),
     variantParents: slice(catalog.variantParents, paths),
@@ -582,14 +609,14 @@ export function applyModpack(
       // Dropped outright rather than conditionally: with `keepLocalEdits`
       // off, an incoming row would otherwise replace the administrator's own
       // assignment with a file reference the project cannot resolve.
-      icons: merge(
-        catalog.icons,
-        Object.fromEntries(
-          Object.entries(pack.icons).filter(
-            ([, value]) => !value.startsWith("file:"),
-          ),
-        ),
-      ),
+      icons: pack.formatVersion < 2
+        ? merge(
+            catalog.icons,
+            Object.fromEntries(
+              Object.entries(pack.icons).filter(([, value]) => !value.startsWith("file:")),
+            ),
+          )
+        : catalog.icons,
       notes: merge(catalog.notes, pack.notes),
       maps: merge(catalog.maps, pack.maps),
       variantParents: merge(catalog.variantParents, pack.variantParents),
@@ -629,7 +656,7 @@ export function templateModpack(): Modpack {
       updatedAt: new Date().toISOString().slice(0, 10),
       author: "Your name or Discord handle",
       description: "One or two lines on what this mod adds.",
-      curseforgeId: "000000",
+      curseforgeId: "0",
       url: "https://www.curseforge.com/ark-survival-ascended/mods/your-mod",
       docsUrl: "https://docs.example.com/your-mod",
       discordUrl: "https://discord.gg/yourinvite",
@@ -651,10 +678,10 @@ export function templateModpack(): Modpack {
       },
     ],
     creatures: [
-      { id: "example-creature", name: "Example Creature", bpPath: creaturePath },
+      { id: "example-creature", name: "Example Creature", bpPath: creaturePath, iconKey: "mod:0:creature:example-creature" },
     ],
-    items: [{ id: "example-item", name: "Example Item", bpPath: itemPath }],
-    icons: { [normalizeBpPath(creaturePath)]: "🦖" },
+    items: [{ id: "example-item", name: "Example Item", bpPath: itemPath, iconKey: "mod:0:item:example-item" }],
+    icons: {},
     notes: {},
     maps: {},
     variantParents: {},
@@ -724,33 +751,31 @@ export function templateModpack(): Modpack {
 export function templateReadme(): string {
   return `# Dino Depot modpack
 
-One mod's catalogued content — creatures, items, icons, INI settings and the
-taming write-ups — as a folder other clusters can install in one click.
+One mod's catalogued data — creatures, items, INI settings and taming
+write-ups — as a folder other clusters can install in one click.
+
+Format 2 is data-only. It contains canonical \`iconKey\` identities, never
+artwork bytes, URLs, or local paths. DinoDepot resolves approved artwork from
+the rights registry at runtime and otherwise uses bundled placeholders.
+The compatibility alias is \`modpack.json\`.
 
 ## Layout
 
     <curseforgeId>-<Mod_Name>/
       modpack.json                 latest-version compatibility alias
-      icons/                       compatibility icon images
       versions/<exact-version>/
-        manifest.json              identity, hashes, sizes, asset list
+        manifest.json              format 4 identity and content hash
         content.json               canonical package content
-        assets/                    immutable package-owned images
-
-An icon in \`modpack.json\` is written \`"file:Rex.webp"\` and normally has a
-matching \`icons/Rex.webp\`. WebP is preferred and PNG is accepted. Emoji
-(\`"🦖"\`) and full URLs need no file. A missing or unsupported optional image
-is omitted during packaging, and that entry uses DinoDepot's default icon.
 
 Studio generates the immutable \`versions/\` files and updates the registry
-index when it exports or submits a pack. Existing clients continue to
-read \`modpack.json\` and \`icons/\`; new clients pin the exact manifest.
+index when it exports or submits a pack. Legacy packs remain importable, but
+their optional image files are quarantined and never enter new exports.
 
 ## Building one
 
 The quickest route is to catalogue the mod inside Dino Depot Production Studio
 as you normally would, then use **Content Sources → the mod → Export modpack…**.
-That writes this whole folder, icons included, and can open the pull request
+That writes this whole data-only folder and can open the pull request
 for you.
 
 Editing by hand works too. The example entries show the shape of each section —

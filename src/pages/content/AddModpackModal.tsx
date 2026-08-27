@@ -29,6 +29,7 @@ import {
   applyModpack,
   compareVersions,
   matchModpackSource,
+  packIconFiles,
   registryVersion,
   searchRegistry,
   templateModpack,
@@ -39,7 +40,6 @@ import {
 } from "../../model/modpack";
 import {
   fetchPack,
-  fetchPackIcons,
   fetchRegistry,
   registryBrowseUrl,
   registryPackUrl,
@@ -74,14 +74,6 @@ import { useDraftsStore } from "../../stores/draftsStore";
 import { openExternal } from "../../services/openExternal";
 import { shortClassName } from "../../services/spawnCommands";
 import { lookupModByProjectId, type ModLookup } from "../../services/scraper";
-import {
-  iconFileStem,
-  modFolderPath,
-  writeProjectIcon,
-  type ModTexture,
-} from "../../services/modAssets";
-import { TexturePickerModal } from "./TexturePickerModal";
-import { IconValue } from "../../components/EntityIcon";
 import { pickFile, pickFolder, pickSavePath } from "../../services/dialogs";
 import { ipc, isTauri } from "../../services/ipc";
 import {
@@ -220,7 +212,7 @@ function usePackageInstall({
    *
    * One path for all three routes — the search list, a pasted link, a file on
    * disk — so a pack picked up from a pull request lands exactly as one from
-   * the index does, including its icons and the "keep what you wrote" rule.
+   * the index does, including artwork quarantine and the "keep what you wrote" rule.
    */
   async function installFrom(
     key: string,
@@ -548,7 +540,7 @@ function RegistryTab({
       const pack = await fetchPack(registry, entry);
       return {
         pack,
-        icons: () => fetchPackIcons(registry, entry, pack),
+        icons: async () => ({ icons: [], missing: packIconFiles(pack) }),
         legacySource: { url: registryPackUrl(registry, entry) },
       };
     });
@@ -741,17 +733,6 @@ function DiscoverTab({
     InstalledPackageInfo[]
   >([]);
   const [packageNotice, setPackageNotice] = useState("");
-  const projectDir = useProjectStore((s) => s.dir);
-  const imagesDirOverride = useProjectStore((s) => s.local?.imagesDir) ?? "";
-  /** Icons chosen during review, by normalized blueprint path. */
-  const [chosenIcons, setChosenIcons] = useState<Record<string, string>>({});
-  /** The entry a picker is open for, if any. */
-  const [picker, setPicker] = useState<{
-    entry: CatalogEntry;
-    modDir: string;
-    modName: string;
-    shortName: string;
-  } | null>(null);
 
   const setExclusion = useCallback((paths: string[], drop: boolean) => {
     setExcluded((prev) => {
@@ -952,18 +933,6 @@ function DiscoverTab({
       }
       setExcluded(seeded);
       setExpanded(new Set());
-      // Icons this project already assigned to these paths. Without this a
-      // rescan showed every entry as though it had never been given one, and
-      // the work looked lost.
-      const assigned: Record<string, string> = {};
-      for (const plan of next) {
-        for (const entry of [...plan.mod.creatures, ...plan.mod.items]) {
-          const key = normalizeBpPath(entry.bpPath);
-          const icon = catalog.icons[key];
-          if (icon) assigned[key] = icon;
-        }
-      }
-      setChosenIcons(assigned);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -996,20 +965,6 @@ function DiscoverTab({
       creatures += kept(plan.mod.creatures);
       items += kept(plan.mod.items);
       if (!firstSource) firstSource = { id: result.sourceId, name: plan.mod.name };
-    }
-
-    // Icons picked during review are project-owned overrides, so they land in
-    // the catalog beside the entries they were chosen for — but only for the
-    // entries actually being catalogued. An icon chosen and then unticked
-    // would otherwise leave a row keyed by a path no source claims, which
-    // publishing reports as missing artwork forever after.
-    const keptIcons = Object.fromEntries(
-      Object.entries(chosenIcons).filter(
-        ([path]) => !excluded.has(normalizeBpPath(path)),
-      ),
-    );
-    if (Object.keys(keptIcons).length > 0) {
-      next = { ...next, icons: { ...next.icons, ...keptIcons } };
     }
 
     const discoveredCatalog = next;
@@ -1364,22 +1319,6 @@ function DiscoverTab({
                       entries={entries}
                       excluded={excluded}
                       onSetExclusion={setExclusion}
-                      icons={chosenIcons}
-                      onPickIcon={
-                        root && projectDir
-                          ? (entry) =>
-                              setPicker({
-                                entry,
-                                modDir: modFolderPath(
-                                  root,
-                                  mod.projectId,
-                                  mod.fileId,
-                                ),
-                                modName: mod.name,
-                                shortName: mod.shortName,
-                              })
-                          : null
-                      }
                     />
                   ) : null,
                 )}
@@ -1398,32 +1337,10 @@ function DiscoverTab({
           />
         )}
 
-        {picker && projectDir && (
-          <TexturePickerModal
-            modDir={picker.modDir}
-            modName={picker.modName}
-            entryName={picker.entry.name}
-            onClose={() => setPicker(null)}
-            onPick={async (
-              texture: ModTexture,
-              pngB64: string,
-              invert: boolean,
-            ) => {
-              const name = await writeProjectIcon(
-                projectDir,
-                imagesDirOverride,
-                iconFileStem(picker.shortName, picker.entry.name),
-                pngB64,
-                invert,
-              );
-              setChosenIcons((prev) => ({
-                ...prev,
-                [normalizeBpPath(picker.entry.bpPath)]: `file:${name}`,
-              }));
-              toast.success(`${texture.name} saved as ${name}`);
-            }}
-          />
-        )}
+        <div className="border border-ink-700 rounded-lg p-3 text-xs text-ink-400">
+          <span className="font-medium text-ink-200">Artwork:</span>{" "}
+          Permission not established. DDS placeholders will be used; this does not block content creation.
+        </div>
 
         <div className="flex items-center justify-between gap-2">
           <p className="text-xs text-ink-400">
@@ -1680,16 +1597,10 @@ function EntryReviewList({
   entries,
   excluded,
   onSetExclusion,
-  icons,
-  onPickIcon,
 }: {
   entries: CatalogEntry[];
   excluded: Set<string>;
   onSetExclusion: (paths: string[], drop: boolean) => void;
-  /** Icons chosen during this review, by normalized blueprint path. */
-  icons: Record<string, string>;
-  /** Null when this mod's artwork cannot be read on this machine. */
-  onPickIcon: ((entry: CatalogEntry) => void) | null;
 }) {
   const [filter, setFilter] = useState("");
 
@@ -1747,30 +1658,6 @@ function EntryReviewList({
                 checked={!dropped}
                 onChange={() => onSetExclusion([entry.bpPath], !dropped)}
               />
-              {onPickIcon && (
-                <button
-                  type="button"
-                  title="Choose this entry's icon from the mod's own artwork"
-                  className="shrink-0 w-7 h-7 rounded border border-ink-700 hover:border-accent-500 flex items-center justify-center overflow-hidden cursor-pointer"
-                  onClick={(event) => {
-                    // Inside the row's label, so a click would otherwise tick
-                    // the checkbox on its way through.
-                    event.preventDefault();
-                    event.stopPropagation();
-                    onPickIcon(entry);
-                  }}
-                >
-                  {icons[normalizeBpPath(entry.bpPath)] ? (
-                    <IconValue
-                      icon={icons[normalizeBpPath(entry.bpPath)]}
-                      size={22}
-                      fallback="🖼"
-                    />
-                  ) : (
-                    <span className="text-xs text-ink-600">+</span>
-                  )}
-                </button>
-              )}
               {/* Same shape as the Content Sources entry list: the name is
                   what is being decided about, the class is context, and the
                   full blueprint path is a hover away rather than in the way. */}
@@ -2069,7 +1956,7 @@ function TemplateTab({ registry }: { registry: ModpackRegistry }) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-ink-300">
-        A modpack is one mod's catalogued content — creatures, items, icons,
+        A modpack is one mod's catalogued data — creatures, items,
         INI settings and the taming write-ups — in a single file. Publishing
         one means the next admin running this mod adds it in a click instead of
         cataloguing it again.

@@ -1,6 +1,7 @@
 import officialData from "../assets/catalog/official-asa.json";
 import { normalizeBpPath, pathsOf } from "./catalog";
 import type { CatalogEntry, CatalogFile, ContentSource } from "./catalog";
+import { assignCanonicalIconKeys } from "./iconKey";
 
 /**
  * The bundled official ASA content source, compiled from ark.wiki.gg by
@@ -46,12 +47,17 @@ interface RawEntry {
   stack?: number;
 }
 
-function toEntries(raw: RawEntry[], prefix: string): CatalogEntry[] {
-  return raw.map((e, i) => ({
+function toEntries(
+  raw: RawEntry[],
+  prefix: string,
+  type: "creature" | "item",
+): CatalogEntry[] {
+  const entries = raw.map((e, i) => ({
     id: `${prefix}-${i}`,
     name: e.name,
     bpPath: e.bpPath,
   }));
+  return assignCanonicalIconKeys(entries, `official:${type}`);
 }
 
 /**
@@ -87,8 +93,8 @@ export const officialSource: ContentSource = {
   enabled: true,
   removed: false,
   notes: `Bundled from ${officialData.source} (${officialData.generatedAt.slice(0, 10)})`,
-  creatures: toEntries(officialData.creatures as RawEntry[], "offc"),
-  items: toEntries(officialData.items as RawEntry[], "offi"),
+  creatures: toEntries(officialData.creatures as RawEntry[], "offc", "creature"),
+  items: toEntries(officialData.items as RawEntry[], "offi", "item"),
 };
 
 export const CATEGORY_EMOJI: Record<string, string> = {

@@ -1,9 +1,12 @@
 import { CreatureRule, ProductionDraft } from "../model/production";
 import {
   buildCatalogIndex,
+  assignedIconKey,
+  catalogProjectAssets,
   CatalogFile,
   normalizeBpPath,
 } from "../model/catalog";
+import { iconSlug, parseIconKey } from "../model/iconKey";
 import {
   effectiveOfficialSource,
   fallbackIcon,
@@ -104,6 +107,7 @@ export interface ViewerCreature {
   name: string;
   category: string;
   icon: string;
+  iconKey: string;
   /** Relative image path under the published images/ folder, when available. */
   img: string | null;
   /** Base creature this is a variant of — drives "Related variants". */
@@ -141,6 +145,7 @@ export interface ViewerDropEntry {
   name: string;
   img: string | null;
   icon: string;
+  iconKey: string;
   qty: string;
   /** Only meaningful for random loot; empty elsewhere. */
   chance: string;
@@ -155,6 +160,7 @@ export interface ViewerEffectItem {
   name: string;
   img: string | null;
   icon: string;
+  iconKey: string;
 }
 
 export interface ViewerEffectRow {
@@ -184,6 +190,7 @@ export interface ViewerItem {
   name: string;
   category: string;
   icon: string;
+  iconKey: string;
   img: string | null;
   info: string;
   /** Item type, as recorded or as the bundled wiki data has it. */
@@ -253,6 +260,13 @@ export function serializeViewerData(
 
   /** Image match with variant inheritance and placeholder fallback. */
   function imgOf(kind: "creatures" | "items", bpPath: string, name: string): string | null {
+    const parsed = parseIconKey(iconKeyOf(kind, bpPath));
+    if (parsed?.namespace === "project") {
+      return catalogProjectAssets(catalog)[parsed.assetId] ?? null;
+    }
+    // Schema-2 official/mod artwork resolves from the public rights registry
+    // at viewer runtime. It is never embedded into the published project.
+    if (catalog.schemaVersion === 2) return null;
     const own = matchImage(imageIndex, kind, [name, classCandidate(bpPath)]);
     if (own) return own;
     if (kind === "creatures") {
@@ -301,6 +315,20 @@ export function serializeViewerData(
       return assigned;
     }
     return fallbackIcon(bpPath, kind);
+  }
+
+  function iconKeyOf(kind: "creatures" | "items", bpPath: string): string {
+    const type = kind === "creatures" ? "creature" : "item";
+    const override = assignedIconKey(catalog, bpPath);
+    if (override) return override;
+    const hit = index[kind].get(normalizeBpPath(bpPath));
+    if (hit?.entry.iconKey) return hit.entry.iconKey;
+    const assetId = iconSlug(hit?.entry.name || displayName(kind, bpPath));
+    if (hit?.source.kind === "official") return `official:${type}:${assetId}`;
+    if (hit?.source.kind === "mod" && /^\d+$/.test(hit.source.curseforgeId)) {
+      return `mod:${hit.source.curseforgeId}:${type}:${assetId}`;
+    }
+    return `dds:placeholder:${type}`;
   }
 
   /**
@@ -352,6 +380,7 @@ export function serializeViewerData(
           name: entry.label.trim() || name || "(unnamed)",
           img: entry.bpPath ? imgOf("items", entry.bpPath, name) : null,
           icon: entry.bpPath ? iconOf("items", entry.bpPath) : "📦",
+          iconKey: entry.bpPath ? iconKeyOf("items", entry.bpPath) : "dds:placeholder:item",
           // Production recurs, so it publishes a rate instead of a quantity.
           qty: list.hasRate ? "" : entry.qty,
           // Odds are meaningless outside random loot, so they never publish
@@ -386,6 +415,7 @@ export function serializeViewerData(
       name: label.trim() || name || "(unnamed)",
       img: bpPath ? imgOf("items", bpPath, name) : null,
       icon: bpPath ? iconOf("items", bpPath) : "📦",
+      iconKey: bpPath ? iconKeyOf("items", bpPath) : "dds:placeholder:item",
     };
   }
 
@@ -576,6 +606,7 @@ export function serializeViewerData(
       name,
       category: categoryOf("creatures", bpPath),
       icon: iconOf("creatures", bpPath),
+      iconKey: iconKeyOf("creatures", bpPath),
       img: imgOf("creatures", bpPath, name),
       base: baseOf(bpPath, name).label,
       info: infoOf(bpPath),
@@ -633,6 +664,7 @@ export function serializeViewerData(
         name,
         category: categoryOf("items", bpPath),
         icon: iconOf("items", bpPath),
+        iconKey: iconKeyOf("items", bpPath),
         img: imgOf("items", bpPath, name),
         info: infoOf(bpPath),
         type: info.type,

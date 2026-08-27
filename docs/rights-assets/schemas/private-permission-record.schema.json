@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://assets.dinodepot.app/metadata/schema/private-permission-record-v1.json",
+  "title": "DDS private icon permission record v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["permissionId", "mod", "grantor", "terms", "requestedAt", "approvedAt", "authorityConfirmed", "status"],
+  "properties": {
+    "permissionId": { "type": "string" },
+    "mod": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "projectUrl"],
+      "properties": {
+        "id": { "type": "integer", "minimum": 0 },
+        "name": { "type": "string" },
+        "projectUrl": { "type": "string", "format": "uri" }
+      }
+    },
+    "grantor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["displayName", "platform"],
+      "properties": {
+        "displayName": { "type": "string" },
+        "platform": { "type": "string" }
+      }
+    },
+    "terms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "sha256", "scope", "desktopApp", "webViewer", "maxResolution", "formatConversion"],
+      "properties": {
+        "version": { "type": "string", "pattern": "^DDS-ICON-PERMISSION-v[0-9]+\\.[0-9]+$" },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "scope": { "type": "array", "items": { "enum": ["creature-icons", "item-icons"] }, "uniqueItems": true },
+        "desktopApp": { "const": true },
+        "webViewer": { "const": true },
+        "maxResolution": { "const": "160x160" },
+        "formatConversion": { "type": "array", "contains": { "const": "webp" } }
+      }
+    },
+    "requestedAt": { "type": "string" },
+    "approvedAt": { "type": "string" },
+    "authorityConfirmed": { "const": true },
+    "status": { "const": "active" }
+  }
+}

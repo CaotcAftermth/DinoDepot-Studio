@@ -3,7 +3,6 @@ import {
   PACKAGE_CONTENT_FORMAT,
   PACKAGE_FORMAT,
   PACKAGE_FORMAT_VERSION,
-  packageAssetV3,
   packageContentAssetPaths,
   packageContentFromModpack,
   packageFile,
@@ -12,11 +11,12 @@ import {
   PackageManifestSchema,
   sha256Hex,
   type PackageContent,
-  type PackageAssetV3,
   type PackageManifest,
 } from "../model/package";
 import {
   iconBaseName,
+  ModpackSchema,
+  packIconFiles,
   registryVersion,
   type Modpack,
   type ModpackRegistry,
@@ -25,7 +25,7 @@ import {
 import { ipc, isTauri } from "./ipc";
 import type { PackIconFetchResult } from "./modpackRegistry";
 import { registryFileUrl } from "./modpackRegistry";
-import { preparePackIcons } from "./modpackInstall";
+import { assignCanonicalIconKeys } from "../model/iconKey";
 import { studioSatisfies } from "../model/studio";
 import {
   packageBase64ToBytes,
@@ -60,46 +60,51 @@ export interface NormalizedLegacyModpack {
 const SAFE_PACKAGE_ID = /^[a-z0-9][a-z0-9._-]*$/;
 const SAFE_PACKAGE_VERSION = /^[A-Za-z0-9][A-Za-z0-9._+-]*$/;
 
-function withoutFileIcons(pack: Modpack): Modpack {
-  return {
-    ...pack,
-    icons: Object.fromEntries(
-      Object.entries(pack.icons).filter(([, value]) => !value.startsWith("file:")),
-    ),
-  };
+function withoutLegacyIcons(pack: Modpack): Modpack {
+  return { ...pack, icons: {} };
 }
 
 /**
- * Converts a compatibility `modpack.json` and its optional images into an
- * ordinary content-addressed package download.
+ * Converts compatibility `modpack.json` content into a data-only package.
  *
  * The conversion is deterministic: another machine reading the same legacy
- * bytes produces the same manifest integrity pin. Missing or malformed images
- * are omitted, while the mod content remains installable with default icons.
+ * content produces the same manifest integrity pin. Legacy artwork is never
+ * read, fetched, copied, or promoted; every old image assignment is omitted.
  */
 export async function normalizeLegacyModpackPackage(
   pack: Modpack,
-  fetched: PackIconFetchResult,
+  _fetched: PackIconFetchResult,
 ): Promise<NormalizedLegacyModpack> {
-  const prepared = preparePackIcons(pack, fetched);
-  const skipped = new Set(prepared.skipped);
+  const skipped = new Set(packIconFiles(pack).map(iconBaseName));
+  const quarantined = withoutLegacyIcons(pack);
 
   if (
-    !SAFE_PACKAGE_ID.test(prepared.pack.meta.id) ||
-    !SAFE_PACKAGE_VERSION.test(prepared.pack.meta.version)
+    !SAFE_PACKAGE_ID.test(quarantined.meta.id) ||
+    !SAFE_PACKAGE_VERSION.test(quarantined.meta.version) ||
+    !/^(?:0|[1-9][0-9]*)$/.test(quarantined.meta.curseforgeId)
   ) {
-    for (const value of Object.values(prepared.pack.icons)) {
-      if (value.startsWith("file:")) skipped.add(iconBaseName(value.slice(5)));
-    }
     return {
       downloaded: null,
-      pack: withoutFileIcons(prepared.pack),
+      pack: quarantined,
       skipped: [...skipped].sort((left, right) => left.localeCompare(right)),
     };
   }
 
   try {
-    const content = packageContentFromModpack(prepared.pack);
+    const dataOnlyPack = ModpackSchema.parse({
+      ...quarantined,
+      formatVersion: 2,
+      creatures: assignCanonicalIconKeys(
+        quarantined.creatures,
+        `mod:${quarantined.meta.curseforgeId}:creature`,
+      ),
+      items: assignCanonicalIconKeys(
+        quarantined.items,
+        `mod:${quarantined.meta.curseforgeId}:item`,
+      ),
+      icons: {},
+    });
+    const content = packageContentFromModpack(dataOnlyPack);
     const contentJson = packageJson(content);
     const contentBytes = new TextEncoder().encode(contentJson);
     const contentRecord = await packageFile(
@@ -114,26 +119,13 @@ export async function normalizeLegacyModpackPackage(
         contentB64: packageBytesToBase64(contentBytes),
       },
     ];
-    const assets: PackageAssetV3[] = [];
-    for (const icon of prepared.icons) {
-      const logicalPath = `assets/${icon.name}`;
-      const bytes = packageBase64ToBytes(icon.contentB64.replace(/\s/g, ""));
-      const mediaType = /\.webp$/i.test(icon.name) ? "image/webp" : "image/png";
-      assets.push(await packageAssetV3(logicalPath, bytes, mediaType));
-      files.push({
-        path: logicalPath,
-        bytes,
-        contentB64: packageBytesToBase64(bytes),
-      });
-    }
-
     const {
       id: packageId,
       version,
       curseforgeId,
       updatedAt,
       ...meta
-    } = prepared.pack.meta;
+    } = dataOnlyPack.meta;
     const manifest = PackageManifestSchema.parse({
       format: PACKAGE_FORMAT,
       formatVersion: PACKAGE_FORMAT_VERSION,
@@ -144,7 +136,7 @@ export async function normalizeLegacyModpackPackage(
       publishedAt: updatedAt,
       meta: { ...meta, updatedAt },
       content: contentRecord,
-      assets,
+      assets: [],
     });
     const manifestJson = packageJson(manifest);
     return {
@@ -158,18 +150,15 @@ export async function normalizeLegacyModpackPackage(
         }),
         files,
       },
-      pack: prepared.pack,
+      pack: dataOnlyPack,
       skipped: [...skipped].sort((left, right) => left.localeCompare(right)),
     };
   } catch {
     // Compatibility content that predates package identity/shape constraints
     // must remain addable. Only its package-owned images are unavailable.
-    for (const value of Object.values(prepared.pack.icons)) {
-      if (value.startsWith("file:")) skipped.add(iconBaseName(value.slice(5)));
-    }
     return {
       downloaded: null,
-      pack: withoutFileIcons(prepared.pack),
+      pack: quarantined,
       skipped: [...skipped].sort((left, right) => left.localeCompare(right)),
     };
   }
@@ -200,6 +189,7 @@ function verifyContentAssetCoverage(
   manifest: PackageManifest,
   content: PackageContent,
 ): void {
+  if (manifest.formatVersion < 4 || content.schemaVersion < 2) return;
   const assets = new Set(manifest.assets.map((asset) => asset.path.toLowerCase()));
   const missing = [...packageContentAssetPaths(content)].filter(
     (path) => !assets.has(path),
@@ -269,15 +259,6 @@ interface ExpectedPackageIdentity {
   integrity?: string;
 }
 
-function storedAssetPath(
-  manifest: PackageManifest,
-  record: PackageManifest["assets"][number],
-): string {
-  return manifest.formatVersion === 3
-    ? (record as PackageAssetV3).blob
-    : record.path;
-}
-
 async function downloadPackageManifest(
   manifestUrl: string,
   expected: ExpectedPackageIdentity,
@@ -339,19 +320,15 @@ async function downloadPackageManifest(
   }
 
   const base = new URL(".", manifestUrl);
-  const packageRoot = new URL("../../", manifestUrl);
-  const files = await Promise.all([
-    downloadFile(new URL(manifest.content.path, base).toString(), manifest.content),
-    ...manifest.assets.map((record) =>
-      downloadFile(
-        new URL(
-          storedAssetPath(manifest, record),
-          manifest.formatVersion === 3 ? packageRoot : base,
-        ).toString(),
-        record,
-      ),
+  // Legacy v2/v3 artwork is quarantined input, not a distribution channel.
+  // Network installs fetch verified content only. Existing art is neither
+  // needed for installation nor exposed without current registry approval.
+  const files = [
+    await downloadFile(
+      new URL(manifest.content.path, base).toString(),
+      manifest.content,
     ),
-  ]);
+  ];
   const contentFile = files.find((file) => file.path === manifest.content.path)!;
   let contentRaw: unknown;
   try {
@@ -433,7 +410,6 @@ export async function readPackageManifestFile(
   const separator =
     manifestPath.includes("\\") && !manifestPath.includes("/") ? "\\" : "/";
   const directory = manifestPath.replace(/[/\\][^/\\]+$/, "");
-  const parent = (value: string) => value.replace(/[/\\][^/\\]+$/, "");
   if (manifest.formatVersion === 3) {
     const segments = directory.split(/[/\\]/).filter(Boolean);
     if (
@@ -445,21 +421,12 @@ export async function readPackageManifestFile(
       );
     }
   }
-  const packageRoot = parent(parent(directory));
   const files: DownloadedPackageFile[] = [];
-  const records = [
-    {
-      record: manifest.content,
-      storedRoot: directory,
-      storedPath: manifest.content.path,
-    },
-    ...manifest.assets.map((record) => ({
-      record,
-      storedRoot: manifest.formatVersion === 3 ? packageRoot : directory,
-      storedPath: storedAssetPath(manifest, record),
-    })),
-  ];
-  for (const { record, storedRoot, storedPath } of records) {
+  const readRecord = async (
+    record: PackageManifest["content"],
+    storedRoot: string,
+    storedPath: string,
+  ): Promise<DownloadedPackageFile> => {
     const contentB64 = await ipc<string>("read_file_b64", {
       path: `${storedRoot}${separator}${storedPath.replace(/\//g, separator)}`,
     });
@@ -478,8 +445,11 @@ export async function readPackageManifestFile(
         `Package image "${record.path}" does not match its PNG/WebP extension`,
       );
     }
-    files.push({ path: record.path, bytes, contentB64 });
-  }
+    return { path: record.path, bytes, contentB64 };
+  };
+  files.push(
+    await readRecord(manifest.content, directory, manifest.content.path),
+  );
   const contentFile = files.find(
     (file) => file.path === manifest.content.path,
   )!;
@@ -539,18 +509,12 @@ export function downloadedAsLegacyInstall(downloaded: DownloadedPackage): {
   icons: PackIconFetchResult;
 } {
   const pack = modpackFromPackage(downloaded.manifest, downloaded.content);
-  const assets = new Map(
-    downloaded.files
-      .filter((file) => file.path.startsWith("assets/"))
-      .map((file) => [file.path.toLowerCase(), file]),
-  );
-  const icons = downloaded.manifest.assets
+  // Package v2/v3 artwork is quarantined metadata. Even locally present bytes
+  // are never exposed to project import or promoted into new storage.
+  const missing = downloaded.manifest.assets
     .filter((record) => /\.(?:webp|png)$/i.test(record.path))
-    .map((record) => ({
-      name: iconBaseName(record.path),
-      contentB64: assets.get(record.path.toLowerCase())!.contentB64,
-    }));
-  return { pack, icons: { icons, missing: [] } };
+    .map((record) => iconBaseName(record.path));
+  return { pack, icons: { icons: [], missing } };
 }
 
 /**

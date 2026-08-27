@@ -5,6 +5,7 @@ import type { LocalProjectState } from "../localState";
 import type { MigrationContext, MigrationStep, ProjectFiles } from "./types";
 import { v1ToV2 } from "./v1ToV2";
 import { v2ToV3 } from "./v2ToV3";
+import { v3ToV4 } from "./v3ToV4";
 
 export type { MigrationContext, MigrationStep, ProjectFiles } from "./types";
 
@@ -14,7 +15,7 @@ export type { MigrationContext, MigrationStep, ProjectFiles } from "./types";
  * Append only. A step that has shipped is permanent — somebody, somewhere, has
  * a project that still needs it — and its fixture test is permanent with it.
  */
-export const MIGRATION_STEPS: MigrationStep[] = [v1ToV2, v2ToV3];
+export const MIGRATION_STEPS: MigrationStep[] = [v1ToV2, v2ToV3, v3ToV4];
 
 /** The steps needed to bring `fromSchema` up to date, oldest first. */
 export function migrationPath(fromSchema: number): MigrationStep[] {

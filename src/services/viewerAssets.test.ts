@@ -26,7 +26,7 @@ const { packageRootKey } = await import("./dependencyManager");
 const { vendorViewerAssets } = await import("./viewerAssets");
 
 describe("viewer asset vendoring", () => {
-  it("embeds project and package images without leaking local paths", async () => {
+  it("embeds project images but never package images", async () => {
     const creature = "/Game/Mods/Test/Dino.Test_C";
     const item = "/Game/Mods/Test/Item.Item";
     const viewer = {
@@ -52,13 +52,13 @@ describe("viewer asset vendoring", () => {
       projectImagesDir: "C:\\project\\images",
     });
 
-    expect(result.creatures[0].img).toMatch(/^data:image\/png;base64,/);
+    expect(result.creatures[0].img).toBeNull();
     expect(result.items[0].img).toMatch(/^data:image\/png;base64,/);
     expect(result.logo).toMatch(/^data:image\/png;base64,/);
     expect(JSON.stringify(result)).not.toContain("C:\\");
   });
 
-  it("downloads and embeds remote catalog images", async () => {
+  it("does not embed remote compatibility refs", async () => {
     const creature = "/Game/Mods/Test/Dino.Test_C";
     const catalog = emptyCatalog();
     catalog.icons[normalizeBpPath(creature)] =
@@ -77,11 +77,11 @@ describe("viewer asset vendoring", () => {
       projectImagesDir: "C:\\project\\images",
     });
 
-    expect(result.creatures[0].img).toMatch(/^data:image\/png;base64,/);
+    expect(result.creatures[0].img).toBeNull();
     expect(JSON.stringify(result)).not.toContain("https://");
   });
 
-  it("embeds managed official images from the exact Core Content root", async () => {
+  it("does not embed managed official-package artwork", async () => {
     const creature = "/Game/PrimalEarth/Dinos/Achatina/Achatina_Character_BP";
     const viewer = {
       cluster: "Test",
@@ -106,7 +106,7 @@ describe("viewer asset vendoring", () => {
       projectImagesDir: "C:\\project\\images",
     });
 
-    expect(result.creatures[0].img).toMatch(/^data:image\/webp;base64,/);
+    expect(result.creatures[0].img).toBeNull();
     expect(JSON.stringify(result)).not.toContain("C:\\");
   });
 
@@ -163,10 +163,7 @@ describe("viewer asset vendoring", () => {
 });
 
 describe("official icon assignments in a published viewer", () => {
-  it("embeds base-game art an administrator assigned", async () => {
-    // `official:` carries no version, so the vendorer has to be told which one
-    // the project pins. Without it these resolve to nothing and the published
-    // site silently loses every base-game icon somebody chose.
+  it("leaves official art for runtime rights-aware resolution", async () => {
     const creature = "/Game/Mods/Test/Dino.Test_C";
     const catalog = emptyCatalog();
     catalog.icons[normalizeBpPath(creature)] = "official:creatures/Rex.webp";
@@ -189,7 +186,7 @@ describe("official icon assignments in a published viewer", () => {
     });
 
     expect(skipped).toEqual([]);
-    expect(result.creatures[0].img).toContain("base64,");
+    expect(result.creatures[0].img).toBeNull();
   });
 
   it("still publishes when no official package is pinned", async () => {

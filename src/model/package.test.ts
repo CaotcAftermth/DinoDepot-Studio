@@ -14,11 +14,10 @@ describe("package formats", () => {
   it("round-trips current modpack content without changing its meaning", async () => {
     const pack = templateModpack();
     const content = packageContentFromModpack(pack);
-    content.icons["/test/icon.icon"] = "file:assets/Rex.png";
     const bytes = new TextEncoder().encode(JSON.stringify(content));
     const manifest = PackageManifestSchema.parse({
       format: "dinodepot.package",
-      formatVersion: 2,
+      formatVersion: 4,
       kind: "modpack",
       packageId: pack.meta.id,
       version: pack.meta.version,
@@ -41,7 +40,9 @@ describe("package formats", () => {
     expect(restored.meta).toEqual(pack.meta);
     expect(restored.creatures).toEqual(pack.creatures);
     expect(restored.creatureInfo).toEqual(pack.creatureInfo);
-    expect(restored.icons["/test/icon.icon"]).toBe("file:Rex.png");
+    expect(content.schemaVersion).toBe(2);
+    expect(restored.icons).toEqual({});
+    expect(restored.creatures.every((entry) => Boolean(entry.iconKey))).toBe(true);
   });
 
   it("refuses paths outside the canonical package layout", () => {
@@ -134,13 +135,28 @@ describe("package formats", () => {
     ).toBe(false);
   });
 
-  it("refuses to flatten two different icons onto one file name", () => {
+  it("drops legacy file refs from data-only package content", () => {
     const pack = templateModpack();
     pack.icons["/test/a.a"] = "file:creatures/Rex.png";
     pack.icons["/test/b.b"] = "file:items/Rex.png";
-    expect(() => packageContentFromModpack(pack)).toThrow(/Rex\.png/);
+    const content = packageContentFromModpack(pack);
+    expect(content.schemaVersion).toBe(2);
+    expect(content.icons).toEqual({});
+  });
 
-    pack.icons["/test/b.b"] = "file:creatures/Rex.png";
-    expect(() => packageContentFromModpack(pack)).not.toThrow();
+  it("requires package v4 assets to remain empty", async () => {
+    const bytes = new TextEncoder().encode("{}");
+    const content = await packageFile("content.json", bytes, "application/json");
+    const asset = await packageFile("assets/Icon.png", new Uint8Array(), "image/png");
+    expect(PackageManifestSchema.safeParse({
+      format: "dinodepot.package",
+      formatVersion: 4,
+      kind: "modpack",
+      packageId: "pack",
+      version: "1.0.0",
+      meta: { name: "Pack" },
+      content,
+      assets: [asset],
+    }).success).toBe(false);
   });
 });

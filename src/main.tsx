@@ -5,6 +5,20 @@ import { AppShell } from "./app/AppShell";
 import { APP_MODULES, prefetchModules } from "./app/modules";
 import { ProjectHomePage } from "./pages/ProjectHomePage";
 import "./styles.css";
+import { AssetRegistryClient, MemoryRegistryCache } from "./services/assetRegistryClient";
+import { isTauri } from "./services/ipc";
+import { configureIconResolver, RightsAwareAssetResolver } from "./services/rightsAwareAssetResolver";
+import { TauriRegistryCache, TauriRightsAssetCache, tauriRegistryFetch } from "./services/rightsAssetCache";
+
+configureIconResolver(
+  new RightsAwareAssetResolver(
+    new AssetRegistryClient(
+      isTauri ? new TauriRegistryCache() : new MemoryRegistryCache(),
+      isTauri ? tauriRegistryFetch : undefined,
+    ),
+    isTauri ? new TauriRightsAssetCache() : undefined,
+  ),
+);
 
 /**
  * Sections load on demand rather than all at once.

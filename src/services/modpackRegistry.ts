@@ -1,21 +1,14 @@
 import {
-  iconBaseName,
   ModpackSchema,
   PACK_FILE,
-  PACK_ICONS_DIR,
   packDirName,
   packFileName,
-  packIconFiles,
   RegistryIndexSchema,
   type Modpack,
   type ModpackRegistry,
   type RegistryEntry,
 } from "../model/modpack";
-import {
-  packageBytesToBase64,
-  packageHttpGet,
-  packageHttpText,
-} from "./packageHttp";
+import { packageHttpGet, packageHttpText } from "./packageHttp";
 
 /**
  * Client for the published modpack registry.
@@ -228,7 +221,7 @@ export function packDirFor(entry: RegistryEntry): string {
 export interface FetchedIcon {
   /** Bare file name, matching the pack's `file:` icon values. */
   name: string;
-  /** Base64 image bytes, ready for managed package storage. */
+  /** Quarantined compatibility bytes; never a rights grant. */
   contentB64: string;
 }
 
@@ -236,45 +229,6 @@ export interface PackIconFetchResult {
   icons: FetchedIcon[];
   /** Referenced files that could not be read from the selected source. */
   missing: string[];
-}
-
-/**
- * Downloads a pack's icon images.
- *
- * Both `icons/` and the legacy `Icons/` spelling are read. New exports always
- * use lowercase, but the compatibility reader cannot strand an existing pack
- * on a case-sensitive host.
- */
-export async function fetchPackIcons(
-  registry: ModpackRegistry,
-  entry: RegistryEntry,
-  pack: Modpack,
-): Promise<PackIconFetchResult> {
-  const dir = packDirFor(entry);
-  const wanted = packIconFiles(pack);
-  if (!dir || wanted.length === 0) return { icons: [], missing: wanted };
-
-  const icons: FetchedIcon[] = [];
-  const missing: string[] = [];
-  for (const name of wanted) {
-    const file = iconBaseName(name);
-    let found = false;
-    for (const iconsDir of [PACK_ICONS_DIR, "Icons"]) {
-      try {
-        const res = await packageHttpGet(
-          registryFileUrl(registry, `${dir}/${iconsDir}/${file}`),
-        );
-        if (res.status < 200 || res.status >= 300) continue;
-        icons.push({ name: file, contentB64: packageBytesToBase64(res.bytes) });
-        found = true;
-        break;
-      } catch {
-        /* try the compatibility spelling before reporting it missing */
-      }
-    }
-    if (!found) missing.push(file);
-  }
-  return { icons, missing };
 }
 
 /** Suggested folder name for a pack being published. */

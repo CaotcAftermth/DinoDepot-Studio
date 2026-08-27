@@ -1,4 +1,5 @@
 import type { CatalogEntry, CatalogFile, ContentSource } from "./catalog";
+import { assignCanonicalIconKeys } from "./iconKey";
 import { currentCurseforgeUrl } from "./catalogDuplicates";
 import { ContentSourceSchema, normalizeBpPath } from "./catalog";
 
@@ -358,14 +359,22 @@ export function discoverMod(
 
   const variantTag = detectVariantTag([...creatureAssets.values()].map((a) => a.leaf));
 
-  const toEntries = (assets: Map<string, ResolvedAsset>): CatalogEntry[] =>
-    [...assets.values()]
+  const toEntries = (
+    assets: Map<string, ResolvedAsset>,
+    type: "creature" | "item",
+  ): CatalogEntry[] => {
+    const entries = [...assets.values()]
       .map((a) => ({
         id: newId(),
         name: humanizeName(a.leaf, variantTag),
         bpPath: a.bpPath,
       }))
       .sort((a, b) => a.name.localeCompare(b.name));
+    const modId = folder?.projectId ?? meta.cfUgcId;
+    return /^\d+$/.test(modId)
+      ? assignCanonicalIconKeys(entries, `mod:${modId}:${type}`)
+      : entries;
+  };
 
   if (counts.creature === 0 && counts.item === 0) {
     warnings.push(
@@ -385,8 +394,8 @@ export function discoverMod(
     url: meta.marketplaceUrl,
     meta,
     variantTag,
-    creatures: toEntries(creatureAssets),
-    items: toEntries(itemAssets),
+    creatures: toEntries(creatureAssets, "creature"),
+    items: toEntries(itemAssets, "item"),
     counts,
     warnings,
   };
@@ -779,8 +788,37 @@ export function applyDiscovery(
     ].sort((a, b) => a.name.localeCompare(b.name));
   };
 
-  const creatures = merge(mod.creatures, plan.unmatchedCreatures);
-  const items = merge(mod.items, plan.unmatchedItems);
+  const preserveAssignedKeys = (
+    entries: CatalogEntry[],
+    previous: CatalogEntry[],
+    renamed: { from: CatalogEntry; to: CatalogEntry }[],
+    type: "creature" | "item",
+  ): CatalogEntry[] => {
+    const prior = new Map(previous.map((entry) => [normalizeBpPath(entry.bpPath), entry.iconKey]));
+    for (const change of renamed) {
+      prior.set(normalizeBpPath(change.to.bpPath), change.from.iconKey);
+    }
+    const carried = entries.map((entry) => ({
+      ...entry,
+      iconKey: prior.get(normalizeBpPath(entry.bpPath)) ?? entry.iconKey,
+    }));
+    return /^\d+$/.test(mod.projectId)
+      ? assignCanonicalIconKeys(carried, `mod:${mod.projectId}:${type}`)
+      : carried;
+  };
+
+  const creatures = preserveAssignedKeys(
+    merge(mod.creatures, plan.unmatchedCreatures),
+    existing?.creatures ?? [],
+    plan.creatures.renamed,
+    "creature",
+  );
+  const items = preserveAssignedKeys(
+    merge(mod.items, plan.unmatchedItems),
+    existing?.items ?? [],
+    plan.items.renamed,
+    "item",
+  );
   const discoveredCreatures = drop(mod.creatures);
   const discoveredItems = drop(mod.items);
   const structuralOverrides = {

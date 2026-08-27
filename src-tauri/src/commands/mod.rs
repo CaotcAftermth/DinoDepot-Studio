@@ -13,5 +13,6 @@ pub mod package_http;
 pub mod package_library;
 pub mod project_io;
 pub mod project_lock;
+pub mod rights_asset_cache;
 pub mod scraper;
 pub mod secrets;

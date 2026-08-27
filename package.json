@@ -4,6 +4,14 @@
   "version": "0.8.0",
   "type": "module",
   "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "scan:modpacks": "node scripts/scan-data-only-modpacks.mjs Public_Content/ModPacks",
+    "scan:public-assets": "node scripts/scan-public-asset-boundary.mjs",
+    "publish:rights-assets": "node scripts/publish-rights-assets.mjs",
+    "prepare:rights-revocation": "node scripts/prepare-rights-revocation.mjs",
+    "test:rights-tooling": "node --test scripts/rights-assets-tooling.test.mjs",
+    "build:official-data": "node scripts/build-official-data-package.mjs",
     "stage:official": "node scripts/stage-bundled-official.mjs",
     "dev": "npm run stage:official && vite",
     "build": "npm run stage:official && tsc && vite build",
@@ -34,6 +42,7 @@
     "tailwindcss": "^4.3.2",
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
-    "vitest": "^3.2.7"
+    "vitest": "^3.2.7",
+    "wrangler": "^4.127.0"
   }
 }

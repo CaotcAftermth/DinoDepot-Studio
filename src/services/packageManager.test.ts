@@ -20,7 +20,7 @@ import {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("exact package downloads", () => {
-  it("verifies the manifest, content, and assets before returning", async () => {
+  it("verifies content without downloading quarantined legacy assets", async () => {
     const registry = defaultModpackRegistry();
     const content = new TextEncoder().encode(
       packageJson({
@@ -73,10 +73,11 @@ describe("exact package downloads", () => {
     );
     const legacy = downloadedAsLegacyInstall(downloaded);
 
-    expect(downloaded.files).toHaveLength(2);
+    expect(downloaded.files).toHaveLength(1);
     expect(legacy.pack.meta.id).toBe("test-pack");
     expect(legacy.pack.icons["/m/c.c"]).toBe("file:Creature.png");
-    expect(legacy.icons.missing).toEqual([]);
+    expect(legacy.icons.missing).toEqual(["Creature.png"]);
+    expect(fetch.mock.calls.map(([input]) => String(input)).some((url) => url.endsWith("Creature.png"))).toBe(false);
   });
 
   it("never substitutes latest when an exact version is absent", async () => {
@@ -112,7 +113,7 @@ describe("exact package downloads", () => {
     ).rejects.toThrow(/requires DinoDepot Studio 9\.0\.0/i);
   });
 
-  it("downloads v3 assets from the package-root blob store", async () => {
+  it("does not download v3 artwork blobs", async () => {
     const registry = defaultModpackRegistry();
     const content = new TextEncoder().encode(
       packageJson({
@@ -169,12 +170,12 @@ describe("exact package downloads", () => {
 
     await downloadRegistryPackage(registry, entry, "2.0.0");
 
-    expect(fetch.mock.calls.map(([input]) => String(input))).toContain(
+    expect(fetch.mock.calls.map(([input]) => String(input))).not.toContain(
       `https://raw.githubusercontent.com/${registry.owner}/${registry.repo}/${registry.branch}/${registry.path}/test-pack/${asset.blob}`,
     );
   });
 
-  it("refuses content that references an asset omitted from the manifest", async () => {
+  it("imports legacy content when its optional artwork is absent", async () => {
     const registry = defaultModpackRegistry();
     const content = new TextEncoder().encode(
       packageJson({
@@ -213,12 +214,12 @@ describe("exact package downloads", () => {
       ),
     );
 
-    await expect(
-      downloadRegistryPackage(registry, entry, "1.0.0"),
-    ).rejects.toThrow(/absent from its manifest/i);
+    const downloaded = await downloadRegistryPackage(registry, entry, "1.0.0");
+    expect(downloaded.files.map((file) => file.path)).toEqual(["content.json"]);
+    expect(downloadedAsLegacyInstall(downloaded).icons.missing).toEqual([]);
   });
 
-  it("refuses a package image whose bytes do not match PNG/WebP", async () => {
+  it("does not request malformed legacy artwork", async () => {
     const registry = defaultModpackRegistry();
     const content = new TextEncoder().encode(
       packageJson({
@@ -253,9 +254,7 @@ describe("exact package downloads", () => {
         },
       ],
     });
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async (input: string | URL | Request) => {
+    const fetch = vi.fn(async (input: string | URL | Request) => {
         const url = String(input);
         return new Response(
           url.endsWith("manifest.json")
@@ -264,25 +263,26 @@ describe("exact package downloads", () => {
               ? content
               : wrongImage,
         );
-      }),
-    );
+      });
+    vi.stubGlobal("fetch", fetch);
 
-    await expect(
-      downloadRegistryPackage(registry, entry, "1.0.0"),
-    ).rejects.toThrow(/does not match.*PNG\/WebP/i);
+    const downloaded = await downloadRegistryPackage(registry, entry, "1.0.0");
+    expect(downloaded.files).toHaveLength(1);
+    expect(fetch.mock.calls.map(([input]) => String(input)).some((url) => url.endsWith("Creature.png"))).toBe(false);
   });
 });
 
 describe("legacy modpack normalization", () => {
   const png = "iVBORw0KGgo=";
 
-  it("converts compatibility icons into a managed v3 package", async () => {
+  it("converts compatibility content into a data-only v4 package", async () => {
     const pack = ModpackSchema.parse({
       meta: {
         id: "legacy-pack",
         name: "Legacy Pack",
         version: "1.2.3",
         updatedAt: "2026-08-17",
+        curseforgeId: "123",
       },
       icons: { "/m/c.c": "file:Creature.png" },
     });
@@ -294,28 +294,27 @@ describe("legacy modpack normalization", () => {
 
     expect(normalized.downloaded).not.toBeNull();
     expect(normalized.downloaded?.manifest).toMatchObject({
-      formatVersion: 3,
+      formatVersion: 4,
       packageId: "legacy-pack",
       version: "1.2.3",
-      assets: [
-        expect.objectContaining({
-          path: "assets/Creature.png",
-          blob: expect.stringMatching(/^assets\/sha256\//),
-        }),
-      ],
+      assets: [],
     });
-    expect(normalized.downloaded?.content.icons["/m/c.c"]).toBe(
-      "file:assets/Creature.png",
-    );
+    expect(normalized.downloaded?.content.schemaVersion).toBe(2);
+    expect(normalized.downloaded?.content.icons).toEqual({});
     expect(normalized.downloaded?.files.map((file) => file.path)).toEqual([
       "content.json",
-      "assets/Creature.png",
     ]);
+    expect(normalized.skipped).toEqual(["Creature.png"]);
   });
 
   it("keeps missing icons non-fatal and removes their assignments", async () => {
     const pack = ModpackSchema.parse({
-      meta: { id: "legacy-pack", name: "Legacy Pack", version: "1.0.0" },
+      meta: {
+        id: "legacy-pack",
+        name: "Legacy Pack",
+        version: "1.0.0",
+        curseforgeId: "123",
+      },
       icons: { "/m/c.c": "file:Missing.webp" },
     });
 

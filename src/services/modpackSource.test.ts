@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { resolvePackageManifestUrl, resolvePackUrls } from "./modpackSource";
+import { afterEach, vi } from "vitest";
+import { packFromUrl, resolvePackageManifestUrl, resolvePackUrls } from "./modpackSource";
 import { defaultModpackRegistry } from "../model/modpack";
 
 const registry = defaultModpackRegistry();
 const RAW = "https://raw.githubusercontent.com";
 const base = `${RAW}/${registry.owner}/${registry.repo}/${registry.branch}/${registry.path}`;
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("resolving a link someone pasted", () => {
   it("recognizes a GitHub immutable-version folder as a v2 manifest", () => {
@@ -91,5 +94,22 @@ describe("resolving a link someone pasted", () => {
 
   it("says so when nothing was pasted", () => {
     expect(() => resolvePackUrls("   ", registry)).toThrow(/Paste a link/);
+  });
+
+  it("imports legacy content without requesting its artwork", async () => {
+    const pack = {
+      meta: { id: "legacy-pack", name: "Legacy Pack", curseforgeId: "123" },
+      icons: { "/m/c.c": "file:Creature.png" },
+    };
+    const fetch = vi.fn(async () =>
+      new Response(JSON.stringify(pack), { status: 200 }),
+    );
+    vi.stubGlobal("fetch", fetch);
+
+    const source = await packFromUrl(`${base}/legacy-pack/modpack.json`, registry);
+    const artwork = await source.icons();
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(artwork).toEqual({ icons: [], missing: ["Creature.png"] });
   });
 });

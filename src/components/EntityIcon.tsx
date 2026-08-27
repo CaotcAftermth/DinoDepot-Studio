@@ -1,43 +1,30 @@
-import missingCreatureIcon from "../assets/icons/Missing_Creature_Icon.webp";
-import missingItemIcon from "../assets/icons/Missing_Item_Icon.webp";
 import { ReactNode, useMemo, useState } from "react";
 import { useDraftsStore, resolveImagesDir } from "../stores/draftsStore";
 import { useProjectStore } from "../stores/projectStore";
-import { normalizeBpPath } from "../model/catalog";
 import {
-  fallbackIcon,
-  officialMapAssetPath,
-  officialVariantParents,
-} from "../model/officialCatalog";
-import { resolveCreatureBase } from "../model/creatureBase";
-import { buildImageIndex, matchImage } from "../model/imageMatch";
-import { useCatalogIndex, useCreatureNameMap } from "../stores/useCatalogIndex";
+  assignedIconKey,
+  catalogLegacyIconValues,
+  normalizeBpPath,
+} from "../model/catalog";
+import { iconSlug, parseIconKey, type IconKey } from "../model/iconKey";
+import { useCatalogIndex } from "../stores/useCatalogIndex";
 import { isTauri } from "../services/ipc";
 import { IconImportPanel } from "./IconImportPanel";
 import { Button, cx, Field, Input, Modal } from "./ui";
-import { useRemoteIcon } from "./useRemoteIcon";
+import { resolveAsset } from "../services/assetResolver";
+import { ContentIcon } from "./ContentIcon";
 import {
-  remoteAssetUrl,
-  resolveAsset,
-} from "../services/assetResolver";
-import { packageRootKey } from "../services/dependencyManager";
-import { OFFICIAL_PACKAGE_ID } from "../services/officialContent";
+  iconFileStem,
+  modFolderPath,
+  writeProjectIcon,
+  type ModTexture,
+} from "../services/modAssets";
+import { TexturePickerModal } from "../pages/content/TexturePickerModal";
+import { toast } from "./toast";
 
 // convertFileSrc is a pure string transform (asset: URL); safe to import in
 // browser mock mode too — we just never render file icons there.
 import { convertFileSrc } from "@tauri-apps/api/core";
-
-/**
- * Icon resolution for creatures/items, in priority order:
- * 1. explicit assignment in catalog.icons (emoji, https URL, or `file:<rel path>`)
- * 2. name-matched image in the images folder (e.g. creatures/Achatina.png)
- * 3. for creature variants: the parent creature's icon (manual parent
- *    assignment first, then the naming heuristic — so Aberrant Achatina
- *    inherits Achatina.png automatically)
- * 4. category-based emoji, then kind fallback
- */
-
-export { fallbackIcon };
 
 /** Absolute folder currently scanned for icon images. */
 export function useImagesDir(): string | null {
@@ -45,172 +32,6 @@ export function useImagesDir(): string | null {
   const imagesDir = useProjectStore((s) => s.local?.imagesDir);
   if (!dir) return null;
   return resolveImagesDir(dir, imagesDir);
-}
-
-/**
- * Cached on the file list's identity — like the catalog index, this is read
- * once per rendered icon, so a per-component `useMemo` rebuilt it hundreds of
- * times for a single list.
- */
-let imageIndexKey: string[] | null = null;
-let imageIndexValue: ReturnType<typeof buildImageIndex>;
-
-export function useImageIndex() {
-  const imageFiles = useDraftsStore((s) => s.imageFiles);
-  if (imageIndexKey !== imageFiles) {
-    imageIndexKey = imageFiles;
-    imageIndexValue = buildImageIndex(imageFiles);
-  }
-  return imageIndexValue;
-}
-
-function fileUrl(imagesDir: string | null, relPath: string): string | null {
-  if (!imagesDir || !isTauri) return null;
-  const resolved = resolveAsset(`file:${relPath}`, {
-    projectImagesDir: imagesDir,
-  });
-  if (resolved.kind !== "local") return null;
-  try {
-    return convertFileSrc(resolved.absolutePath);
-  } catch {
-    return null;
-  }
-}
-
-function classNameCandidate(bpPath: string): string {
-  const cls = bpPath.split(".").pop() ?? "";
-  return cls.replace(/_C$/, "").replace(/_Character_BP.*/i, "");
-}
-
-/**
- * Resolves the display icon for a blueprint path.
- * Returns { src } for images or { emoji } for text icons.
- */
-export function useResolvedIcon(
-  bpPath: string,
-  kind: "creatures" | "items",
-  entityName?: string,
-): { src: string | null; emoji: string } {
-  const icons = useDraftsStore((s) => s.catalog.icons);
-  const packageAssets = useDraftsStore((s) => s.packageAssets);
-  const packageRoots = useDraftsStore((s) => s.packageRoots);
-  // A remote icon cannot be rendered from its URL — see `useRemoteIcon`. This
-  // resolves the assignment for *this* entry through the on-disk cache.
-  const assignedUrl = remoteUrlOf(icons[normalizeBpPath(bpPath)]);
-  const cachedRemote = useRemoteIcon(assignedUrl);
-  const projectVariantParents = useDraftsStore((s) => s.catalog.variantParents);
-  // Same precedence as the picker: a fertilized egg inherits its egg's icon
-  // without anyone assigning one, and a project override still wins.
-  const variantParents = useMemo(
-    () => ({ ...officialVariantParents, ...projectVariantParents }),
-    [projectVariantParents],
-  );
-  const officialVersion = useDraftsStore((s) => s.officialVersion);
-  const imagesDir = useImagesDir();
-  const imageIndex = useImageIndex();
-  const catalogIndex = useCatalogIndex();
-  const nameMap = useCreatureNameMap();
-  const emoji = fallbackIcon(bpPath, kind);
-
-  function fromAssignment(path: string): { src: string | null; emoji: string } | null {
-    const key = normalizeBpPath(path);
-    const assigned = icons[key] ?? packageAssets[key];
-    if (!assigned) return null;
-    const resolved = resolveAsset(assigned, {
-      projectImagesDir: imagesDir,
-      // Lets an `official:` assignment name base-game art without pinning the
-      // release it came from.
-      legacy: { origin: "project", officialVersion },
-      packageRoot: (packageId, version) =>
-        packageRoots[packageRootKey("modpack", packageId, version)] ?? null,
-      officialRoot: (version) =>
-        packageRoots[packageRootKey("official", OFFICIAL_PACKAGE_ID, version)] ??
-        null,
-    });
-    if (resolved.kind === "local") {
-      let src: string | null = null;
-      if (isTauri) {
-        try {
-          src = convertFileSrc(resolved.absolutePath);
-        } catch {
-          src = null;
-        }
-      }
-      return src ? { src, emoji } : null;
-    }
-    if (resolved.kind === "remote") {
-      // Null until the cache has it; the emoji shows in the meantime rather
-      // than a broken image, and appears for good if it never arrives.
-      return { src: path === bpPath ? cachedRemote : null, emoji };
-    }
-    return resolved.kind === "glyph"
-      ? { src: null, emoji: resolved.value }
-      : null;
-  }
-
-  function fromImages(candidates: string[]): { src: string | null; emoji: string } | null {
-    const file = matchImage(imageIndex, kind, candidates);
-    if (!file) return null;
-    const src = fileUrl(imagesDir, file);
-    return src ? { src, emoji } : null;
-  }
-
-  const name =
-    entityName ??
-    catalogIndex[kind].get(normalizeBpPath(bpPath))?.entry.name ??
-    "";
-
-  // 1–2: own assignment, then own image match.
-  const own =
-    fromAssignment(bpPath) ??
-    fromImages([name, classNameCandidate(bpPath)]);
-  if (own) return own;
-
-  // 3: variant inheritance (creatures only) — manual parent, official
-  // class-stem match, then the tag/prefix-stripped name.
-  if (kind === "creatures") {
-    const hit = catalogIndex.creatures.get(normalizeBpPath(bpPath));
-    const parentPath = variantParents[normalizeBpPath(bpPath)] ?? null;
-    const base = resolveCreatureBase(
-      { id: "", name: name || classNameCandidate(bpPath), bpPath },
-      {
-        parentPath,
-        parentName: parentPath
-          ? (catalogIndex.creatures.get(normalizeBpPath(parentPath))?.entry.name ??
-            classNameCandidate(parentPath))
-          : undefined,
-        variantTag: hit?.source.variantTag,
-      },
-    );
-    const basePath =
-      base.bpPath ?? nameMap.get(base.label.toLowerCase()) ?? null;
-    const isSelf =
-      basePath !== null &&
-      normalizeBpPath(basePath) === normalizeBpPath(bpPath);
-    if (!isSelf) {
-      const inherited =
-        (basePath ? fromAssignment(basePath) : null) ??
-        fromImages([
-          base.label,
-          basePath ? classNameCandidate(basePath) : "",
-        ]);
-      if (inherited) return inherited;
-    }
-  }
-
-  // 4: the "missing icon" placeholder image, if one exists in the folder.
-  const placeholder = imageIndex.missing[kind];
-  if (placeholder) {
-    const src = fileUrl(imagesDir, placeholder);
-    if (src) return { src, emoji };
-  }
-
-  return { src: null, emoji };
-}
-
-/** The placeholder shown when an entry has no icon anywhere. */
-export function missingIconFor(kind: "creatures" | "items"): string {
-  return kind === "creatures" ? missingCreatureIcon : missingItemIcon;
 }
 
 export function EntityIcon({
@@ -227,49 +48,70 @@ export function EntityIcon({
   size?: number;
   className?: string;
 }) {
-  const { src, emoji } = useResolvedIcon(bpPath, kind, name);
-  // Nothing resolved: the placeholder art, not a glyph. It ships with the app
-  // rather than inside a package, because the case it exists for is precisely
-  // the one where no package resolved.
-  const placeholder = missingIconFor(kind);
-  return (
-    <img
-      src={src ?? placeholder}
-      alt=""
-      width={size}
-      height={size}
-      loading="lazy"
-      decoding="async"
-      className={cx("inline-block rounded-sm object-contain shrink-0", className)}
-      style={{ width: size, height: size }}
-      onError={(e) => {
-        // A resolved file that has since been removed. The placeholder is
-        // bundled, so this can only fire once.
-        const el = e.currentTarget;
-        if (el.src.endsWith(placeholder)) {
-          el.outerHTML = `<span style="font-size:${size - 2}px;width:${size}px" class="inline-block text-center shrink-0 leading-none">${emoji}</span>`;
-          return;
-        }
-        el.src = placeholder;
-      }}
-    />
-  );
+  const catalog = useDraftsStore((state) => state.catalog);
+  const index = useCatalogIndex();
+  const type = kind === "creatures" ? "creature" : "item";
+  const entry = index[kind].get(normalizeBpPath(bpPath))?.entry;
+  const iconKey = assignedIconKey(catalog, bpPath) ?? entry?.iconKey ??
+    (`dds:placeholder:${type}` as IconKey);
+  return <ContentIcon iconKey={iconKey} type={type} alt={name ?? entry?.name ?? ""} size={size} className={className} />;
 }
 
 /** Assigns/clears an icon for a blueprint path (persists to catalog.icons). */
 export function useAssignIcon() {
   const { catalog, setCatalog } = useDraftsStore();
+  const projectId = useProjectStore((state) => state.settings?.projectId ?? "project");
+  const catalogIndex = useCatalogIndex();
   return (bpPath: string, icon: string) => {
     const key = normalizeBpPath(bpPath);
-    const icons = { ...catalog.icons };
-    if (icon) icons[key] = icon;
-    else delete icons[key];
-    setCatalog({ ...catalog, icons });
+    if (catalog.schemaVersion === 1) {
+      const icons = { ...catalog.icons };
+      if (icon) icons[key] = icon;
+      else delete icons[key];
+      setCatalog({ ...catalog, icons });
+      return;
+    }
+    const iconOverrides = { ...catalog.iconOverrides };
+    const projectAssets = { ...catalog.projectAssets };
+    const legacyIconRefs = { ...catalog.legacyIconRefs };
+    const parsed = parseIconKey(icon);
+    if (!icon) {
+      delete iconOverrides[key];
+      delete legacyIconRefs[key];
+    } else if (parsed) {
+      iconOverrides[key] = parsed.value;
+      delete legacyIconRefs[key];
+    } else if (icon.startsWith("official:")) {
+      const path = icon.slice(9);
+      const assetId = iconSlug(path.split(/[\\/]/).pop()?.replace(/\.[^.]+$/, "") ?? "asset");
+      const type = catalogIndex.creatures.has(key) ? "creature" : "item";
+      iconOverrides[key] = `official:${type}:${assetId}` as IconKey;
+      delete legacyIconRefs[key];
+    } else if (icon.startsWith("file:")) {
+      const path = icon.slice(5).replace(/\\/g, "/");
+      const assetId = `${iconSlug(path.split("/").pop()?.replace(/\.[^.]+$/, "") ?? "asset")}-${Math.abs(hashPath(key)).toString(16)}`;
+      projectAssets[assetId] = path;
+      iconOverrides[key] = `project:${iconSlug(projectId, "project")}:${assetId}` as IconKey;
+      delete legacyIconRefs[key];
+    } else {
+      delete iconOverrides[key];
+      legacyIconRefs[key] = {
+        kind: /^https?:\/\//i.test(icon) ? "remote" : "glyph",
+        value: icon,
+      };
+    }
+    setCatalog({ ...catalog, icons: {}, iconOverrides, projectAssets, legacyIconRefs });
   };
 }
 
-/** How many base-game icons render at once before the search has to narrow it. */
-const OFFICIAL_GRID_CAP = 300;
+function hashPath(value: string): number {
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index++) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
 
 const EMOJI_PALETTE = [
   "🦖", "🦕", "🐉", "🦅", "🐻", "🐟", "🦎", "🐸", "🦂", "🐌", "🐢", "🦇",
@@ -291,15 +133,9 @@ const MAP_EMOJI_PALETTE = [
  */
 export function useIconSrc(): (icon: string) => string | null {
   const imagesDir = useImagesDir();
-  const packageRoots = useDraftsStore((s) => s.packageRoots);
-  const officialVersion = useDraftsStore((s) => s.officialVersion);
   return (icon: string) => {
     const resolved = resolveAsset(icon, {
       projectImagesDir: imagesDir,
-      legacy: { origin: "project", officialVersion },
-      officialRoot: (version) =>
-        packageRoots[packageRootKey("official", OFFICIAL_PACKAGE_ID, version)] ??
-        null,
     });
     if (resolved.kind === "local" && isTauri) {
       try {
@@ -315,17 +151,12 @@ export function useIconSrc(): (icon: string) => string | null {
   };
 }
 
-/** The https URL in an icon value, if it is one. */
-export function remoteUrlOf(icon: string | undefined): string | null {
-  return remoteAssetUrl(icon);
-}
-
 /** Renders an icon value, falling back to a plain glyph when it isn't an image. */
 export function IconValue({
   icon,
   size = 20,
   fallback = "🗺️",
-  officialMap,
+  officialMap: _officialMap,
   className,
 }: {
   icon: string;
@@ -336,37 +167,7 @@ export function IconValue({
   className?: string;
 }) {
   const localSrc = useIconSrc()(icon);
-  const remoteSrc = useRemoteIcon(remoteUrlOf(icon));
-  const packageRoots = useDraftsStore((state) => state.packageRoots);
-  const officialVersion = useDraftsStore((state) => state.officialVersion);
-  const managedPath =
-    officialMap && officialVersion
-      ? officialMapAssetPath(officialMap, icon)
-      : null;
-  const managed = managedPath
-    ? resolveAsset(
-        {
-          origin: "official",
-          packageVersion: officialVersion,
-          path: managedPath,
-        },
-        {
-          officialRoot: (version) =>
-            packageRoots[
-              packageRootKey("official", OFFICIAL_PACKAGE_ID, version)
-            ] ?? null,
-        },
-      )
-    : null;
-  let managedSrc: string | null = null;
-  if (managed?.kind === "local" && isTauri) {
-    try {
-      managedSrc = convertFileSrc(managed.absolutePath);
-    } catch {
-      managedSrc = null;
-    }
-  }
-  const src = localSrc ?? remoteSrc ?? managedSrc;
+  const src = localSrc;
   const resolved = resolveAsset(icon);
   const glyph = resolved.kind === "glyph" ? resolved.value : fallback;
   if (src) {
@@ -396,9 +197,8 @@ export function IconValue({
 }
 
 /**
- * Icon picker over project-owned images, emoji, and remote overrides.
- * Managed official/modpack images resolve automatically and are not exposed
- * as folders the administrator has to configure.
+ * Icon picker over project-owned images and map emoji.
+ * Global official/mod artwork appears only through current rights manifests.
  */
 export function IconChooserModal({
   title,
@@ -409,6 +209,7 @@ export function IconChooserModal({
   iconGroup,
   imageSearchSeed = "",
   fallbackNote,
+  onExtractTexture,
   onPick,
   onClose,
 }: {
@@ -416,11 +217,8 @@ export function IconChooserModal({
   current: string;
   palette?: string[];
   /**
-   * Offer the base game's artwork instead of an emoji palette.
-   *
-   * True for creatures and items, where the official package holds a picture
-   * of nearly everything and a glyph is a poor second. False for maps, which
-   * have no such library — an emoji is the only thing there is to pick.
+   * Creature/item mode. Official package artwork is deliberately unavailable;
+   * project-owned custom import remains available.
    */
   officialArtwork?: boolean;
   /**
@@ -436,14 +234,13 @@ export function IconChooserModal({
   imageSearchSeed?: string;
   /** Shown bottom-left, e.g. what happens with no assignment. */
   fallbackNote?: ReactNode;
+  /** Explicit project-custom extraction; never uploads to global asset service. */
+  onExtractTexture?: () => void;
   onPick: (icon: string) => void;
   onClose: () => void;
 }) {
   const imageFiles = useDraftsStore((s) => s.imageFiles);
   const refreshImages = useDraftsStore((s) => s.refreshImages);
-  const packageAssets = useDraftsStore((s) => s.packageAssets);
-  const packageRoots = useDraftsStore((s) => s.packageRoots);
-  const officialVersion = useDraftsStore((s) => s.officialVersion);
   const imagesDir = useImagesDir();
   const [custom, setCustom] = useState(
     current.startsWith("file:") || current.startsWith("official:")
@@ -451,53 +248,6 @@ export function IconChooserModal({
       : current,
   );
   const [imageSearch, setImageSearch] = useState(imageSearchSeed);
-  const [officialSearch, setOfficialSearch] = useState(imageSearchSeed);
-
-  /**
-   * Base-game artwork, offered for anything — a mod's creature included.
-   *
-   * A modpack entry could only ever be given a project image or an emoji, so
-   * an unillustrated mod creature could not borrow the stock icon for the
-   * animal it is a variant of. The official package is already installed and
-   * already resolved; there was no reason to withhold it.
-   */
-  const officialArt = useMemo(() => {
-    const seen = new Map<string, string>();
-    // Matched on a path segment, not a prefix: the package stores these as
-    // `assets/creatures/Rex.webp`, so anchoring at the start finds nothing.
-    for (const ref of Object.values(packageAssets)) {
-      if (ref.origin !== "official") continue;
-      if (
-        officialKind &&
-        !ref.path.toLowerCase().split("/").includes(officialKind)
-      ) {
-        continue;
-      }
-      const label = ref.path.replace(/^.*\//, "").replace(/\.[^.]+$/, "");
-      if (!seen.has(ref.path)) seen.set(ref.path, label);
-    }
-    return [...seen].map(([path, label]) => ({ path, label }));
-  }, [packageAssets, officialKind]);
-
-  const officialRoot =
-    packageRoots[
-      packageRootKey("official", OFFICIAL_PACKAGE_ID, officialVersion)
-    ] ?? "";
-
-  const officialMatches = useMemo(() => {
-    const q = officialSearch.toLowerCase().replace(/[^a-z0-9]/g, "");
-    if (!q) return officialArt;
-    return officialArt.filter((art) =>
-      art.label.toLowerCase().replace(/[^a-z0-9]/g, "").includes(q),
-    );
-  }, [officialArt, officialSearch]);
-  // Capped rather than virtualized: the official package runs to well over a
-  // thousand icons, and mounting every one of them as an <img> to scroll past
-  // costs more than it shows. Searching is the way through a list this long.
-  const matchingOfficial = useMemo(
-    () => officialMatches.slice(0, OFFICIAL_GRID_CAP),
-    [officialMatches],
-  );
 
   const matchingImages = useMemo(() => {
     const q = imageSearch.toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -524,9 +274,16 @@ export function IconChooserModal({
             <span className="text-xs font-semibold text-ink-300 uppercase tracking-wide">
               Project-owned images ({imageFiles.length} files)
             </span>
-            <Button variant="ghost" onClick={() => refreshImages()}>
-              ↻ Refresh
-            </Button>
+            <div className="flex gap-1">
+              {onExtractTexture && (
+                <Button variant="ghost" onClick={onExtractTexture}>
+                  Extract installed mod texture…
+                </Button>
+              )}
+              <Button variant="ghost" onClick={() => refreshImages()}>
+                ↻ Refresh
+              </Button>
+            </div>
           </div>
           <p className="text-xs text-ink-400 mb-2">
             Scanning the project's managed <span className="mono">images</span>
@@ -573,57 +330,16 @@ export function IconChooserModal({
         </div>
       )}
 
-      {isTauri && officialArtwork && officialArt.length > 0 && officialRoot && (
+      {officialArtwork && (
         <div className="mb-4">
           <span className="text-xs font-semibold text-ink-300 uppercase tracking-wide">
-            Base game {officialKind === "items" ? "item" : "creature"} artwork
-            ({officialArt.length} icons)
+            Approved {officialKind === "items" ? "item" : "creature"} artwork
           </span>
-          <p className="text-xs text-ink-400 mb-2 mt-1">
-            From the managed Official ASA package. Usable on any entry,
-            including a mod's — an assignment follows the package rather than
-            naming the version it came from.
+          <p className="text-xs text-ink-400 mt-1">
+            Permission not established for bundled reference art. Approved
+            registry artwork resolves automatically; use project-owned custom
+            art below when you control publication rights.
           </p>
-          <Input
-            value={officialSearch}
-            onChange={(e) => setOfficialSearch(e.target.value)}
-            placeholder="Search base game icons…"
-            className="mb-2"
-          />
-          {matchingOfficial.length > 0 ? (
-            <div className="grid grid-cols-8 gap-2 max-h-72 overflow-y-auto pr-1">
-              {matchingOfficial.map((art) => (
-                <button
-                  key={art.path}
-                  onClick={() => pick(`official:${art.path}`)}
-                  title={art.path}
-                  className={cx(
-                    "flex flex-col items-center gap-1 p-1.5 rounded-md hover:bg-ink-700 cursor-pointer border",
-                    current === `official:${art.path}`
-                      ? "border-accent-500"
-                      : "border-transparent",
-                  )}
-                >
-                  <img
-                    src={convertFileSrc(`${officialRoot}/${art.path}`)}
-                    alt={art.label}
-                    className="w-10 h-10 object-contain"
-                  />
-                  <span className="text-[10px] text-ink-400 truncate w-full">
-                    {art.label}
-                  </span>
-                </button>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-ink-400">No matches.</p>
-          )}
-          {officialMatches.length > matchingOfficial.length && (
-            <p className="text-xs text-ink-500 mt-2">
-              Showing {matchingOfficial.length} of {officialMatches.length} —
-              search to narrow it down.
-            </p>
-          )}
         </div>
       )}
 
@@ -647,27 +363,27 @@ export function IconChooserModal({
                 </button>
               ))}
             </div>
+            <Field
+              label="Custom emoji"
+              hint="Remote image URLs are quarantined compatibility refs and cannot be newly assigned."
+            >
+              <div className="flex gap-2">
+                <Input
+                  value={custom}
+                  onChange={(e) => setCustom(e.target.value)}
+                  placeholder="🐌"
+                />
+                <Button
+                  variant="primary"
+                  disabled={!custom.trim() || /^https?:\/\//i.test(custom.trim())}
+                  onClick={() => pick(custom.trim())}
+                >
+                  Set
+                </Button>
+              </div>
+            </Field>
           </>
         )}
-        <Field
-          label="Custom emoji or image URL"
-          hint="Paste any emoji, or an https:// image URL (e.g. a wiki icon)"
-        >
-          <div className="flex gap-2">
-            <Input
-              value={custom}
-              onChange={(e) => setCustom(e.target.value)}
-              placeholder="🐌 or https://…/icon.png"
-            />
-            <Button
-              variant="primary"
-              disabled={!custom.trim()}
-              onClick={() => pick(custom.trim())}
-            >
-              Set
-            </Button>
-          </div>
-        </Field>
       </div>
 
       <div className="flex justify-between items-center mt-4">
@@ -707,13 +423,48 @@ export function IconPickerModal({
   onClose: () => void;
 }) {
   const assign = useAssignIcon();
-  const icons = useDraftsStore((s) => s.catalog.icons);
+  const catalog = useDraftsStore((s) => s.catalog);
+  const icons = catalogLegacyIconValues(catalog);
   const catalogIndex = useCatalogIndex();
-  const current = icons[normalizeBpPath(bpPath)] ?? "";
+  const projectDir = useProjectStore((state) => state.dir);
+  const imagesDirOverride = useProjectStore((state) => state.local?.imagesDir) ?? "";
+  const modsDir = useProjectStore((state) => state.local?.modsDir)?.trim() ?? "";
+  const [extracting, setExtracting] = useState(false);
+  const current = assignedIconKey(catalog, bpPath) ?? icons[normalizeBpPath(bpPath)] ?? "";
   // An imported icon is filed under the source that owns the entry, so the
   // images folder groups the same way the catalog does.
-  const owner =
-    catalogIndex[kind].get(normalizeBpPath(bpPath))?.source.name ?? "";
+  const ownerSource = catalogIndex[kind].get(normalizeBpPath(bpPath))?.source;
+  const owner = ownerSource?.name ?? "";
+  const discovery = ownerSource?.discovery;
+  const canExtract = Boolean(
+    projectDir &&
+    modsDir &&
+    ownerSource?.kind === "mod" &&
+    /^\d+$/.test(ownerSource.curseforgeId) &&
+    discovery?.fileId,
+  );
+
+  if (extracting && canExtract && projectDir && ownerSource && discovery) {
+    return (
+      <TexturePickerModal
+        modDir={modFolderPath(modsDir, ownerSource.curseforgeId, discovery.fileId)}
+        modName={ownerSource.name}
+        entryName={name}
+        onClose={() => setExtracting(false)}
+        onPick={async (texture: ModTexture, pngB64: string, invert: boolean) => {
+          const relative = await writeProjectIcon(
+            projectDir,
+            imagesDirOverride,
+            iconFileStem(discovery.shortName || ownerSource.name, name),
+            pngB64,
+            invert,
+          );
+          assign(bpPath, `file:${relative}`);
+          toast.success(`${texture.name} saved as project-custom artwork`);
+        }}
+      />
+    );
+  }
 
   return (
     <IconChooserModal
@@ -723,14 +474,14 @@ export function IconPickerModal({
       officialKind={kind}
       iconGroup={owner}
       imageSearchSeed={name}
+      onExtractTexture={canExtract ? () => setExtracting(true) : undefined}
       onPick={(icon) => assign(bpPath, icon)}
       onClose={onClose}
       fallbackNote={
         <>
-          Files named after the creature/item (e.g.{" "}
-          <span className="mono">creatures\Achatina.png</span>) are used
-          automatically — variants inherit their parent's icon. With nothing
-          assigned, the entry shows the placeholder artwork.
+          Import or select project-owned artwork only when you control its
+          publication rights. With nothing assigned, entry shows approved
+          registry art or bundled placeholder.
         </>
       }
     />

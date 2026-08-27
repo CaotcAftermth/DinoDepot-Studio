@@ -32,7 +32,7 @@ if (sha256(manifestBytes) !== String(release.integrity ?? "").toLowerCase()) {
 const manifest = JSON.parse(manifestBytes.toString("utf8"));
 if (
   manifest.format !== "dinodepot.package" ||
-  ![2, 3].includes(manifest.formatVersion) ||
+  ![2, 3, 4].includes(manifest.formatVersion) ||
   manifest.kind !== "official" ||
   manifest.packageId !== "official-asa" ||
   manifest.version !== release.version
@@ -68,6 +68,10 @@ await verifiedCopy(
   path.join(versionOutput, manifest.content.path),
   manifest.content,
 );
+
+if (manifest.formatVersion === 4 && (manifest.assets ?? []).length !== 0) {
+  throw new Error("Official package v4 must be data-only");
+}
 
 for (const asset of manifest.assets ?? []) {
   const logical = String(asset.path ?? "");

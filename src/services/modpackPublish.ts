@@ -1,10 +1,7 @@
 import {
   compareVersions,
-  iconBaseName,
   PACK_FILE,
-  PACK_ICONS_DIR,
   packDirName,
-  packIconFiles,
   RegistryIndexSchema,
   registryEntryFor,
   type Modpack,
@@ -16,7 +13,6 @@ import {
 import {
   PACKAGE_FORMAT_VERSION,
   PackageManifestSchema,
-  packageAssetV3,
   packageContentFromModpack,
   packageFile,
   packageJson,
@@ -64,82 +60,16 @@ export interface AssembledPack {
  */
 export async function assemblePack(
   pack: Modpack,
-  imagesDir: string,
+  _imagesDir: string,
 ): Promise<AssembledPack> {
-  const files: PackFile[] = [];
-  const missingIcons: string[] = [];
-  const assetBytes = new Map<string, Uint8Array>();
-
-  for (const icon of packIconFiles(pack)) {
-    const name = iconBaseName(icon);
-    if (icon !== name || !/\.(?:webp|png)$/i.test(name)) {
-      missingIcons.push(icon);
-      continue;
-    }
-    const collision = [...assetBytes.keys()].find(
-      (candidate) => candidate.toLowerCase() === name.toLowerCase(),
-    );
-    if (collision) {
-      throw new Error(
-        `Two icon references collapse to the same package file: ${collision} and ${name}`,
-      );
-    }
-    if (!imagesDir) {
-      missingIcons.push(name);
-      continue;
-    }
-    try {
-      const contentB64 = await ipc<string>("read_file_b64", {
-        path: joinPath(imagesDir, name),
-      });
-      const bytes = bytesFromBase64(contentB64);
-      if (!hasImageSignature(name, bytes)) {
-        missingIcons.push(name);
-        continue;
-      }
-      files.push({ path: `${PACK_ICONS_DIR}/${name}`, contentB64 });
-      assetBytes.set(name, bytes);
-    } catch {
-      missingIcons.push(name);
-    }
+  if (pack.formatVersion < 2) {
+    throw new Error("Legacy modpacks must be imported before they can be re-exported");
   }
-
   const dir = packDirName(pack.meta);
-  const available = new Set(
-    [...assetBytes.keys()].map((name) => name.toLowerCase()),
-  );
-  const packaged = {
-    ...pack,
-    icons: Object.fromEntries(
-      Object.entries(pack.icons).filter(([, value]) => {
-        if (!value.startsWith("file:")) return true;
-        const reference = value.slice(5);
-        const name = iconBaseName(reference);
-        return (
-          reference === name &&
-          /\.(?:webp|png)$/i.test(name) &&
-          available.has(name.toLowerCase())
-        );
-      }),
-    ),
-  };
-  files.unshift({ path: PACK_FILE, text: JSON.stringify(packaged, null, 2) });
-
+  const packaged = { ...pack, icons: {} };
   const content = packageContentFromModpack(packaged);
   const contentText = packageJson(content);
   const contentBytes = new TextEncoder().encode(contentText);
-  const assetEntries = await Promise.all(
-    [...assetBytes.entries()].map(async ([name, bytes]) => ({
-      bytes,
-      record: await packageAssetV3(
-        `assets/${name}`,
-        bytes,
-        mediaTypeFor(name),
-      ),
-    })),
-  );
-  const assets = assetEntries.map(({ record }) => record);
-  assets.sort((left, right) => left.path.localeCompare(right.path));
   const manifest = PackageManifestSchema.parse({
     format: "dinodepot.package",
     formatVersion: PACKAGE_FORMAT_VERSION,
@@ -159,18 +89,16 @@ export async function assemblePack(
       variantTag: pack.meta.variantTag,
     },
     content: await packageFile("content.json", contentBytes, "application/json"),
-    assets,
+    assets: [],
   });
   const manifestText = packageJson(manifest);
   const versionRoot = `versions/${pack.meta.version}`;
-  files.push({ path: `${versionRoot}/content.json`, text: contentText });
-  const emittedBlobs = new Set<string>();
-  for (const { record, bytes } of assetEntries) {
-    if (emittedBlobs.has(record.blob)) continue;
-    emittedBlobs.add(record.blob);
-    files.push({ path: record.blob, contentB64: base64FromBytes(bytes) });
-  }
-  files.push({ path: `${versionRoot}/manifest.json`, text: manifestText });
+  const files: PackFile[] = [
+    { path: PACK_FILE, text: JSON.stringify(packaged, null, 2) },
+    { path: `${versionRoot}/content.json`, text: contentText },
+    { path: `${versionRoot}/manifest.json`, text: manifestText },
+  ];
+  assertDataOnlyPackFiles(files);
 
   const registryVersion: RegistryVersion = {
     version: pack.meta.version,
@@ -178,7 +106,7 @@ export async function assemblePack(
     integrity: await sha256Hex(new TextEncoder().encode(manifestText)),
     publishedAt: pack.meta.updatedAt,
     packageFormat: PACKAGE_FORMAT_VERSION,
-    minStudioVersion: "0.4.0",
+    minStudioVersion: "0.9.0",
   };
   const registryEntry: RegistryEntry = {
     ...registryEntryFor(pack),
@@ -188,44 +116,31 @@ export async function assemblePack(
   return {
     dir,
     files,
-    missingIcons,
+    missingIcons: [],
     registryVersion,
     registryEntry,
     manifestText,
   };
 }
 
+const FORBIDDEN_ART_EXTENSION = /\.(?:png|jpe?g|webp|gif|svg)(?:$|[?#])/i;
+
+/** Shared export/disk/PR boundary: format-2 packs are JSON-only. */
+export function assertDataOnlyPackFiles(files: readonly PackFile[]): void {
+  for (const file of files) {
+    const normalized = file.path.replace(/\\/g, "/");
+    if (FORBIDDEN_ART_EXTENSION.test(normalized) || file.contentB64 !== undefined) {
+      throw new Error(`Data-only modpacks cannot contain artwork: ${file.path}`);
+    }
+    if (!normalized.endsWith(".json")) {
+      throw new Error(`Data-only modpacks may contain JSON files only: ${file.path}`);
+    }
+  }
+}
+
 function bytesFromBase64(value: string): Uint8Array {
   const binary = atob(value.replace(/\s/g, ""));
   return Uint8Array.from(binary, (character) => character.charCodeAt(0));
-}
-
-function hasImageSignature(name: string, bytes: Uint8Array): boolean {
-  if (/\.png$/i.test(name)) {
-    return (
-      bytes.length >= 8 &&
-      bytes[0] === 0x89 &&
-      String.fromCharCode(...bytes.subarray(1, 4)) === "PNG" &&
-      bytes[4] === 0x0d &&
-      bytes[5] === 0x0a &&
-      bytes[6] === 0x1a &&
-      bytes[7] === 0x0a
-    );
-  }
-  return (
-    /\.webp$/i.test(name) &&
-    bytes.length >= 12 &&
-    String.fromCharCode(...bytes.subarray(0, 4)) === "RIFF" &&
-    String.fromCharCode(...bytes.subarray(8, 12)) === "WEBP"
-  );
-}
-
-function base64FromBytes(bytes: Uint8Array): string {
-  let binary = "";
-  for (let offset = 0; offset < bytes.length; offset += 0x8000) {
-    binary += String.fromCharCode(...bytes.subarray(offset, offset + 0x8000));
-  }
-  return btoa(binary);
 }
 
 async function gitBlobSha(bytes: Uint8Array): Promise<string> {
@@ -239,16 +154,6 @@ async function gitBlobSha(bytes: Uint8Array): Promise<string> {
     .join("");
 }
 
-function mediaTypeFor(name: string): string {
-  const extension = name.split(".").pop()?.toLowerCase();
-  return (
-    {
-      png: "image/png",
-      webp: "image/webp",
-    }[extension ?? ""] ?? "application/octet-stream"
-  );
-}
-
 /** Joins with the separator already in use, so Windows paths stay Windows paths. */
 function joinPath(dir: string, name: string): string {
   const sep = dir.includes("\\") && !dir.includes("/") ? "\\" : "/";
@@ -260,6 +165,7 @@ export async function writePackToDisk(
   pack: AssembledPack,
   targetDir: string,
 ): Promise<void> {
+  assertDataOnlyPackFiles(pack.files);
   const immutableManifest = pack.files.find(
     (file) => /^versions\/[^/]+\/manifest\.json$/.test(file.path),
   );
@@ -432,6 +338,7 @@ export async function planPublish(
   registry: ModpackRegistry,
   pack: AssembledPack,
 ): Promise<PublishPlan> {
+  assertDataOnlyPackFiles(pack.files);
   requirePublishable(pack);
   const info = await ipc<{ canPush: boolean; defaultBranch: string }>(
     "github_repo_info",
@@ -473,6 +380,7 @@ export async function publishPack(
   meta: Modpack["meta"],
   onProgress?: (step: string) => void,
 ): Promise<PublishResult> {
+  assertDataOnlyPackFiles(pack.files);
   requirePublishable(pack);
   const say = (s: string) => onProgress?.(s);
 
@@ -620,7 +528,6 @@ export async function publishPack(
 /** The pull request description — what a reviewer needs, in review order. */
 function prBody(meta: Modpack["meta"], pack: AssembledPack): string {
   const entry = pack.registryEntry ?? registryEntryFor({ meta } as Modpack);
-  const icons = pack.files.filter((f) => f.path.startsWith(`${PACK_ICONS_DIR}/`));
   const lines = [
     `**${meta.name}** \`${meta.version}\``,
     "",
@@ -632,7 +539,7 @@ function prBody(meta: Modpack["meta"], pack: AssembledPack): string {
     `| CurseForge | ${meta.curseforgeId ? `\`${meta.curseforgeId}\`` : "—"} |`,
     `| Mod page | ${meta.url || "—"} |`,
     `| Author | ${meta.author || "—"} |`,
-    `| Icons | ${icons.length} |`,
+    "| Artwork binaries | 0 (data-only) |",
     "",
     "### Index entry",
     "",

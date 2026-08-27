@@ -50,6 +50,14 @@ jobs:
       - name: Type check the feedback service
         run: npx tsc --noEmit -p services/feedback-api/tsconfig.json
 
+      - name: Enforce data-only public asset boundary
+        run: |
+          npm run scan:modpacks
+          npm run scan:public-assets
+
+      - name: Rights publisher tooling tests
+        run: npm run test:rights-tooling
+
       # Covers both suites: `include` in vite.config.ts spans src/ and services/.
       - name: Frontend and service tests
         run: npx vitest run

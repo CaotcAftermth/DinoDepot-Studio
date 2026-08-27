@@ -47,6 +47,14 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      - name: Enforce data-only public asset boundary
+        run: |
+          npm run scan:modpacks
+          npm run scan:public-assets
+
+      - name: Rights publisher tooling tests
+        run: npm run test:rights-tooling
+
       - name: Frontend tests
         run: npx vitest run
 

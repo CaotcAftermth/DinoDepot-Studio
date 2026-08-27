@@ -145,7 +145,7 @@ fn local_blob_target(root: &Path, file: &ManifestFile) -> Result<PathBuf, String
 fn parse_manifest(text: &str) -> Result<PackageManifest, String> {
     let manifest: PackageManifest =
         serde_json::from_str(text).map_err(|e| format!("Package manifest is invalid: {e}"))?;
-    if manifest.format != "dinodepot.package" || !matches!(manifest.format_version, 2 | 3) {
+    if manifest.format != "dinodepot.package" || !matches!(manifest.format_version, 2 | 3 | 4) {
         return Err("Unsupported package manifest format".into());
     }
     if !matches!(manifest.kind.as_str(), "modpack" | "official") {
@@ -159,6 +159,9 @@ fn parse_manifest(text: &str) -> Result<PackageManifest, String> {
     }
     if manifest.content.path != "content.json" {
         return Err("Package content must be content.json".into());
+    }
+    if manifest.format_version == 4 && !manifest.assets.is_empty() {
+        return Err("Package v4 is data-only and cannot contain assets".into());
     }
 
     let mut seen = HashSet::new();
@@ -216,6 +219,18 @@ fn expected_files(manifest: &PackageManifest) -> HashMap<String, ManifestFile> {
         .collect()
 }
 
+fn required_files(manifest: &PackageManifest) -> HashMap<String, ManifestFile> {
+    // Package v2/v3 artwork is quarantined compatibility input. Content stays
+    // installable after those optional binaries have been removed.
+    if manifest.format_version < 4 {
+        [(manifest.content.path.clone(), manifest.content.clone())]
+            .into_iter()
+            .collect()
+    } else {
+        expected_files(manifest)
+    }
+}
+
 fn installed_is_valid(target: &Path, manifest_json: &str, manifest: &PackageManifest) -> bool {
     if fs::read_to_string(target.join("manifest.json"))
         .ok()
@@ -224,7 +239,7 @@ fn installed_is_valid(target: &Path, manifest_json: &str, manifest: &PackageMani
     {
         return false;
     }
-    expected_files(manifest).values().all(|expected| {
+    required_files(manifest).values().all(|expected| {
         fs::read(target.join(&expected.path)).is_ok_and(|bytes| {
             bytes.len() == expected.size
                 && sha256_hex(&bytes).eq_ignore_ascii_case(&expected.sha256)
@@ -307,6 +322,11 @@ fn install_bytes(
     let mut supplied = HashMap::new();
     let mut total = 0usize;
     for (path, bytes) in files {
+        if manifest.format_version < 4 && path.starts_with("assets/") {
+            // Legacy artwork is quarantined input. Ignore supplied bytes even
+            // when present so a compatibility import can only install data.
+            continue;
+        }
         if !expected.contains_key(&path) || supplied.contains_key(&path) {
             return Err(format!("Unexpected or duplicate package file '{path}'"));
         }
@@ -325,7 +345,8 @@ fn install_bytes(
         }
         supplied.insert(path, bytes);
     }
-    let missing: Vec<_> = expected
+    let required = required_files(&manifest);
+    let missing: Vec<_> = required
         .keys()
         .filter(|path| !supplied.contains_key(*path))
         .cloned()
@@ -417,35 +438,19 @@ fn install_from_disk(root: &Path, manifest_path: &Path) -> Result<PackageInstall
     let dir = manifest_path
         .parent()
         .ok_or("The bundled package manifest has no folder")?;
-    // Format 3 addresses its assets by content hash from the package root,
-    // which is two levels above `versions/<exact-version>/`.
-    let package_root = dir
-        .parent()
-        .and_then(Path::parent)
-        .ok_or("The bundled package is not laid out below versions/<version>/")?;
-
     let mut files: Vec<(String, Vec<u8>)> = Vec::new();
     let mut total = 0usize;
-    let records = std::iter::once((&manifest.content, false))
-        .chain(manifest.assets.iter().map(|asset| (asset, true)));
-    for (record, is_asset) in records {
-        let v3_asset = is_asset && manifest.format_version == 3;
-        let stored = if v3_asset {
-            record
-                .blob
-                .as_deref()
-                .ok_or_else(|| format!("Package asset '{}' has no blob path", record.path))?
-        } else {
-            record.path.as_str()
-        };
+    // Package v2/v3 artwork remains quarantined even when the source files are
+    // present. Data-only v4 has no assets, so every format reads content only.
+    for record in std::iter::once(&manifest.content) {
+        let stored = record.path.as_str();
         if !safe_relative(stored) {
             return Err(format!(
                 "Package file '{stored}' is not a safe relative path"
             ));
         }
-        let base = if v3_asset { package_root } else { dir };
-        let bytes = fs::read(base.join(stored))
-            .map_err(|e| format!("Could not read package file '{stored}': {e}"))?;
+        let bytes = fs::read(dir.join(stored))
+            .map_err(|error| format!("Could not read package file '{stored}': {error}"))?;
         total = total.saturating_add(bytes.len());
         if total > MAX_PACKAGE_BYTES {
             return Err("Package is larger than 256 MB".into());
@@ -717,7 +722,7 @@ mod tests {
             let info = install_from_disk(library.path(), &manifest_path).unwrap();
             let installed = Path::new(&info.path);
             assert!(installed.join("content.json").is_file());
-            assert!(installed.join("assets/creatures/Rex.webp").is_file());
+            assert!(!installed.join("assets/creatures/Rex.webp").exists());
             assert_eq!(info.package_id, "official-asa");
         }
     }
@@ -768,7 +773,7 @@ mod tests {
     }
 
     #[test]
-    fn accepts_only_real_png_or_webp_package_images() {
+    fn quarantines_supplied_legacy_package_images() {
         let temp = tempfile::tempdir().unwrap();
         let content = br#"{"format":"dinodepot.package-content","schemaVersion":1}"#;
         let image = b"not a png";
@@ -779,7 +784,7 @@ mod tests {
             content.len(),
             image.len()
         );
-        assert!(install_at(
+        let installed = install_at(
             temp.path(),
             &manifest,
             "",
@@ -794,7 +799,8 @@ mod tests {
                 },
             ],
         )
-        .is_err());
+        .unwrap();
+        assert!(!Path::new(&installed.path).join("assets/Icon.png").exists());
 
         assert!(parse_manifest(&manifest.replace("Icon.png", "Icon.jpg")).is_err());
     }
@@ -888,20 +894,19 @@ mod tests {
     }
 
     #[test]
-    fn installs_nested_assets_under_the_version_root() {
+    fn legacy_install_keeps_nested_assets_out_of_managed_storage() {
         let temp = tempfile::tempdir().unwrap();
         let (manifest, files) = asset_fixture("1.0.0");
         let info = install_at(temp.path(), &manifest, "", files).unwrap();
 
         let icon = Path::new(&info.path).join("assets/creatures/Achatina.png");
-        assert_eq!(fs::read(&icon).unwrap(), PNG);
-        // The resolver hands this exact path to the asset protocol, so it has
-        // to sit under the app-data content root the scope allows.
+        assert!(!icon.exists());
+        assert!(Path::new(&info.path).join("content.json").is_file());
         assert!(info.path.replace('\\', "/").contains("/official/asa/1.0.0"));
     }
 
     #[test]
-    fn v3_versions_share_one_verified_content_addressed_blob() {
+    fn v3_versions_never_promote_legacy_artwork_into_the_blob_store() {
         let temp = tempfile::tempdir().unwrap();
         let (first_manifest, first_files) = v3_asset_fixture("1.0.0");
         let (second_manifest, second_files) = v3_asset_fixture("1.0.1");
@@ -914,15 +919,13 @@ mod tests {
             .join("blobs/sha256")
             .join(&hash[0..2])
             .join(format!("{hash}.png"));
-        assert_eq!(fs::read(blob).unwrap(), PNG);
-        assert_eq!(
-            fs::read(Path::new(&first.path).join("assets/creatures/Achatina.png")).unwrap(),
-            PNG
-        );
-        assert_eq!(
-            fs::read(Path::new(&second.path).join("assets/creatures/Achatina.png")).unwrap(),
-            PNG
-        );
+        assert!(!blob.exists());
+        assert!(!Path::new(&first.path)
+            .join("assets/creatures/Achatina.png")
+            .exists());
+        assert!(!Path::new(&second.path)
+            .join("assets/creatures/Achatina.png")
+            .exists());
     }
 
     #[test]

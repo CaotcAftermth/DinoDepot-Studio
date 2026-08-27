@@ -11,7 +11,7 @@ import {
   CosmeticsDraftSchema,
   emptyCosmeticsDraft,
 } from "../model/cosmetics";
-import { CatalogFile, CatalogFileSchema, emptyCatalog } from "../model/catalog";
+import { CatalogFile, CatalogFileSchema, catalogForWrite, emptyCatalog } from "../model/catalog";
 import { emptyWatchlist, Watchlist, WatchlistSchema } from "../model/watchlist";
 import { emptyHistory, HistoryFile, HistoryFileSchema } from "../model/history";
 import { emptyPlayers, PlayersFile, PlayersFileSchema } from "../model/players";
@@ -173,7 +173,7 @@ export async function flushPendingSaves(): Promise<FlushResult> {
     [PROJECT_FILE.production, state.production],
     [PROJECT_FILE.remaps, state.remaps],
     [PROJECT_FILE.cosmetics, state.cosmetics],
-    [PROJECT_FILE.catalog, state.projectCatalog],
+    [PROJECT_FILE.catalog, catalogForWrite(state.projectCatalog)],
     [PROJECT_FILE.watchlist, state.watchlist],
     [PROJECT_FILE.history, state.history],
     [PROJECT_FILE.players, state.players],
@@ -413,7 +413,7 @@ export const useDraftsStore = create<DraftsState>((set, get) => ({
           set({ catalog: clean(get().catalog), projectCatalog });
           schedulePersist(
             PROJECT_FILE.catalog,
-            JSON.stringify(projectCatalog, null, 2),
+            JSON.stringify(catalogForWrite(projectCatalog), null, 2),
           );
         })
         .catch(async (error: unknown) => {
@@ -527,7 +527,7 @@ export const useDraftsStore = create<DraftsState>((set, get) => ({
     set({ catalog, projectCatalog });
     schedulePersist(
       PROJECT_FILE.catalog,
-      JSON.stringify(projectCatalog, null, 2),
+      JSON.stringify(catalogForWrite(projectCatalog), null, 2),
     );
   },
 
@@ -544,7 +544,7 @@ export const useDraftsStore = create<DraftsState>((set, get) => ({
     set({ catalog, projectCatalog });
     await useProjectStore
       .getState()
-      .saveFile(PROJECT_FILE.catalog, JSON.stringify(projectCatalog, null, 2));
+      .saveFile(PROJECT_FILE.catalog, JSON.stringify(catalogForWrite(projectCatalog), null, 2));
   },
   setWatchlist(watchlist) {
     recordChanges(diffList(get().watchlist.mods, watchlist.mods, WATCHLIST_SPEC));

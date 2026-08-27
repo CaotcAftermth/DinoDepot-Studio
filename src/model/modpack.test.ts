@@ -209,7 +209,8 @@ describe("sourceToModpack", () => {
     // The exporting cluster's opinions about official creatures are not facts
     // about the mod, and must not travel with it.
     const pack = sourceToModpack(source(), catalogWithData());
-    expect(pack.icons[normalizeBpPath(CREATURE)]).toBe("🦖");
+    expect(pack.icons).toEqual({});
+    expect(pack.creatures[0].iconKey).toMatch(/^mod:12345:creature:/);
     expect(pack.icons[normalizeBpPath(OFFICIAL)]).toBeUndefined();
     expect(pack.notes[normalizeBpPath(OFFICIAL)]).toBeUndefined();
     expect(pack.creatureInfo[normalizeBpPath(OFFICIAL)]).toBeUndefined();
@@ -368,8 +369,8 @@ describe("applyModpack", () => {
     };
     const result = applyModpack(emptyCatalog(), withIcon, ids);
     expect(result.catalog.icons[normalizeBpPath(CREATURE)]).toBeUndefined();
-    // Anything that resolves without a project file still arrives.
-    expect(result.catalog.icons[normalizeBpPath(ITEM)]).toBe("🍖");
+    // All legacy artwork stays isolated; content identity comes from iconKey.
+    expect(result.catalog.icons[normalizeBpPath(ITEM)]).toBeUndefined();
   });
 
   it("keeps the project's own icon when a pack ships one for the same entry", () => {
@@ -507,7 +508,7 @@ describe("templateModpack", () => {
 
   it("documents the folder layout without leaking escapes", () => {
     const readme = templateReadme();
-    expect(readme).toContain("icons/");
+    expect(readme).toContain("data-only");
     expect(readme).toContain("modpack.json");
     // Backticks must survive the template literal as real backticks.
     expect(readme).toContain("`modpack.json`");
@@ -573,25 +574,20 @@ describe("pack icons", () => {
       .toEqual([]);
   });
 
-  it("flattens nested icon paths on export so packs stay portable", () => {
-    // The exporting project may nest images; the importing one should not have
-    // to recreate that layout.
+  it("does not export nested project icon paths", () => {
     const catalog = emptyCatalog();
     catalog.icons[normalizeBpPath(CREATURE)] = "file:creatures/mod/Foo.png";
     catalog.icons[normalizeBpPath(ITEM)] = "🍖";
     const pack = sourceToModpack(source(), catalog);
-    expect(pack.icons[normalizeBpPath(CREATURE)]).toBe("file:Foo.png");
-    expect(pack.icons[normalizeBpPath(ITEM)]).toBe("🍖");
-    expect(packIconFiles(pack)).toEqual(["Foo.png"]);
+    expect(pack.icons).toEqual({});
+    expect(packIconFiles(pack)).toEqual([]);
   });
 
-  it("leaves remote icon URLs alone — they already travel", () => {
+  it("does not export remote icon URLs", () => {
     const catalog = emptyCatalog();
     catalog.icons[normalizeBpPath(CREATURE)] = "https://example.com/rex.png";
     const pack = sourceToModpack(source(), catalog);
-    expect(pack.icons[normalizeBpPath(CREATURE)]).toBe(
-      "https://example.com/rex.png",
-    );
+    expect(pack.icons).toEqual({});
     expect(packIconFiles(pack)).toEqual([]);
   });
 });

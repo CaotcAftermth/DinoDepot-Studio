@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+throw new Error(
+  "Direct official-art import is disabled. Review provenance outside this repository and use the rights publisher.",
+);
+
 /**
  * Imports human-named official icon folders into the immutable SHA-256 store.
  * The input root contains creatures/, items/, and/or maps/. It can be a

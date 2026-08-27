@@ -2,8 +2,9 @@
  * The public cluster viewer ("Production Atlas"): a modern, Ark-themed,
  * single-file HTML page published to GitHub Pages. It fetches the
  * viewer-data JSON at runtime, so republishing the data updates the page
- * without touching the HTML. Creature/item images load from the repo's
- * published images/ folder with emoji fallback.
+ * without touching the HTML. Project-custom images may load from the
+ * published images folder; official/mod images pass through the public rights
+ * registry and fall back to bundled placeholders.
  */
 
 export interface ViewerPageConfig {
@@ -389,7 +390,8 @@ button.drop:hover{border-color:var(--cyan)}
 <script>
 var CFG = {
   dataUrl: ${JSON.stringify(config.dataUrl)},
-  imagesUrl: ${JSON.stringify(config.imagesUrl.replace(/\/+$/, ""))}
+  imagesUrl: ${JSON.stringify(config.imagesUrl.replace(/\/+$/, ""))},
+  assetOrigin: "https://assets.dinodepot.app"
 };
 var DATA = null;
 var byC = new Map(), byI = new Map();
@@ -417,6 +419,118 @@ function iconBox(e, cls){
       'onerror="this.parentNode.textContent=\\''+esc(e.icon||"📦")+'\\'"></span>';
   }
   return '<span class="'+cls+'">'+esc(e && e.icon || "📦")+'</span>';
+}
+
+var REGISTRY_REFRESH_MS = 15 * 60 * 1000;
+var REGISTRY_OFFLINE_MAX_MS = 24 * 60 * 60 * 1000;
+var registryRequests = new Map();
+var assetObjectUrls = new Map();
+function placeholderData(type){
+  var glyph = type === "creature" ? "?" : type === "map" ? "M" : "#";
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="160" height="160" viewBox="0 0 160 160"><rect width="160" height="160" rx="20" fill="#101a25"/><rect x="8" y="8" width="144" height="144" rx="16" fill="none" stroke="#24384a" stroke-width="4"/><text x="80" y="102" text-anchor="middle" font-family="system-ui" font-size="64" font-weight="700" fill="#7d93a5">'+glyph+'</text></svg>';
+  return "data:image/svg+xml," + encodeURIComponent(svg);
+}
+function registryCacheKey(path){ return "dds.asset-registry:" + path; }
+async function registryJson(path){
+  var key = registryCacheKey(path), saved = null;
+  try { saved = JSON.parse(localStorage.getItem(key) || "null"); } catch (_) {}
+  var age = saved ? Date.now() - Number(saved.fetchedAt || 0) : Infinity;
+  if(saved && age <= REGISTRY_REFRESH_MS) return saved.body;
+  if(registryRequests.has(path)) return registryRequests.get(path);
+  var headers = {};
+  if(saved && saved.etag) headers["If-None-Match"] = saved.etag;
+  var pending = fetch(CFG.assetOrigin + path, { cache: "no-cache", headers: headers })
+    .then(async function(response){
+      if(response.status === 304 && saved) return { body:saved.body, etag:saved.etag || "" };
+      if(!response.ok) throw new Error("HTTP "+response.status);
+      return { body:await response.json(), etag:response.headers.get("ETag") || "" };
+    })
+    .then(function(result){
+      var body = result.body;
+      if(!body || body.schemaVersion !== 1) throw new Error("unsupported registry schema");
+      try { localStorage.setItem(key, JSON.stringify({ fetchedAt: Date.now(), body: body, etag:result.etag })); } catch (_) {}
+      return body;
+    })
+    .catch(function(error){
+      if(saved && age <= REGISTRY_OFFLINE_MAX_MS) return saved.body;
+      throw error;
+    })
+    .finally(function(){ registryRequests.delete(path); });
+  registryRequests.set(path, pending);
+  return pending;
+}
+function parseContentKey(value){
+  var official = /^official:(creature|item|map):([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(value || "");
+  if(official) return { ns:"official", type:official[1], asset:official[2] };
+  var mod = /^mod:((?:0|[1-9][0-9]*)):(creature|item):([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(value || "");
+  if(mod) return { ns:"mod", modId:mod[1], type:mod[2], asset:mod[3] };
+  var dds = /^dds:[a-z0-9]+(?:-[a-z0-9]+)*:([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(value || "");
+  if(dds) return { ns:"dds", type:dds[1] };
+  var project = /^project:[a-z0-9]+(?:-[a-z0-9]+)*:[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value || "");
+  return project ? { ns:"project" } : null;
+}
+async function sha256Hex(bytes){
+  var digest = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest)).map(function(byte){ return byte.toString(16).padStart(2,"0"); }).join("");
+}
+async function verifiedAssetUrl(iconKey, record){
+  var safePath = /^\/(?:official|mods)\/[a-z0-9/_.-]+\.webp$/.test(record && record.path || "") && record.path.indexOf("..") < 0 && record.path.indexOf("//") < 0;
+  if(!record || record.status !== "active" || !safePath || !Number.isInteger(record.version) || record.version < 1 || !/^[a-f0-9]{64}$/.test(record.sha256 || "")) throw new Error("inactive or invalid asset");
+  var response = await fetch(CFG.assetOrigin + record.path, { cache: "force-cache" });
+  if(!response.ok) throw new Error("asset HTTP "+response.status);
+  var bytes = await response.arrayBuffer();
+  if(await sha256Hex(bytes) !== record.sha256) throw new Error("asset SHA-256 mismatch");
+  var blob = new Blob([bytes], { type:"image/webp" });
+  var bitmap = await createImageBitmap(blob);
+  var valid = bitmap.width === 160 && bitmap.height === 160;
+  bitmap.close();
+  if(!valid) throw new Error("asset dimensions are not 160x160");
+  var previous = assetObjectUrls.get(iconKey);
+  if(previous) URL.revokeObjectURL(previous);
+  var url = URL.createObjectURL(blob);
+  assetObjectUrls.set(iconKey, url);
+  return url;
+}
+function imageNodes(root){
+  var out = [];
+  (function visit(value){
+    if(!value || typeof value !== "object") return;
+    if(Array.isArray(value)){ value.forEach(visit); return; }
+    if(typeof value.iconKey === "string" && Object.prototype.hasOwnProperty.call(value,"img")) out.push(value);
+    Object.keys(value).forEach(function(key){ visit(value[key]); });
+  })(root);
+  return out;
+}
+async function refreshContentAssets(data){
+  var nodes = imageNodes(data), index = null;
+  try { index = await registryJson("/registry/index.json"); } catch (_) {}
+  await Promise.all(nodes.map(async function(node){
+    var parsed = parseContentKey(node.iconKey);
+    var oldUrl = assetObjectUrls.get(node.iconKey);
+    if(oldUrl){ URL.revokeObjectURL(oldUrl); assetObjectUrls.delete(node.iconKey); }
+    if(!parsed || parsed.ns === "dds") { node.img = placeholderData(parsed && parsed.type || "item"); return; }
+    if(parsed.ns === "project") return;
+    node.img = placeholderData(parsed.type);
+    if(!index || !index.mods) return;
+    try {
+      var row = parsed.ns === "official" ? index.official : index.mods[parsed.modId];
+      var expectedManifest = parsed.ns === "official" ? "/registry/official.json" : "/registry/mods/"+parsed.modId+".json";
+      if(!row || row.manifest !== expectedManifest) return;
+      var manifest = await registryJson(row.manifest);
+      if(parsed.ns === "mod") {
+        var rights = manifest.rights || {};
+        if(["author-approved","license-approved"].indexOf(rights.status) < 0) return;
+        if((rights.scope || []).indexOf(parsed.type + "-icons") < 0) return;
+        if(String(manifest.modId) !== parsed.modId) return;
+      } else {
+        if(!manifest.rights || manifest.rights.status !== "official-reference-policy") return;
+        if(manifest.rights.reviewState !== "approved" || manifest.rights.distributionEligible !== true) return;
+        if((manifest.rights.scope || []).indexOf(parsed.type + "-icons") < 0) return;
+      }
+      var record = (manifest.assets || {})[parsed.type + ":" + parsed.asset];
+      node.img = await verifiedAssetUrl(node.iconKey, record);
+    } catch (_) { node.img = placeholderData(parsed.type); }
+  }));
 }
 function fmtI(s){
   if(s < 60) return s + "s";
@@ -1006,7 +1120,8 @@ $("fp").addEventListener("click", function(){
 
 fetch(CFG.dataUrl, { cache: "no-cache" })
   .then(function(r){ if(!r.ok) throw new Error("HTTP "+r.status); return r.json(); })
-  .then(function(data){
+  .then(async function(data){
+    await refreshContentAssets(data);
     DATA = data;
     data.creatures.forEach(function(c){ byC.set(c.id, c); });
     data.items.forEach(function(i){ byI.set(i.id, i); byIn.set(normRef(i.id), i); });
@@ -1023,6 +1138,14 @@ fetch(CFG.dataUrl, { cache: "no-cache" })
     renderCList();
     renderIList();
     openInitial((location.hash || "#overview").slice(1));
+    setInterval(function(){
+      refreshContentAssets(DATA).then(function(){
+        renderCList();
+        renderIList();
+        if(selC) openC(selC);
+        if(selI) openI(selI);
+      });
+    }, REGISTRY_REFRESH_MS);
   })
   .catch(function(err){
     $("loading").style.display = "none";

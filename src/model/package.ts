@@ -16,7 +16,8 @@ import { normalizeAssetPath } from "./assetRef";
 
 export const PACKAGE_FORMAT = "dinodepot.package";
 export const LEGACY_PACKAGE_FORMAT_VERSION = 2;
-export const PACKAGE_FORMAT_VERSION = 3;
+export const IMMUTABLE_ASSET_PACKAGE_FORMAT_VERSION = 3;
+export const PACKAGE_FORMAT_VERSION = 4;
 export const PACKAGE_CONTENT_FORMAT = "dinodepot.package-content";
 
 const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/i);
@@ -147,11 +148,18 @@ export const PackageManifestV2Schema = PackageManifestBaseSchema.extend({
 
 /** Logical asset paths backed by immutable package-root SHA-256 blobs. */
 export const PackageManifestV3Schema = PackageManifestBaseSchema.extend({
-  formatVersion: z.literal(PACKAGE_FORMAT_VERSION),
+  formatVersion: z.literal(IMMUTABLE_ASSET_PACKAGE_FORMAT_VERSION),
   assets: z.array(PackageAssetV3Schema).default([]),
 }).superRefine(validateManifest);
 
+/** New packages contain metadata/content only; global artwork never travels. */
+export const PackageManifestV4Schema = PackageManifestBaseSchema.extend({
+  formatVersion: z.literal(PACKAGE_FORMAT_VERSION),
+  assets: z.array(z.never()).max(0).default([]),
+}).superRefine(validateManifest);
+
 export const PackageManifestSchema = z.union([
+  PackageManifestV4Schema,
   PackageManifestV3Schema,
   PackageManifestV2Schema,
 ]);
@@ -160,7 +168,7 @@ export type PackageManifest = z.infer<typeof PackageManifestSchema>;
 export const PackageContentSchema = z
   .object({
     format: z.literal(PACKAGE_CONTENT_FORMAT),
-    schemaVersion: z.literal(1),
+    schemaVersion: z.union([z.literal(1), z.literal(2)]),
     iniNotes: z.string().default(""),
     iniSettings: z.array(IniSettingSchema).default([]),
     creatures: z.array(CatalogEntrySchema).default([]),
@@ -217,6 +225,29 @@ export const PackageContentSchema = z
         });
       }
     }
+    if (content.schemaVersion === 2) {
+      if (Object.keys(content.icons).length > 0) {
+        context.addIssue({
+          code: "custom",
+          path: ["icons"],
+          message: "Package content schema 2 is data-only",
+        });
+      }
+      for (const [kind, entries] of [
+        ["creatures", content.creatures],
+        ["items", content.items],
+      ] as const) {
+        entries.forEach((entry, index) => {
+          if (!entry.iconKey) {
+            context.addIssue({
+              code: "custom",
+              path: [kind, index, "iconKey"],
+              message: "Data-only package entries require iconKey",
+            });
+          }
+        });
+      }
+    }
   });
 export type PackageContent = z.infer<typeof PackageContentSchema>;
 
@@ -258,22 +289,24 @@ export function assertDistinctIconBaseNames(
 }
 
 export function packageContentFromModpack(pack: Modpack): PackageContent {
-  assertDistinctIconBaseNames(pack.icons, `Modpack ${pack.meta.id}`);
+  if (pack.formatVersion < 2) {
+    assertDistinctIconBaseNames(pack.icons, `Modpack ${pack.meta.id}`);
+  }
   return PackageContentSchema.parse({
     format: PACKAGE_CONTENT_FORMAT,
-    schemaVersion: 1,
+    schemaVersion: pack.formatVersion >= 2 ? 2 : 1,
     iniNotes: pack.iniNotes,
     iniSettings: pack.iniSettings,
     creatures: pack.creatures,
     items: pack.items,
-    icons: Object.fromEntries(
-      Object.entries(pack.icons).map(([path, value]) => [
-        path,
-        value.startsWith("file:")
-          ? `file:assets/${iconBaseName(value.slice(5))}`
-          : value,
-      ]),
-    ),
+    icons: pack.formatVersion >= 2
+      ? {}
+      : Object.fromEntries(
+          Object.entries(pack.icons).map(([path, value]) => [
+            path,
+            value.startsWith("file:") ? `file:assets/${iconBaseName(value.slice(5))}` : value,
+          ]),
+        ),
     notes: pack.notes,
     maps: pack.maps,
     variantParents: pack.variantParents,
@@ -289,12 +322,11 @@ export function modpackFromPackage(
   if (manifest.kind !== "modpack") {
     throw new Error(`${manifest.packageId} is an official package, not a modpack`);
   }
-  assertDistinctIconBaseNames(
-    content.icons,
-    `Package ${manifest.packageId}@${manifest.version}`,
-  );
+  if (content.schemaVersion === 1) {
+    assertDistinctIconBaseNames(content.icons, `Package ${manifest.packageId}@${manifest.version}`);
+  }
   return ModpackSchema.parse({
-    formatVersion: 2,
+    formatVersion: content.schemaVersion === 2 ? 2 : 1,
     meta: {
       id: manifest.packageId,
       version: manifest.version,
@@ -305,14 +337,14 @@ export function modpackFromPackage(
     iniSettings: content.iniSettings,
     creatures: content.creatures,
     items: content.items,
-    icons: Object.fromEntries(
-      Object.entries(content.icons).map(([path, value]) => [
-        path,
-        value.startsWith("file:")
-          ? `file:${iconBaseName(value.slice(5))}`
-          : value,
-      ]),
-    ),
+    icons: content.schemaVersion === 1
+      ? Object.fromEntries(
+          Object.entries(content.icons).map(([path, value]) => [
+            path,
+            value.startsWith("file:") ? `file:${iconBaseName(value.slice(5))}` : value,
+          ]),
+        )
+      : {},
     notes: content.notes,
     maps: content.maps,
     variantParents: content.variantParents,

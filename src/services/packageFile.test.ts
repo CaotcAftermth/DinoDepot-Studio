@@ -67,7 +67,7 @@ describe("offline package folders", () => {
     expect(result.files).toHaveLength(1);
   });
 
-  it("accepts a local official manifest, so Core Content is testable offline", async () => {
+  it("imports local official content while quarantining its legacy art", async () => {
     const root = "C:\\dev-packages\\official-asa\\1.0.0";
     const content = new TextEncoder().encode(
       packageJson({
@@ -99,12 +99,10 @@ describe("offline package folders", () => {
     const result = await readPackageManifestFile(manifestPath);
 
     expect(result.manifest.kind).toBe("official");
-    expect(result.files.map((file) => file.path)).toContain(
-      "assets/creatures/Achatina.webp",
-    );
+    expect(result.files.map((file) => file.path)).toEqual(["content.json"]);
   });
 
-  it("reads v3 blobs from the package root rather than the version folder", async () => {
+  it("does not read locally present v3 artwork blobs", async () => {
     const packageRoot = "C:\\offline\\content-addressed";
     const root = `${packageRoot}\\versions\\1.0.0`;
     const content = new TextEncoder().encode(
@@ -139,10 +137,10 @@ describe("offline package folders", () => {
 
     const result = await readPackageManifestFile(manifestPath);
 
-    expect(result.files.map((file) => file.path)).toContain("assets/Icon.webp");
+    expect(result.files.map((file) => file.path)).toEqual(["content.json"]);
   });
 
-  it("rejects an image whose bytes do not match its extension", async () => {
+  it("skips a quarantined legacy image whose bytes do not match", async () => {
     const root = "C:\\dev-packages\\liar\\1.0.0";
     const content = new TextEncoder().encode(
       packageJson({ format: "dinodepot.package-content", schemaVersion: 1 }),
@@ -165,9 +163,8 @@ describe("offline package folders", () => {
     fixture.bytes.set(`${root}\\content.json`, content);
     fixture.bytes.set(`${root}\\assets\\Icon.png`, notAPng);
 
-    await expect(readPackageManifestFile(manifestPath)).rejects.toThrow(
-      /does not match its PNG\/WebP extension/,
-    );
+    const result = await readPackageManifestFile(manifestPath);
+    expect(result.files.map((file) => file.path)).toEqual(["content.json"]);
   });
 
   it("rejects content whose bytes drifted from the manifest hash", async () => {

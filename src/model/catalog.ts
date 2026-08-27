@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { CreatureInfoSchema } from "./creatureInfo";
+import { IconKeySchema, type IconKey } from "./iconKey";
 
 /**
  * Content sources: the creatures/items/mods available to this project.
@@ -11,6 +12,8 @@ export const CatalogEntrySchema = z.object({
   id: z.string(),
   name: z.string(),
   bpPath: z.string(),
+  /** Stable content-image identity. Optional only while legacy data is read. */
+  iconKey: IconKeySchema.optional(),
 });
 export type CatalogEntry = z.infer<typeof CatalogEntrySchema>;
 
@@ -119,6 +122,7 @@ export const ContentSourceSchema = z.object({
    * here copies just the chosen file across, because a `file:` icon is
    * relative to the images folder and only what lives there is published.
    */
+  /** @deprecated Schema-4 moves this machine-local hint out of shared data. */
   iconsDir: z.string().default(""),
   /** Freeform config notes that don't fit the Key=Value shape. */
   iniNotes: z.string().default(""),
@@ -220,16 +224,9 @@ export function emptyOfficialOverlay(): OfficialOverlay {
   };
 }
 
-export const CatalogFileSchema = z.object({
-  schemaVersion: z.literal(1),
+const CatalogSharedSchema = z.object({
   sources: z.array(ContentSourceSchema),
   official: OfficialOverlaySchema.default(emptyOfficialOverlay()),
-  /**
-   * Icon assignments: normalized blueprint path -> emoji, image URL, or
-   * `file:<name>` referencing the project's images/ folder.
-   * Kept separate from entries so official/bundled content can have icons too.
-   */
-  icons: z.record(z.string(), z.string()).default({}),
   /**
    * Manual variant relationships: normalized child blueprint path -> parent
    * blueprint path. Overrides the name-based variant grouping heuristic and
@@ -259,20 +256,107 @@ export const CatalogFileSchema = z.object({
    */
   creatureInfo: z.record(z.string(), CreatureInfoSchema).default({}),
 });
+
+export const LegacyIconRefSchema = z.object({
+  kind: z.enum(["glyph", "remote", "file", "package", "unknown"]),
+  value: z.string(),
+}).strict();
+export type LegacyIconRef = z.infer<typeof LegacyIconRefSchema>;
+
+const ProjectAssetPathSchema = z.string().refine((value) => {
+  const normalized = value.replace(/\\/g, "/");
+  return (
+    normalized.length > 0 &&
+    !normalized.startsWith("/") &&
+    !/^[a-z]:/i.test(normalized) &&
+    !normalized.split("/").some((part) => part === ".." || part === "." || !part)
+  );
+}, "Project asset paths must be safe relative paths");
+
+/** Schema-1 remains a read-only compatibility boundary. */
+export const CatalogFileV1Schema = CatalogSharedSchema.extend({
+  schemaVersion: z.literal(1),
+  icons: z.record(z.string(), z.string()).default({}),
+});
+
+/** Every new catalog write uses identities; loose refs exist only in quarantine. */
+export const CatalogFileV2Schema = CatalogSharedSchema.extend({
+  schemaVersion: z.literal(2),
+  /** @deprecated In-memory compatibility shadow. Schema-4 writers remove it. */
+  icons: z.record(z.string(), z.string()).default({}),
+  iconOverrides: z.record(z.string(), IconKeySchema).default({}),
+  projectAssets: z.record(z.string(), ProjectAssetPathSchema).default({}),
+  legacyIconRefs: z.record(z.string(), LegacyIconRefSchema).default({}),
+});
+
+export const CatalogFileSchema = z.discriminatedUnion("schemaVersion", [
+  CatalogFileV2Schema,
+  CatalogFileV1Schema,
+]);
 export type CatalogFile = z.infer<typeof CatalogFileSchema>;
 
 export function emptyCatalog(): CatalogFile {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     sources: [],
     official: emptyOfficialOverlay(),
     icons: {},
+    iconOverrides: {},
+    projectAssets: {},
+    legacyIconRefs: {},
     variantParents: {},
     notes: {},
     maps: {},
     itemInfo: {},
     creatureInfo: {},
   };
+}
+
+export function catalogIconOverrides(catalog: CatalogFile): Record<string, IconKey> {
+  return catalog.schemaVersion === 2 ? catalog.iconOverrides : {};
+}
+
+export function catalogLegacyIconRefs(catalog: CatalogFile): Record<string, LegacyIconRef> {
+  if (catalog.schemaVersion === 2) return catalog.legacyIconRefs;
+  return Object.fromEntries(
+    Object.entries(catalog.icons).map(([path, value]) => [
+      path,
+      { kind: legacyIconKind(value), value },
+    ]),
+  );
+}
+
+export function catalogLegacyIconValues(catalog: CatalogFile): Record<string, string> {
+  if (catalog.schemaVersion === 1) return catalog.icons;
+  return Object.fromEntries(
+    Object.entries(catalog.legacyIconRefs).map(([path, ref]) => [path, ref.value]),
+  );
+}
+
+export function catalogProjectAssets(catalog: CatalogFile): Record<string, string> {
+  return catalog.schemaVersion === 2 ? catalog.projectAssets : {};
+}
+
+/** Portable schema-2 representation. Compatibility shadows never reach disk. */
+export function catalogForWrite(catalog: CatalogFile): unknown {
+  if (catalog.schemaVersion === 1) return catalog;
+  const { icons: _icons, ...rest } = catalog;
+  return {
+    ...rest,
+    sources: rest.sources.map(({ iconsDir: _iconsDir, ...source }) => source),
+  };
+}
+
+export function assignedIconKey(catalog: CatalogFile, bpPath: string): IconKey | undefined {
+  return catalogIconOverrides(catalog)[normalizeBpPath(bpPath)];
+}
+
+export function legacyIconKind(value: string): LegacyIconRef["kind"] {
+  if (value.startsWith("file:")) return "file";
+  if (/^https?:\/\//i.test(value)) return "remote";
+  if (/^(?:official|package):/i.test(value)) return "package";
+  if (!value.includes(":") && [...value].length <= 8) return "glyph";
+  return "unknown";
 }
 
 /**
@@ -360,13 +444,21 @@ export function forgetPaths(
     Object.fromEntries(
       Object.entries(map).filter(([key]) => !paths.has(normalizeBpPath(key))),
     );
-  return {
-    ...catalog,
-    icons: without(catalog.icons),
+  const records = {
     notes: without(catalog.notes),
     maps: without(catalog.maps),
     variantParents: without(catalog.variantParents),
     itemInfo: without(catalog.itemInfo),
     creatureInfo: without(catalog.creatureInfo),
+  };
+  if (catalog.schemaVersion === 1) {
+    return { ...catalog, ...records, icons: without(catalog.icons) };
+  }
+  return {
+    ...catalog,
+    ...records,
+    icons: without(catalog.icons),
+    iconOverrides: without(catalog.iconOverrides),
+    legacyIconRefs: without(catalog.legacyIconRefs),
   };
 }

@@ -275,6 +275,26 @@ function assetIssues(input: ValidationInput): ProjectIssue[] {
   // problem to fix — it is a row to ignore.
   const known = knownPaths(input.catalog);
 
+  if (input.catalog.schemaVersion === 2) {
+    const projectKeys = new Set(
+      Object.values(input.catalog.iconOverrides)
+        .filter((value) => value.startsWith("project:"))
+        .map((value) => value.split(":").at(-1) ?? ""),
+    );
+    const count = [...projectKeys].filter((assetId) => input.catalog.schemaVersion === 2 && input.catalog.projectAssets[assetId]).length;
+    if (count > 0) {
+      issues.push(
+        issue(
+          "assets",
+          "warning",
+          "Project custom artwork",
+          `Publishing will include ${count} project-owned/custom image${count === 1 ? "" : "s"}. Confirm you have authority to publish them; they never enter the global DDS asset service.`,
+          "project-assets",
+        ),
+      );
+    }
+  }
+
   for (const [path, icon] of Object.entries(input.catalog.icons ?? {})) {
     if (!icon.startsWith("file:")) continue;
     if (!known.has(normalizeBpPath(path))) continue;

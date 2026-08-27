@@ -1,7 +1,7 @@
 {
-  "version": "1.3.0",
-  "publishedAt": "2026-08-17",
+  "version": "2.0.0",
+  "publishedAt": "2026-08-27",
   "name": "Official ASA Core Content",
   "author": "DinoDepot Studio",
-  "description": "Managed icons for official ARK: Survival Ascended content."
+  "description": "Data-only defaults for official ARK: Survival Ascended content; artwork resolves separately through the rights registry."
 }
