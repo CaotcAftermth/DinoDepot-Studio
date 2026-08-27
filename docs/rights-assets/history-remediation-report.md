@@ -11,9 +11,9 @@ Maintainer authorization was received and remediation ran on 2026-08-27.
 - A complete pre-rewrite Git bundle was created outside OneDrive and verified with `git bundle verify`. Size: 43,996,850 bytes. SHA-256: `597dc63474c1b463dd22c6b6173115630fab78fd97592174d32e6c43ce629a8e`.
 - `git-filter-repo` 2.47.0 removed `.png`, `.jpg`, `.jpeg`, `.webp`, `.gif`, and `.svg` paths below `Public_Content/Official_Icons` and `Public_Content/ModPacks` from all local refs.
 - Verification found zero matching paths across `git rev-list --objects --all`. The original artwork commits are unreachable, and the repacked object database reports zero loose or garbage objects.
-- All seven artwork-bearing GitHub Releases (`v0.2.0`, `v0.2.1`, `v0.3.0`, `v0.4.0`, `v0.5.0`, `v0.7.0`, and `v0.8.0`) and their uploaded assets were deleted. Sanitized tags were retained and rewritten.
+- All seven artwork-bearing GitHub Releases (`v0.2.0`, `v0.2.1`, `v0.3.0`, `v0.4.0`, `v0.5.0`, `v0.7.0`, and `v0.8.0`) and their uploaded assets were deleted. GitHub permanently locks immutable-release tag names against reuse, so the seven remote tags were deleted rather than recreated.
 - The GitHub Pages API returned `404`; no repository Pages site was available to delete.
-- The sanitized `main` branch and all seven tags were force-pushed with lease protection after verification.
+- Sanitized `main` was force-pushed with lease protection in the same atomic transaction that deleted the seven remote tags. Repository-level release immutability was verified restored and enabled.
 
 ## R2 and CDN status
 
