@@ -131,8 +131,8 @@ In the repository, under *Settings → Secrets and variables → Actions*:
 
 `GITHUB_TOKEN` is provided by Actions; nothing to add.
 
-**Done.** Both secrets are configured. Neither has been exercised yet - the
-Release workflow has not run (see *What has and has not been proven* below).
+**Done.** Both secrets are configured and the Release workflow has used them
+successfully (see *What has and has not been proven* below).
 
 ### 4. Keep a backup of the private key
 
@@ -144,30 +144,27 @@ Keep an offline copy somewhere you would keep a password.
 
 ---
 
-## What has and has not been proven
-
-Two workflows, and only one of them has ever run. Worth being precise about,
-because the setup above being finished does not mean the release path works.
+## Workflow status
 
 | | Trigger | Status |
 |---|---|---|
 | `ci.yml` | pull request, push | **Run, and passing.** Version check, `tsc`, frontend tests, Rust tests, production build all green on merged PRs. |
-| `release.yml` | `v*.*.*` tag | **Run for v0.3.0.** The release is live on GitHub. |
+| `release.yml` | `v*.*.*` tag | **Run, and passing.** Signing and updater output have been verified on a published release. |
 
-The v0.3.0 run established the workflow, signing, and updater path. Every new
-draft still needs the asset and update checks below before it is published.
+Every new draft still needs the asset and update checks below before it is
+published. Release versions are immutable and must never be reused.
 
 ---
 
 ## Cutting a release
 
-1. Decide the version. SemVer: patch for fixes, minor for features, major for a
-   change that breaks projects.
+1. Decide a fresh version. SemVer: patch for fixes, minor for features, major
+   for a change that breaks projects. Never reuse a published version.
 
 2. Set it everywhere at once:
 
    ```bash
-   node scripts/check-versions.mjs --set 0.4.0
+   node scripts/check-versions.mjs --set X.Y.Z
    ```
 
    That writes `package.json`, `src-tauri/Cargo.toml`,
@@ -182,8 +179,8 @@ draft still needs the asset and update checks below before it is published.
 4. Commit, then tag with a leading `v`:
 
    ```bash
-   git commit -am "Release 0.4.0"
-   git tag v0.4.0
+   git commit -am "Release X.Y.Z"
+   git tag vX.Y.Z
    git push origin main --tags
    ```
 
@@ -193,9 +190,9 @@ draft still needs the asset and update checks below before it is published.
 
 6. Look at the draft. It should carry exactly three assets:
 
-   - `DinoDepot Studio_0.4.0_x64-setup.exe` - the installer, which is also the
+   - `DinoDepot Studio_X.Y.Z_x64-setup.exe` - the installer, which is also the
      updater artifact; they are the same file
-   - `DinoDepot Studio_0.4.0_x64-setup.exe.sig` - its detached signature
+   - `DinoDepot Studio_X.Y.Z_x64-setup.exe.sig` - its detached signature
    - `latest.json` - the manifest the updater reads
 
    **There is no `.nsis.zip`.** With `createUpdaterArtifacts: true`, Tauri v2

@@ -1,15 +1,10 @@
 {
   "schemaVersion": 1,
   "registryVersion": 1,
-  "generatedAt": "2026-08-27T20:26:12.809Z",
+  "generatedAt": "2026-08-29T00:00:00.000Z",
   "official": {
     "manifest": "/registry/official.json",
     "version": 1
   },
-  "mods": {
-    "987274": {
-      "manifest": "/registry/mods/987274.json",
-      "version": 1
-    }
-  }
+  "mods": {}
 }

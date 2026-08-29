@@ -1,8 +1,8 @@
 # Manual test matrix
 
-The automated suite proves that the pieces behave as written: 1,543 frontend
-tests, 103 Rust tests, a type check and a production build, on every pull
-request. None of it proves the thing that actually matters here - that two
+The automated suite runs frontend tests, Rust tests, type checks, and a
+production build on every pull request. None of it proves the thing that
+actually matters here: that two
 people on two machines can edit one cluster's configuration all week without
 losing work or leaking a player's address.
 
@@ -399,33 +399,32 @@ Try to publish with no site repository bound, and with a revoked token.
 
 ## F. The updater
 
-This is the section the release exists for. It needs **two versions**: an
-install of `v0.2.1` as the baseline, and `v0.3.0` published as the newer one.
+This section needs two fresh test versions: `<baseline>` installed locally and
+`<candidate>` published as the newer release.
 
-> **Order matters.** Install `v0.2.1` *first*, from the v0.2.1 release page.
-> The endpoint is `releases/latest/download/latest.json`, so once `v0.3.0` is
+> **Order matters.** Install `<baseline>` first. The endpoint is
+> `releases/latest/download/latest.json`, so once `<candidate>` is
 > published it becomes what an install is offered. Installing the baseline
 > after that still works, but you lose the chance to see *Up to date* behave
 > correctly first.
 
 ### F1 - Baseline installs
 
-1. On a clean machine, download and run
-   `DinoDepot.Studio_0.2.1_x64-setup.exe` from the v0.2.1 release.
+1. On a clean machine, download and run the `<baseline>` installer.
 2. Expect a SmartScreen "unknown publisher" prompt - the installer is
    updater-signed but not Authenticode-signed. **This is the known, accepted
    state, not a defect.** Choose *More info* → *Run anyway*.
-3. Launch. Confirm Help/About or the title reports **0.2.1**.
+3. Launch. Confirm Help/About or the title reports `<baseline>`.
 
 ### F2 - Up to date, when it is
 
-With only `v0.2.1` published, check for updates.
+With `<baseline>` still the latest release, check for updates.
 
 **Expect** **Up to date**. Nothing offered, nothing downloaded.
 
 ### F3 - An update is offered, never silently
 
-With `v0.3.0` published, check for updates from the 0.2.1 install.
+With `<candidate>` published, check for updates from the baseline install.
 
 **Expect** the banner names the version and waits. Nothing installs on its own,
 and nothing restarts without being told to.
@@ -434,7 +433,7 @@ and nothing restarts without being told to.
 
 Accept the update.
 
-**Expect** it downloads, installs, and relaunches into **0.3.0**. The project
+**Expect** it downloads, installs, and relaunches into `<candidate>`. The project
 opens afterwards with its settings, its repository binding and its account
 still in place - an update that loses the binding is a failed update.
 
@@ -457,11 +456,13 @@ menu and the window.
 security model and blocks any further release.
 
 > Do this against a *test* endpoint or a copied install. Do not modify the
-> published v0.3.0 release - it is immutable and it is what real installs see.
+> published candidate release. Published releases are immutable and are what
+> real installs receive.
 
 ### F6 - Downgrade prevention
 
-1. On the 0.3.0 install, point the check at a manifest advertising 0.2.1.
+1. On the candidate install, point the check at a manifest advertising the
+   baseline version.
 2. Check for updates.
 
 **Expect** refusal. The plugin declines same-version updates but not older
@@ -512,39 +513,39 @@ Create or open a project without configuring any image path. Open Content
 Sources and Settings.
 
 **Expect** there is no official/modpack icon-folder picker. The project records
-an exact `official-asa` dependency, available official creature/item images
-render from the managed package library, and entries without one show their
-normal category/default icon.
+an exact `official-asa` dependency. Artwork renders only when the rights
+registry marks that exact asset eligible; every other entry uses a bundled
+placeholder.
 
-### H2 - Missing pack icons do not block a mod
+### H2 - Missing artwork does not block a mod
 
-Import a legacy pack whose JSON references one PNG/WebP file that is absent, or
-use Discovery and choose **Add without pack**.
+Import a compatibility pack whose data references one absent image, or use
+Discovery and choose **Add without pack**.
 
 **Expect** the mod and all discovered content are added. The missing assignment
 is omitted, its entry displays the default icon, and the success message reports
 the fallback rather than an installation failure.
 
-### H3 - Only WebP and PNG are accepted
+### H3 - Registry artwork is verified
 
-Try equivalent `.webp`, `.png`, and `.jpg` package icons, including a file whose
-extension does not match its bytes.
+Prepare an approved WebP, then test a wrong hash, wrong dimensions, malformed
+bytes, and a withdrawn registry entry.
 
-**Expect** WebP is selected first when both accepted formats share a name, PNG
-also works, and JPEG/mislabeled bytes are ignored or rejected as icon bytes
-without preventing locally discovered mod content from being added.
+**Expect** only the approved 160x160 WebP with the matching SHA-256 displays.
+Every invalid or withdrawn case purges the cache entry and uses a placeholder.
 
 ### H4 - Published versions remain immutable
 
-Open projects pinned to Anomalocaris package `1.0.0` and `1.0.1` on the same
+Open projects pinned to two different versions of the same package on one
 machine.
 
-**Expect** both versions coexist. `1.0.0` retains its PNG asset; `1.0.1` uses
-the WebP set. Neither project silently changes its exact dependency.
+**Expect** both versions coexist. Neither project silently changes its exact
+dependency.
 
 ### H5 - Content-addressed package versions reuse bytes
 
-Install two v3 package versions that reference at least one identical image,
+Install two format-3 compatibility package versions that reference at least
+one identical image,
 then inspect `%APPDATA%/com.ggfizz.dinodepotstudio/content/`.
 
 **Expect** each version retains its logical `assets/...` path, both render
@@ -554,7 +555,7 @@ path. V2 package folders continue to render without conversion.
 
 ### H6 - Compatibility imports do not populate project images
 
-Add the same legacy `modpack.json` through the registry, a pasted HTTPS link,
+Add the same compatibility `modpack.json` through the registry, a pasted HTTPS link,
 and a local file. Test once with complete icons and once with one missing icon.
 
 **Expect** valid icons render from the managed package library and repeated

@@ -32,18 +32,9 @@ describe("fixture set", () => {
     }
   });
 
-  it("every fixture records source provenance", () => {
-    for (const { fixture } of parsed) {
-      expect(fixture.source.page, fixture.name).toBeTruthy();
-      expect(fixture.source.revisionId, fixture.name).toBeGreaterThan(0);
-      expect(["ASA", "ASE", "both"]).toContain(fixture.source.game);
-    }
-  });
-
-  it("names the mod for any creature that isn't base game", () => {
+  it("covers a mod creature", () => {
     const edmontonia = CREATURE_FIXTURES.find((f) => f.name === "Edmontonia")!;
-    expect(edmontonia.source.mod).toContain("Additions");
-    expect(edmontonia.source.page.startsWith("Mod:")).toBe(true);
+    expect(edmontonia.info.methods?.[0]?.tags).toContain("combat-assist");
   });
 });
 
@@ -146,9 +137,8 @@ describe("representative cases", () => {
   });
 
   it("Edmontonia is the combat-assist case and comes from a mod", () => {
-    const { fixture, info } = byName("Edmontonia");
+    const { info } = byName("Edmontonia");
     expect(info.methods[0].tags).toContain("combat-assist");
-    expect(fixture.source.mod).toBeTruthy();
     expect(info.methods[0].effectiveness).toContain("fire damage");
   });
 

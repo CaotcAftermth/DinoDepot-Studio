@@ -33,6 +33,17 @@ export interface RegistryResponse {
 
 export type RegistryFetch = (url: string, etag?: string) => Promise<RegistryResponse>;
 
+interface RegistrySchema<T> {
+  safeParse(value: unknown):
+    | { success: true; data: T }
+    | { success: false };
+}
+
+interface LoadedRegistryDocument {
+  record: RegistryCacheRecord;
+  data: unknown;
+}
+
 export class MemoryRegistryCache implements RegistryCache {
   private readonly values = new Map<string, RegistryCacheRecord>();
   async get(key: string) { return this.values.get(key) ?? null; }
@@ -55,7 +66,16 @@ export async function fetchRegistryJson(url: string, etag?: string): Promise<Reg
 }
 
 export class AssetRegistryClient {
-  private readonly inflight = new Map<string, Promise<RegistryCacheRecord | null>>();
+  /**
+   * Parsed read-through cache for this app session.
+   *
+   * A registry manifest can contain thousands of icons. Resolving every row
+   * must not re-read that same document through IPC or re-run its full Zod
+   * validation. The persisted cache still owns restart durability; this map
+   * only keeps its already-validated value while the process is alive.
+   */
+  private readonly loaded = new Map<string, LoadedRegistryDocument>();
+  private readonly inflight = new Map<string, Promise<unknown | null>>();
 
   constructor(
     private readonly cache: RegistryCache = new MemoryRegistryCache(),
@@ -67,58 +87,94 @@ export class AssetRegistryClient {
     parsed: ParsedIconKey,
   ): Promise<ModAssetManifest | OfficialAssetManifest | null> {
     if (parsed.namespace !== "official" && parsed.namespace !== "mod") return null;
-    const indexRecord = await this.load("/registry/index.json", RegistryIndexSchema);
-    if (!indexRecord) return null;
-    const index = RegistryIndexSchema.parse(indexRecord.body) as AssetRegistryIndex;
+    const index = await this.load<AssetRegistryIndex>(
+      "/registry/index.json",
+      RegistryIndexSchema,
+    );
+    if (!index) return null;
     if (parsed.namespace === "official") {
       if (!index.official) return null;
-      const record = await this.load(index.official.manifest, OfficialAssetManifestSchema);
-      return record ? OfficialAssetManifestSchema.parse(record.body) : null;
+      return this.load<OfficialAssetManifest>(
+        index.official.manifest,
+        OfficialAssetManifestSchema,
+      );
     }
     const row = index.mods[parsed.modId];
     if (!row) return null;
-    const record = await this.load(row.manifest, ModAssetManifestSchema);
-    if (!record) return null;
-    const manifest = ModAssetManifestSchema.parse(record.body);
+    const manifest = await this.load<ModAssetManifest>(
+      row.manifest,
+      ModAssetManifestSchema,
+    );
+    if (!manifest) return null;
     return manifest.modId === Number(parsed.modId) ? manifest : null;
   }
 
-  private async load(path: string, schema: { safeParse(value: unknown): { success: boolean } }): Promise<RegistryCacheRecord | null> {
-    const current = await this.cache.get(path);
-    const age = current ? this.now() - current.fetchedAt : Number.POSITIVE_INFINITY;
-    if (current && age <= REGISTRY_REFRESH_MS) {
-      return schema.safeParse(current.body).success ? current : null;
+  private async load<T>(
+    path: string,
+    schema: RegistrySchema<T>,
+  ): Promise<T | null> {
+    const current = this.loaded.get(path);
+    if (
+      current &&
+      this.now() - current.record.fetchedAt <= REGISTRY_REFRESH_MS
+    ) {
+      return current.data as T;
     }
     const pending = this.inflight.get(path);
-    if (pending) return pending;
-    const task = this.refresh(path, current, schema).finally(() => this.inflight.delete(path));
+    if (pending) return pending as Promise<T | null>;
+    const task = this.loadCurrent(path, schema).finally(() =>
+      this.inflight.delete(path),
+    );
     this.inflight.set(path, task);
     return task;
   }
 
-  private async refresh(
+  private async loadCurrent<T>(
     path: string,
-    current: RegistryCacheRecord | null,
-    schema: { safeParse(value: unknown): { success: boolean } },
-  ): Promise<RegistryCacheRecord | null> {
+    schema: RegistrySchema<T>,
+  ): Promise<T | null> {
+    const loaded = this.loaded.get(path);
+    const current = loaded?.record ?? await this.cache.get(path);
+    const age = current
+      ? this.now() - current.fetchedAt
+      : Number.POSITIVE_INFINITY;
+    const parsedCurrent = loaded
+      ? loaded.data as T
+      : current
+        ? parsed(schema, current.body)
+        : null;
+
+    if (current && age <= REGISTRY_REFRESH_MS) {
+      if (parsedCurrent !== null) {
+        this.loaded.set(path, { record: current, data: parsedCurrent });
+      }
+      return parsedCurrent;
+    }
+
     try {
       const response = await this.request(`${ASSET_SERVICE_ORIGIN}${path}`, current?.etag);
       const next = response.status === 304 && current
         ? { ...current, fetchedAt: this.now(), etag: response.etag ?? current.etag }
         : { body: response.body, fetchedAt: this.now(), etag: response.etag ?? "" };
-      if (!schema.safeParse(next.body).success) {
+      const nextData = parsed(schema, next.body);
+      if (nextData === null) {
         await this.cache.delete(path);
+        this.loaded.delete(path);
         assetDiagnostic({ code: "registry-failure", key: path, detail: "unsupported or invalid schema" });
         return null;
       }
       await this.cache.set(path, next);
-      return next;
+      this.loaded.set(path, { record: next, data: nextData });
+      return nextData;
     } catch (error) {
       if (
         current &&
-        this.now() - current.fetchedAt <= REGISTRY_OFFLINE_MAX_MS &&
-        schema.safeParse(current.body).success
-      ) return current;
+        age <= REGISTRY_OFFLINE_MAX_MS &&
+        parsedCurrent !== null
+      ) {
+        this.loaded.set(path, { record: current, data: parsedCurrent });
+        return parsedCurrent;
+      }
       assetDiagnostic({
         code: "registry-failure",
         key: path,
@@ -127,4 +183,9 @@ export class AssetRegistryClient {
       return null;
     }
   }
+}
+
+function parsed<T>(schema: RegistrySchema<T>, value: unknown): T | null {
+  const result = schema.safeParse(value);
+  return result.success ? result.data : null;
 }

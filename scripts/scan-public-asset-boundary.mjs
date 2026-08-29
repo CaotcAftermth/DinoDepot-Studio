@@ -22,7 +22,8 @@ for (const file of tracked) {
 
 const json = async (file) => JSON.parse(await readFile(file, "utf8"));
 for (const file of tracked.filter((candidate) =>
-  /^Public_Content\/Official_Icons\/versions\/[^/]+\/manifest\.json$/.test(candidate),
+  existsSync(candidate)
+    && /^Public_Content\/Official_Icons\/versions\/[^/]+\/manifest\.json$/.test(candidate),
 )) {
   const manifest = await json(file);
   if (manifest.formatVersion === 4 && (!Array.isArray(manifest.assets) || manifest.assets.length !== 0)) {
@@ -31,7 +32,8 @@ for (const file of tracked.filter((candidate) =>
 }
 
 for (const file of tracked.filter((candidate) =>
-  /^Public_Content\/Asset_Registry\/registry\/mods\/[0-9]+\.json$/.test(candidate),
+  existsSync(candidate)
+    && /^Public_Content\/Asset_Registry\/registry\/mods\/[0-9]+\.json$/.test(candidate),
 )) {
   const manifest = await json(file);
   const approved = ["author-approved", "license-approved"].includes(manifest?.rights?.status);

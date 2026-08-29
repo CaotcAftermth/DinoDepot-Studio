@@ -22,7 +22,7 @@ npm run tauri build    # production installer
 npx vitest run         # unit tests (serializers, validation, simulator)
 ```
 
-Requires: Node 18+, Rust toolchain, Google Chrome (for the CurseForge scraper).
+Requires: Node 22+, Rust toolchain, Google Chrome (for the CurseForge scraper).
 
 ## First-time setup
 
@@ -64,33 +64,31 @@ Requires: Node 18+, Rust toolchain, Google Chrome (for the CurseForge scraper).
     New entries default to `|1|1|`.
   - *Mod Update Watcher*: checks watched mod pages for new update dates and
     flags mods as *needs review* until you mark them reviewed.
-- **Publish** - each output publishes independently: validation gate (errors
-  block, warnings need acknowledgement), remote comparison, commit message,
-  publish history, and copyable RAW URLs for the server INI. Also publishes
-  the **Cluster Viewer**: a public, Ark-themed lookup page for members
-  (creature → produces, item → produced-by, plus admin-written taming/utility
-  info from Content Sources → Info…). Publish the page once to `docs/index.html`
-  and enable GitHub Pages (deploy from branch, `/docs`); republish only the
-  viewer *data* when rules change.
+- **Publish** - validates and publishes the public site as one atomic GitHub
+  commit: viewer page, viewer data, assets, and manifest always stay in sync.
+  Outputs with independent consumers and destinations keep their own publish
+  cards, remote comparison, history, and copyable RAW URLs. The public Cluster
+  Viewer lets members look up what creatures produce, what produces each item,
+  and administrator-written taming or utility information. Enable GitHub Pages
+  from the configured branch and `/docs` folder after the first site publish.
 
 ## Icons
 
-Icons are resolved from managed packages. There is no icon folder to
-configure - official and modpack artwork is installed automatically from
-immutable, integrity-checked packages, and the app ships with the official
-package so it works on a first launch with no network.
+Catalog data and artwork rights are separate. Official and mod artwork resolves
+through the rights registry only when the exact asset is active and approved
+for distribution. Verified 160x160 WebP files are cached outside the project;
+denied, revoked, replaced, disabled, or corrupt records are purged. The app
+fails closed to bundled placeholder artwork when permission cannot be proven.
 
-Package format v3 stores each unique image once by SHA-256 and reuses it across
-exact package versions. Previously published v2 packages remain supported.
+Legacy v1 and package v2/v3 content remains readable, but its artwork references
+are quarantined compatibility data and do not display or publish by themselves.
 
 Resolution order for an entry:
 
-1. a project override - click any entry icon in Content Sources to set an
-   emoji, an image URL, or a file from the project's own `images/` folder;
-2. the exact official or modpack package asset pinned by this project;
-3. an `images/` match by name (e.g. `Achatina.webp`), then the parent
-   creature's icon for variants;
-4. the category glyph.
+1. a project-owned override imported or selected from the project's own
+   `images/` folder;
+2. rights-approved official or mod artwork for the entry's canonical icon key;
+3. the bundled missing-creature or missing-item placeholder.
 
 When you catalogue a mod through **Discover installed**, each entry in the
 review list has an icon box: it opens the mod's own artwork, read straight out
@@ -107,11 +105,11 @@ Oodle statically into the game and there is no copy to borrow.
 Project-owned images go in `<project folder>/images`. **WebP is preferred and
 PNG is the only fallback** - file signatures are checked, so an image is read
 by its actual bytes rather than its extension. Anything else is ignored.
-Package-owned images never copy into that folder: immutable and legacy
-modpacks are both normalized into the shared managed package library.
+Registry artwork never copies into that folder. It stays in the verified
+machine-wide cache, while project-owned images stay with the project.
 
 A missing, unreadable, or malformed icon is never fatal: the entry falls back
-to its glyph, and mods still add, export and publish normally.
+to bundled placeholder artwork, and mods still add, export and publish normally.
 
 Building or testing packages locally? See
 [docs/local-package-testing.md](docs/local-package-testing.md).
@@ -136,5 +134,5 @@ src-tauri/         Rust backend: project IO+backups, keyring secrets,
                    GitHub Contents API, scraper process runner
 sidecar/           Node/Puppeteer CurseForge scraper (NDJSON events)
 scripts/           catalog, package, and maintenance tooling
-StructureExample/  original format reference documents
+StructureExample/  published-format reference fixtures
 ```

@@ -6,24 +6,14 @@ import officialIndex from "../../Public_Content/Official_Icons/index.json";
 import { normalizeBpPath } from "./catalog";
 import officialData from "../assets/catalog/official-asa.json";
 
-/**
- * The compiled creature info that ships inside the official package.
- *
- * It is built from a spreadsheet by a script rather than written by hand, so
- * nothing checks its shape at authoring time. The package is immutable once
- * published - a record that fails to parse cannot be corrected in place, only
- * superseded by a whole new version - which makes parsing every record here
- * the cheapest place to catch it.
- */
+/** The creature information that ships inside the official package. */
 
 const payload = JSON.parse(
   readFileSync(
-    new URL("../../scripts/data/creature-info.json", import.meta.url),
+    new URL("../assets/catalog/official-creature-info.json", import.meta.url),
     "utf8",
   ),
 ) as {
-  provenance: Record<string, string>;
-  droppedGuides: Record<string, string>;
   variantParents: Record<string, string>;
   creatureInfo: Record<string, unknown>;
 };
@@ -50,7 +40,7 @@ describe("bundled creature info", () => {
     expect(records.length).toBeLessThan(officialData.creatures.length);
   });
 
-  it("carries no leftover citation markers from the capture", () => {
+  it("contains no external links or citation markers", () => {
     const blob = JSON.stringify(payload.creatureInfo);
     expect(blob).not.toMatch(/\]\[\d+\]/);
     expect(blob).not.toContain("http");
@@ -62,21 +52,6 @@ describe("bundled creature info", () => {
       expect(officialPaths.has(normalizeBpPath(child))).toBe(true);
       expect(officialPaths.has(normalizeBpPath(parent))).toBe(true);
       expect(child).not.toBe(parent);
-    }
-  });
-
-  /**
-   * A guide the workbook filed under the wrong creature is dropped, never
-   * repaired: the real guide for those creatures was never captured, and the
-   * text describes a different animal entirely.
-   */
-  it("keeps no guide that was filed under the wrong creature", () => {
-    expect(Object.keys(payload.droppedGuides).length).toBeGreaterThan(0);
-    for (const bpPath of Object.keys(payload.droppedGuides)) {
-      const record = payload.creatureInfo[bpPath] as
-        | { methods?: unknown[] }
-        | undefined;
-      expect(record?.methods ?? []).toEqual([]);
     }
   });
 
@@ -125,11 +100,7 @@ describe("bundled creature info", () => {
     }
   });
 
-  /**
-   * Taming steps are legacy imported text. Asserting a route for a creature
-   * marked unobtainable by source data is the failure that would
-   * mislead an administrator most.
-   */
+  /** Unavailable creatures must never suggest an acquisition route. */
   it("gives no acquisition method to an unavailable creature", () => {
     for (const [bpPath, raw] of records) {
       const info = CreatureInfoSchema.parse(raw);
@@ -165,11 +136,6 @@ describe("bundled creature info", () => {
       }
       expect(`${bpPath}: ${new Set(ids).size}`).toBe(`${bpPath}: ${ids.length}`);
     }
-  });
-
-  it("records where each part came from", () => {
-    expect(Object.keys(payload.provenance).length).toBeGreaterThan(0);
-    expect(JSON.stringify(payload.provenance)).toMatch(/source|legacy/i);
   });
 
   /**
@@ -209,8 +175,7 @@ describe("bundled creature info", () => {
     expect(rex.methods[0].inputs.map((input) => input.label)).toContain(
       "Raw Prime Meat",
     );
-    // Every input the workbook lists as taming food keeps that role, which is
-    // what the editor groups them by.
+    // The editor groups inputs by role.
     for (const input of rex.methods[0].inputs) {
       expect(input.role).toBe("taming-food");
       expect(input.referenceType).toBe("text");

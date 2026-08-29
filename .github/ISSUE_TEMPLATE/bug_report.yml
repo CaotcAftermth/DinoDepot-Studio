@@ -81,7 +81,7 @@ body:
         Copy debug information in the app's right-click menu produces exactly
         this. It contains no credentials and no project data.
       placeholder: |
-        DinoDepot Studio 0.6.0
+        DinoDepot Studio X.Y.Z
         Windows 11 10.0.26200 x86 64-bit
         Route: /production/:id
       render: text

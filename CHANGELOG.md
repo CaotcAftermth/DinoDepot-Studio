@@ -6,6 +6,27 @@ features, the last for fixes.
 
 ## Unreleased
 
+### Guided example project
+
+- Added one protected example project with mock official-catalog content,
+  walkthrough authoring, completion tracking, annotations, and project-specific
+  control states.
+
+### Rights-aware artwork
+
+- Separated catalog identity from artwork delivery. Official and mod artwork
+  now displays only when current registry metadata proves distribution rights.
+- Added fail-closed caching, revocation tooling, integrity verification, and
+  bundled placeholders. Older package artwork remains readable compatibility
+  data but no longer displays or publishes by itself.
+
+### Performance
+
+- Coalesced icon registry requests and cached manifest indexes in memory so
+  icon-heavy pages no longer repeat the same registry work for every row.
+
+## 0.8.0 - 2026-08-23
+
 ### Feedback
 
 DinoDepot Studio can now be told when it is wrong, without leaving it.
@@ -53,9 +74,10 @@ feature request.
 
 Reports become issues on the DinoDepot Studio repository. Your own GitHub
 sign-in is not used and is never sent: a small service holds that credential,
-and the app holds none. Set its address in **Settings › Feedback**; with none
-set, reports are still written and kept, and open in your browser with
-everything filled in.
+and the app holds none. Official builds use the managed DinoDepot Feedback
+service. Development and self-hosted builds can set their own service address;
+with none set, reports are still written and kept, and open in your browser
+with everything filled in.
 
 For maintainers: `docs/architecture/feedback.md`, and
 `services/feedback-api/README.md` for deployment.
@@ -121,14 +143,8 @@ nothing to migrate.
 
 The catalog gained **70 fertilized egg entries**, so a production rule can
 consume one without being flagged as referring to content that is not in the
-catalog.
-
-These were read from ARK's own game files rather than derived from a naming
-rule, because the rule does not hold: `_Fertilized` is *inserted before* a
-variant qualifier, so the Tek Parasaur egg is
-`PrimalItemConsumable_Egg_Para_Fertilized_Bionic`, not `..._Bionic_Fertilized`.
-Ten eggs - the generic Small/Medium/Large ones, Titanoboa, Pachyrhino and
-others - have no fertilized form at all and were correctly left out.
+catalog. Irregular variant names and creatures without fertilized eggs are
+represented accurately.
 
 Each one is filed as a variant of the egg it comes from, so it inherits that
 egg's icon and **item pickers collapse the pair onto a single row**. Variant
@@ -191,13 +207,10 @@ with the same *Show variants* toggle.
 
 ### For maintainers
 
-- New `sidecar-assets/` .NET tool reads mod containers via CUE4Parse
+- The `sidecar-assets/` .NET tool reads installed mod containers via CUE4Parse
   (Apache-2.0). Build with `npm run build:assets`. It fetches Oodle on first
   use; whether that library may be redistributed in an installer is unresolved,
   so it is not committed.
-- `gamelist` mode on that tool lists base-game asset paths in about two
-  seconds, index-only. It produced `scripts/data/fertilized-eggs.json`.
-- `scripts/fertilized-eggs.mjs` adds the egg entries and can run standalone.
 
 ## Earlier versions
 

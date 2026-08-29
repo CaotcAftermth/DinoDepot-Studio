@@ -3,17 +3,26 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { creatureInfoFor, CREATURE_VARIANT_PARENTS } from "./creature-info.mjs";
 
 const repository = process.cwd();
 const root = path.join(repository, "Public_Content", "Official_Icons");
 const catalog = JSON.parse(await readFile(path.join(repository, "src", "assets", "catalog", "official-asa.json"), "utf8"));
+const info = JSON.parse(await readFile(path.join(repository, "src", "assets", "catalog", "official-creature-info.json"), "utf8"));
 const metadata = JSON.parse(await readFile(path.join(root, "official.json"), "utf8"));
 const version = String(metadata.version ?? "");
 if (!/^[A-Za-z0-9][A-Za-z0-9._+-]*$/.test(version)) throw new Error("Unsafe official version");
 
 const json = (value) => `${JSON.stringify(value, null, 2)}\n`;
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
+const normalizePath = (bpPath) => bpPath.trim().replace(/_C$/i, "").toLowerCase();
+const knownCreaturePaths = new Set(
+  (catalog.creatures ?? []).map((entry) => normalizePath(entry.bpPath)),
+);
+const creatureInfo = Object.fromEntries(
+  Object.entries(info.creatureInfo ?? {})
+    .filter(([bpPath]) => knownCreaturePaths.has(normalizePath(bpPath)))
+    .sort(([left], [right]) => left.localeCompare(right)),
+);
 const content = {
   format: "dinodepot.package-content",
   schemaVersion: 2,
@@ -24,9 +33,9 @@ const content = {
   icons: {},
   notes: {},
   maps: {},
-  variantParents: CREATURE_VARIANT_PARENTS,
+  variantParents: info.variantParents ?? {},
   itemInfo: {},
-  creatureInfo: creatureInfoFor(catalog),
+  creatureInfo,
 };
 const contentBytes = Buffer.from(json(content));
 const manifest = {

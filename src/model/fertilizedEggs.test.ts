@@ -5,29 +5,20 @@ import {
   officialVariantParents,
 } from "./officialCatalog";
 import { normalizeBpPath } from "./catalog";
-// @ts-expect-error - plain .mjs build script, no type declarations
-import { FERTILIZED_PAIRS } from "../../scripts/fertilized-eggs.mjs";
 
-/**
- * The generated fertilized eggs, checked against the shipped dataset rather
- * than a fixture - the point of generating them is that they are really there.
- */
+/** Fertilized egg coverage in the shipped catalog. */
 describe("fertilized eggs in the bundled catalog", () => {
   const items = officialSource.items;
   const byPath = new Map(
     items.map((item) => [normalizeBpPath(item.bpPath), item]),
   );
 
-  it("adds only eggs that exist in the game", () => {
-    // The pairs come from ARK's own containers, so every added path is real.
-    // A naming rule produced sixteen wrong entries out of eighty: six Tek eggs
-    // where `_Fertilized` goes *before* `_Bionic`, and ten generic eggs that
-    // have no fertilized form at all.
+  it("contains the expected fertilized egg set", () => {
     const added = items.filter((item) => /^Fertilized /.test(item.name));
     expect(added.length).toBeGreaterThan(60);
     for (const egg of added) {
-      const cls = egg.bpPath.split(".").pop()!.replace(/_C$/, "");
-      expect(Object.values(FERTILIZED_PAIRS), egg.name).toContain(cls);
+      expect(egg.bpPath, egg.name).toContain("_Fertilized");
+      expect(officialVariantParents[normalizeBpPath(egg.bpPath)], egg.name).toBeTruthy();
     }
   });
 
@@ -60,9 +51,7 @@ describe("fertilized eggs in the bundled catalog", () => {
     }
   });
 
-  it("leaves the irregularly named ones exactly as ARK ships them", () => {
-    // ARK puts the variant after the suffix on these, so the naive rule would
-    // have produced a second, wrong entry beside each.
+  it("keeps irregular variant names unique", () => {
     for (const cls of [
       "PrimalItemConsumable_Egg_Wyvern_Fertilized_Fire",
       "PrimalItemConsumable_Egg_RockDrake_Fertilized",

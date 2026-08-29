@@ -16,13 +16,17 @@ The desktop cache lives in app data under `asset-cache/` and `registry-cache/`, 
 
 ## Public repository boundary
 
-`Public_Content/Asset_Registry` contains disabled public registry identities. Every currently known image is `not-reviewed` and `publishEligible: false`; these files are not an approval source. The full audit is in `legacy-asset-inventory.json`.
+`Public_Content/Asset_Registry` contains the public registry structure. It
+currently publishes no eligible artwork and is not an approval source.
 
 Real permission records and immutable permission terms are private inputs maintained outside this repository. This repository contains only a schema and an intentionally unusable redacted example. The tool does not generate or edit legal wording.
 
-## Deployment status
+## Deployment
 
-On 2026-08-27, maintainers created `dinodepot-assets`, applied `r2-cors.json`, attached the active `assets.dinodepot-studio.app` custom domain, disabled `r2.dev`, and uploaded only the disabled registry manifests with the index last. No artwork was uploaded. Public GET/HEAD, CORS, ETag/304, and CDN cache behavior were verified against the custom domain.
+The managed registry uses the private `dinodepot-assets` bucket and the
+`assets.dinodepot-studio.app` custom domain. Direct `r2.dev` access remains
+disabled. Public GET/HEAD, CORS, ETag/304, and CDN cache behavior must be
+verified after configuration changes.
 
 ## Maintainer CLI
 
@@ -64,7 +68,7 @@ In a separately authorized maintainer/CI environment, upload with:
 CLOUDFLARE_API_TOKEN=<secret> CLOUDFLARE_ACCOUNT_ID=<account> npm run rights:assets -- publish <output-dir>/publish-plan.json --execute
 ```
 
-The execute path uses the repository-pinned Wrangler and explicit remote R2 operations. It refuses absent credentials; neither credential is compiled into the desktop or viewer. Existing `publish:rights-assets` and the legacy Rust `prepare` form remain compatible.
+The execute path uses the repository-pinned Wrangler and explicit remote R2 operations. It refuses absent credentials; neither credential is compiled into the desktop or viewer. Existing `publish:rights-assets` and the Rust `prepare` form remain compatible.
 
 To prepare - but not execute - a metadata-first revocation:
 
@@ -95,4 +99,6 @@ References: [Wrangler R2 object commands](https://developers.cloudflare.com/work
 
 ## Rollback
 
-Schema 4 migration does not move or delete a user's project files. Reverting application code restores prior readers; Git can restore removed repository binaries. Do not restore artwork-bearing exports without a new rights review. History rewriting, force-pushing, release deletion, Pages cleanup, and CDN purges require separate explicit authorization.
+Schema 4 migration does not move or delete a user's project files. Reverting
+application code restores prior readers. Do not publish artwork-bearing
+exports without a current rights review.

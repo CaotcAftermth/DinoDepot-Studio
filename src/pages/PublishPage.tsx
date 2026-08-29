@@ -315,14 +315,6 @@ function FamilyCard({
             </Button>
           </div>
 
-          {state.family === "viewerPage" && (
-            <p className="text-xs text-sky-400">
-              Serve this page with GitHub Pages: repo Settings → Pages → deploy
-              from branch, folder <span className="mono">/docs</span>. The page
-              loads the Cluster Viewer Data file automatically - republish the
-              data (not the page) when rules change.
-            </p>
-          )}
           {state.family === "players" && (
             <p className="text-xs text-sky-400">
               The roster itself - names, IDs, and which map each stored
@@ -332,13 +324,6 @@ function FamilyCard({
                 Player Data
               </Link>{" "}
               page.
-            </p>
-          )}
-          {state.family === "viewerData" && (
-            <p className="text-xs text-sky-400">
-              Managed official, modpack, and project-owned WebP/PNG icons are
-              included in the published page automatically. Anything missing
-              uses DinoDepot's default icon.
             </p>
           )}
           {record && (

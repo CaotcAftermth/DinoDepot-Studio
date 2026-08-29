@@ -10,18 +10,15 @@ import {
 const load = async (path: string) => JSON.parse(await readFile(path, "utf8")) as unknown;
 
 describe("public asset registry schemas", () => {
-  it("accepts committed quarantine registries with no active artwork", async () => {
+  it("accepts the empty public registry", async () => {
     const root = "Public_Content/Asset_Registry/registry";
     const index = RegistryIndexSchema.parse(await load(`${root}/index.json`));
     const official = OfficialAssetManifestSchema.parse(await load(`${root}/official.json`));
-    const mod = ModAssetManifestSchema.parse(await load(`${root}/mods/987274.json`));
 
-    expect(index.mods["987274"].manifest).toBe("/registry/mods/987274.json");
+    expect(index.mods).toEqual({});
     expect(official.rights.status).toBe("official-reference-policy");
     expect(official.rights.distributionEligible).toBe(false);
-    expect(Object.values(official.assets).every((asset) => asset.status === "disabled")).toBe(true);
-    expect(mod.rights.status).toBe("not-reviewed");
-    expect(Object.values(mod.assets).every((asset) => asset.status === "disabled")).toBe(true);
+    expect(official.assets).toEqual({});
   });
 
   it("rejects traversal and mismatched mod paths", () => {

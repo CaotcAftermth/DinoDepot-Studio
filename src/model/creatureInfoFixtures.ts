@@ -1,23 +1,6 @@
 import type { CreatureInfo, MethodTag } from "./creatureInfo";
 
-/**
- * Verified acquisition fixtures.
- *
- * Records retain source revisions from the legacy fixture dataset. They exist
- * to exercise the schema end to end: every availability, outcome, tag, input
- * reference type and role, phase-level outcome, and variant inheritance.
- */
-
-export interface FixtureSource {
-  /** Legacy source page title. */
-  page: string;
-  /** Revision the text was read at - the anchor for reimport comparison. */
-  revisionId: number;
-  /** Which game the information applies to. */
-  game: "ASA" | "ASE" | "both";
-  /** Mod that adds the creature, when it isn't base game. */
-  mod?: string;
-}
+/** Representative acquisition fixtures covering the complete schema. */
 
 export interface CreatureFixture {
   /** Blueprint path, or "" when the creature isn't in the bundled catalog. */
@@ -25,7 +8,6 @@ export interface CreatureFixture {
   name: string;
   /** Which representative case this fixture is here to cover. */
   covers: string;
-  source: FixtureSource;
   info: Partial<CreatureInfo>;
 }
 
@@ -129,7 +111,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: P.rex,
     name: "Rex",
     covers: "ordinary knockout",
-    source: { page: "Rex", revisionId: 585582, game: "both" },
     info: {
       availability: "acquirable",
       methods: [
@@ -155,7 +136,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: P.dodo,
     name: "Dodo",
     covers: "ordinary passive - the simplest possible record",
-    source: { page: "Dodo", revisionId: 586871, game: "both" },
     info: {
       availability: "acquirable",
       methods: [
@@ -171,8 +151,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
   {
     bpPath: P.diplo,
     name: "Diplodocus",
-    covers: "two valid routes on one creature from the legacy source text",
-    source: { page: "Diplodocus", revisionId: 585428, game: "both" },
+    covers: "two valid routes on one creature",
     info: {
       availability: "acquirable",
       methods: [
@@ -197,7 +176,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: P.carcha,
     name: "Carcharodontosaurus",
     covers: "trust building + mounted; temporary control resolves into a full tame",
-    source: { page: "Carcharodontosaurus", revisionId: 595730, game: "ASA" },
     info: {
       availability: "acquirable",
       methods: [
@@ -220,12 +198,11 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     },
   },
 
-  // ---- 5. CORRECTED: nest / baby minigame ------------------------------
+  // ---- 5. nest / baby minigame -----------------------------------------
   {
     bpPath: P.giganto,
     name: "Gigantoraptor",
-    covers: "nest + baby mimicry minigame; adult is untameable - corrected from combat-assist",
-    source: { page: "Gigantoraptor", revisionId: 593622, game: "ASA" },
+    covers: "nest + baby mimicry minigame; adult is untameable",
     info: {
       availability: "acquirable",
       methods: [
@@ -279,12 +256,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: "",
     name: "Edmontonia",
     covers: "combat assistance - you fight alongside it without attacking it (mod creature)",
-    source: {
-      page: "Mod:Additions Ascended/Edmontonia",
-      revisionId: 588874,
-      game: "ASA",
-      mod: "Additions Ascended (ARK Additions)",
-    },
     info: {
       availability: "acquirable",
       methods: [
@@ -335,7 +306,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: "",
     name: "Wyvern",
     covers: "egg theft then raise - adults cannot be tamed",
-    source: { page: "Wyvern", revisionId: 587899, game: "both" },
     info: {
       availability: "acquirable",
       methods: [
@@ -359,7 +329,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: "",
     name: "Rhyniognatha",
     covers: "impregnation with a CREATURE input gated on drag weight",
-    source: { page: "Rhyniognatha", revisionId: 588992, game: "ASA" },
     info: {
       availability: "acquirable",
       methods: [
@@ -401,7 +370,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: "",
     name: "Gigantoraptor (orphan route)",
     covers: "wild-baby claim via a tamed Gigantoraptor's Baby Call",
-    source: { page: "Gigantoraptor", revisionId: 593622, game: "ASA" },
     info: {
       availability: "acquirable",
       methods: [
@@ -425,7 +393,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: "",
     name: "Fasolasuchus",
     covers: "unique knockout - no tranquilizers involved",
-    source: { page: "Fasolasuchus", revisionId: 593540, game: "ASA" },
     info: {
       availability: "acquirable",
       methods: [
@@ -461,7 +428,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: P.phoenix,
     name: "Phoenix",
     covers: "environmental - only exists during a specific weather event",
-    source: { page: "Phoenix", revisionId: 595665, game: "both" },
     info: {
       availability: "acquirable",
       methods: [
@@ -490,7 +456,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: P.lio,
     name: "Liopleurodon",
     covers: "temporary control - reverts on a timer",
-    source: { page: "Liopleurodon", revisionId: 586858, game: "both" },
     info: {
       availability: "acquirable",
       methods: [
@@ -509,7 +474,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: "",
     name: "Alpha Rex",
     covers: "unavailable - nothing to record beyond that",
-    source: { page: "Alpha Rex", revisionId: 265022, game: "both" },
     info: { availability: "unavailable" },
   },
 
@@ -517,9 +481,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
   {
     bpPath: "",
     name: "Aberrant Gigantoraptor",
-    covers:
-      "variant inheritance from legacy source text; stores nothing itself",
-    source: { page: "Gigantoraptor", revisionId: 593622, game: "ASA" },
+    covers: "variant inheritance; stores nothing itself",
     info: {
       // Deliberately empty: it inherits every section from Gigantoraptor.
       overrides: [],
@@ -532,7 +494,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: P.equus,
     name: "Equus",
     covers: "passive feeding that becomes a mounted minigame",
-    source: { page: "Equus", revisionId: 585447, game: "both" },
     info: {
       availability: "acquirable",
       methods: [
@@ -561,7 +522,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: P.andrew,
     name: "Andrewsarchus",
     covers: "distract-then-ride with a directional minigame",
-    source: { page: "Andrewsarchus", revisionId: 585333, game: "both" },
     info: {
       availability: "acquirable",
       methods: [
@@ -594,7 +554,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: P.hyaeno,
     name: "Hyaenodon",
     covers: "trust building with no input at all",
-    source: { page: "Hyaenodon", revisionId: 585475, game: "both" },
     info: {
       availability: "acquirable",
       methods: [
@@ -617,7 +576,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: P.chalico,
     name: "Chalicotherium",
     covers: "passive with a hunger gate between feeds",
-    source: { page: "Chalicotherium", revisionId: 596273, game: "both" },
     info: {
       availability: "acquirable",
       methods: [
@@ -640,7 +598,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: P.mantis,
     name: "Mantis",
     covers: "passive gated on a specific resource",
-    source: { page: "Mantis", revisionId: 588094, game: "both" },
     info: {
       availability: "acquirable",
       methods: [
@@ -662,7 +619,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: P.pego,
     name: "Pegomastax",
     covers: "passive where the creature takes from you rather than being fed",
-    source: { page: "Pegomastax", revisionId: 595563, game: "both" },
     info: {
       availability: "acquirable",
       methods: [
@@ -685,7 +641,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: P.gacha,
     name: "Gacha",
     covers: "passive fed by dropping items on the ground",
-    source: { page: "Gacha", revisionId: 586876, game: "both" },
     info: {
       availability: "acquirable",
       methods: [
@@ -708,7 +663,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: P.troodon,
     name: "Troodon",
     covers: "passive paid for in sacrificed tames rather than food",
-    source: { page: "Troodon", revisionId: 589010, game: "both" },
     info: {
       availability: "acquirable",
       methods: [
@@ -730,7 +684,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: "",
     name: "Yi Ling",
     covers: "knockout where tranquilizers do nothing - a timed stun window instead",
-    source: { page: "Yi Ling", revisionId: 593265, game: "ASA" },
     info: {
       availability: "acquirable",
       methods: [
@@ -770,7 +723,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: "",
     name: "Enforcer",
     covers: "craft-and-assemble - never tamed at all",
-    source: { page: "Enforcer", revisionId: 586878, game: "both" },
     info: {
       availability: "acquirable",
       methods: [
@@ -796,7 +748,6 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: "",
     name: "Fenrir",
     covers: "reward - obtained only by beating a boss",
-    source: { page: "Fenrir", revisionId: 587905, game: "both" },
     info: {
       availability: "acquirable",
       methods: [

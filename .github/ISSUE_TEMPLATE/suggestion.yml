@@ -48,4 +48,4 @@ body:
     id: version
     attributes:
       label: DinoDepot Studio version
-      placeholder: "0.6.0"
+      placeholder: "Shown in Settings > About"
