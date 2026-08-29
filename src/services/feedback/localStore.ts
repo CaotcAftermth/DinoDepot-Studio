@@ -18,7 +18,7 @@ import { emptyFeedbackState, type FeedbackState } from "../../model/feedback/typ
  * A read failure returns an empty history. A write failure is logged and
  * returned to the feedback state machine so it can keep the draft open and
  * tell the reporter that it is not yet safe on disk. It never escapes into an
- * unrelated app workflow — see the failure isolation note in
+ * unrelated app workflow - see the failure isolation note in
  * `docs/architecture/feedback.md`.
  */
 
@@ -28,7 +28,7 @@ let inFlight: Promise<void> | null = null;
  * Reads the stored history.
  *
  * Generates the installation id on the first read, which is also the first
- * time anything about feedback happens on this machine — so an installation
+ * time anything about feedback happens on this machine - so an installation
  * that never sends a report never gets an id at all until it is used.
  */
 export async function loadFeedbackState(): Promise<FeedbackState> {
@@ -50,7 +50,7 @@ export async function loadFeedbackState(): Promise<FeedbackState> {
  * Serialized against itself: two reports finishing at once would otherwise
  * both read, both modify and both write, and the second would erase the first.
  * The caller always holds the whole state, so waiting for the previous write
- * is enough — there is no partial update to reconcile.
+ * is enough - there is no partial update to reconcile.
  */
 export async function saveFeedbackState(state: FeedbackState): Promise<void> {
   const previous = inFlight ?? Promise.resolve();

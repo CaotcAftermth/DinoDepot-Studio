@@ -1,14 +1,14 @@
 /**
  * The one vocabulary of failures the app speaks.
  *
- * Every operation that can fail — a save, a fetch, a push, a migration —
+ * Every operation that can fail - a save, a fetch, a push, a migration -
  * resolves to one of these codes rather than to a string. Two things fall out
  * of that: the UI can say something an admin understands without parsing
  * English out of an error message, and the retry logic can tell "the network
  * blinked" apart from "your token was revoked" without guessing.
  *
- * Messages here are the *user-facing* ones. Anything technical — a status
- * code, a path, a commit sha — belongs in `detail`, which the UI shows only
+ * Messages here are the *user-facing* ones. Anything technical - a status
+ * code, a path, a commit sha - belongs in `detail`, which the UI shows only
  * under Advanced Details.
  */
 
@@ -28,17 +28,17 @@ export const STUDIO_ERROR_CODES = [
   // --- authentication and access ----------------------------------------
   /** No credential stored for the account this project is bound to. */
   "auth.missing",
-  /** 401 — the token is invalid or expired. */
+  /** 401 - the token is invalid or expired. */
   "auth.expired",
-  /** 403 — the token is valid but lacks the permission needed. */
+  /** 403 - the token is valid but lacks the permission needed. */
   "auth.forbidden",
 
   // --- repository state --------------------------------------------------
-  /** 404 — the repository is gone, or access to it was revoked. */
+  /** 404 - the repository is gone, or access to it was revoked. */
   "repo.unavailable",
   /** The repository answering is not the one this project is bound to. */
   "repo.identityMismatch",
-  /** 409/422 — a ref or repository conflict GitHub refused outright. */
+  /** 409/422 - a ref or repository conflict GitHub refused outright. */
   "repo.conflict",
   /** The push was rejected because the branch moved on. Retryable by design. */
   "repo.nonFastForward",
@@ -50,7 +50,7 @@ export const STUDIO_ERROR_CODES = [
   "network.timeout",
   /** 429 or a secondary rate limit. Carries `retryAfterSeconds` when GitHub says. */
   "network.rateLimited",
-  /** 5xx — GitHub's problem, not ours. */
+  /** 5xx - GitHub's problem, not ours. */
   "network.serverError",
 
   // --- domain ------------------------------------------------------------
@@ -138,7 +138,7 @@ export function asStudioError(
  * Which failures are worth trying again on their own.
  *
  * A non-fast-forward push is retryable in the sense that the *sync* re-runs
- * from the fetch — never that the same push is repeated blindly.
+ * from the fetch - never that the same push is repeated blindly.
  */
 const RETRYABLE: ReadonlySet<StudioErrorCode> = new Set([
   "network.offline",
@@ -170,7 +170,7 @@ export function isAccessProblem(error: StudioError): boolean {
 /**
  * Turns an HTTP status into a code and a sentence an admin can act on.
  *
- * `what` names the thing being reached for — "the project repository" — so the
+ * `what` names the thing being reached for - "the project repository" - so the
  * message reads as advice rather than as a status line.
  */
 export function classifyHttpStatus(
@@ -224,7 +224,7 @@ export function classifyHttpStatus(
   if (status >= 500) {
     return new StudioError(
       "network.serverError",
-      "GitHub is having trouble right now. Your work is saved locally — try again in a moment.",
+      "GitHub is having trouble right now. Your work is saved locally - try again in a moment.",
       base,
     );
   }

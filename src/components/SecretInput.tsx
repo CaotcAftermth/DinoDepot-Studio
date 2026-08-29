@@ -4,7 +4,7 @@ import { Button, Input } from "./ui";
 /**
  * A field for a value that goes into Windows Credential Manager.
  *
- * A stored secret is never rendered — not even masked-but-present, because
+ * A stored secret is never rendered - not even masked-but-present, because
  * there is nothing to render: the app cannot read one back. The row of
  * asterisks is a statement that something is stored, not the thing itself.
  *

@@ -42,7 +42,7 @@ export interface Env {
    *
    * Off by default, and deliberately so. A key compiled into a desktop
    * application that anybody can download is not a secret, and treating it as
-   * one would be worse than not having it — it invites the belief that the
+   * one would be worse than not having it - it invites the belief that the
    * endpoint is protected when it is not. Rate limiting is what actually holds
    * the line. Set this only when the deployment is private and the key can be
    * distributed out of band.

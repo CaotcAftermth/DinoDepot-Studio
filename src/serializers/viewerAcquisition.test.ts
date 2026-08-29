@@ -158,7 +158,7 @@ describe("viewer acquisition", () => {
       .acq!.methods[0].phases;
 
     expect(phases[0].failureOrReset).toBe("adult aggro resets it");
-    // The plain phase stays lean — no empty outcome keys published.
+    // The plain phase stays lean - no empty outcome keys published.
     expect(phases[1].failureOrReset).toBeUndefined();
     expect(phases[1].repeatUntil).toBeUndefined();
   });
@@ -308,7 +308,7 @@ describe("drops and maps", () => {
         settingsWith(disabled),
       ).creatures[0].maps;
 
-    // One running map is enough — it is plainly obtainable.
+    // One running map is enough - it is plainly obtainable.
     expect(mapsOf(["Scorched Earth"]).caution).toBe(false);
     expect(mapsOf(["Scorched Earth", "Ragnarok"]).caution).toBe(true);
     expect(mapsOf([]).caution).toBe(false);
@@ -342,7 +342,7 @@ describe("what reaches the public page", () => {
       availability: "acquirable" as const,
       methods: [knockout()],
     });
-    // No production rule at all — this is a lookup page, not only an atlas.
+    // No production rule at all - this is a lookup page, not only an atlas.
     const data = serializeViewerData(emptyProductionDraft(), catalog, "c");
     expect(data.creatures.map((c) => c.name)).toEqual(["Rex"]);
     expect(data.creatures[0].produces).toBe(false);

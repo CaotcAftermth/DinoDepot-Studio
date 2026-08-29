@@ -91,7 +91,7 @@ export function RemapsPage() {
     };
     setRemaps({ ...remaps, entries: [...remaps.entries, entry] });
     // Remap cards default to folded, which is right for a list you are reading
-    // and wrong for the one you just made — it has two empty fields in it and
+    // and wrong for the one you just made - it has two empty fields in it and
     // nothing else to say. Recorded as "differs from the default", so the rest
     // of the list is untouched.
     setFold(`remap:${entry.id}`, true);
@@ -143,7 +143,7 @@ export function RemapsPage() {
       toast.success(
         `Imported ${result.draft.entries.length} remaps` +
           (result.catalogAdded > 0
-            ? ` — ${result.catalogAdded} unknown creatures added to "Imported / unsorted"`
+            ? ` - ${result.catalogAdded} unknown creatures added to "Imported / unsorted"`
             : ""),
       );
     } catch (e) {
@@ -160,7 +160,7 @@ export function RemapsPage() {
     <div {...feedbackTarget("creature-remaps")}>
       <PageHeader
         title="Creature Type Remaps"
-        subtitle={`${activeCount} active of ${remaps.entries.length} entries · ${totals.errors} errors · ${totals.warnings} warnings — published as a separate raw file referenced by the game INI`}
+        subtitle={`${activeCount} active of ${remaps.entries.length} entries · ${totals.errors} errors · ${totals.warnings} warnings - published as a separate raw file referenced by the game INI`}
         actions={
           <>
             <Button onClick={importFromFile}>Import live file…</Button>
@@ -197,8 +197,8 @@ export function RemapsPage() {
               <CollapsibleCard
                 key={entry.id}
                 prefKey={`remap:${entry.id}`}
-                // Remaps are a long list of one-line facts — source becomes
-                // destination — so the page is far more useful as an index
+                // Remaps are a long list of one-line facts - source becomes
+                // destination - so the page is far more useful as an index
                 // than as a stack of open forms.
                 defaultOpen={false}
                 // Source → destination and nothing else: the header is for
@@ -232,7 +232,7 @@ export function RemapsPage() {
                         "Marks this remap as a deliberate conversion.\n\n" +
                         "A remap normally exists because the source creature is going away, so " +
                         "validation warns when the source's content is still enabled and not " +
-                        "marked \"Being removed\" — that usually means the remap was set up by " +
+                        "marked \"Being removed\" - that usually means the remap was set up by " +
                         "mistake, and it would silently convert creatures players still have.\n\n" +
                         "Turning this on says you meant it, and dismisses that one warning. It " +
                         "changes nothing in the published output."
@@ -289,7 +289,7 @@ export function RemapsPage() {
                     </div>
                   </Field>
                 </div>
-                <Field label="Notes / reason" hint="Internal only — never published">
+                <Field label="Notes / reason" hint="Internal only - never published">
                   <Input
                     value={entry.notes}
                     onChange={(e) => updateEntry(entry.id, { notes: e.target.value })}

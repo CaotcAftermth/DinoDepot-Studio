@@ -19,7 +19,7 @@ import {
  * what makes it portable: Cloudflare Workers is what `wrangler.toml` deploys
  * to, and Deno Deploy, Netlify Edge Functions and Node 18 all run the same
  * module with a different entry file and nothing else changed. Only the two
- * optional bindings — KV for rate limiting, R2 for attachments — are
+ * optional bindings - KV for rate limiting, R2 for attachments - are
  * Cloudflare-shaped, and both are described as interfaces this service defines
  * rather than imported types.
  *
@@ -53,7 +53,7 @@ export default {
       const settings = readSettings(env);
 
       // Checked before anything else reads the body, so an unauthorized
-      // request costs nothing. Off unless the deployment sets a key — see the
+      // request costs nothing. Off unless the deployment sets a key - see the
       // note in env.ts about why a key in a downloadable app is not a secret.
       const presented =
         request.headers.get("x-feedback-key") ?? url.searchParams.get("key") ?? "";

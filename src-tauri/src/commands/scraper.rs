@@ -13,7 +13,7 @@ impl Default for ScraperState {
     }
 }
 
-/// Strips Windows verbatim prefixes (`\\?\`) that canonicalize() adds —
+/// Strips Windows verbatim prefixes (`\\?\`) that canonicalize() adds -
 /// Node's module loader cannot resolve a main script given as a `\\?\` path.
 fn de_verbatim(path: PathBuf) -> PathBuf {
     let s = path.to_string_lossy();
@@ -65,7 +65,7 @@ pub async fn scraper_start(
     let mut cmd = tokio::process::Command::new("node");
     cmd.arg(&script).arg(&mode);
 
-    // Every mode takes a JSON list argument — required for watch and lookup,
+    // Every mode takes a JSON list argument - required for watch and lookup,
     // optional for cosmetics, where it is the cosmetics already recorded and
     // lets the sidecar skip detail pages it does not need to open. Separate
     // temp files so one mode's run cannot clobber another's input.

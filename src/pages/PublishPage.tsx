@@ -85,7 +85,7 @@ export function PublishPage() {
   const [ghStatus, setGhStatus] = useState<string | null>(null);
   const [preview, setPreview] = useState<OutputState | null>(null);
 
-  // The shared registry — Overview reads exactly the same states, so the two
+  // The shared registry - Overview reads exactly the same states, so the two
   // pages cannot disagree about what is published.
   const allOutputs = useMemo(
     () =>
@@ -115,7 +115,7 @@ export function PublishPage() {
   async function handleTest() {
     setGhStatus("Testing connection…");
     // Recorded in the shared status cache, which is where Overview reads its
-    // "verified" state from — it never runs a test of its own.
+    // "verified" state from - it never runs a test of its own.
     const result = await useGithubStatus.getState().checkConnection(github);
     setGhStatus(result.message);
   }
@@ -137,7 +137,7 @@ export function PublishPage() {
       {!configured && (
         <Card className="mb-4">
           <p className="text-sm text-amber-400">
-            GitHub is not configured yet — set the repository owner, name, and
+            GitHub is not configured yet - set the repository owner, name, and
             branch in Settings before publishing.
           </p>
         </Card>
@@ -176,7 +176,7 @@ export function PublishPage() {
  * The "Publish All" modal is gone.
  *
  * It published each output as its own commit, so a failure halfway through left
- * a site that was half last week's — and there was no single moment at which
+ * a site that was half last week's - and there was no single moment at which
  * the published site was known to correspond to one version of the project.
  * `PublishSiteCard` replaces it with one atomic commit carrying the viewer
  * page, viewer data, assets, and manifest. Cards below are only for outputs
@@ -219,7 +219,7 @@ function FamilyCard({
     try {
       const remote = await fetchRemote(github, state.family);
       if (!remote.exists) {
-        setRemoteNote("Remote file does not exist yet — publishing will create it.");
+        setRemoteNote("Remote file does not exist yet - publishing will create it.");
       } else if (remote.content === state.content) {
         setRemoteNote("Remote file is identical to the current draft output.");
       } else {
@@ -319,13 +319,13 @@ function FamilyCard({
             <p className="text-xs text-sky-400">
               Serve this page with GitHub Pages: repo Settings → Pages → deploy
               from branch, folder <span className="mono">/docs</span>. The page
-              loads the Cluster Viewer Data file automatically — republish the
+              loads the Cluster Viewer Data file automatically - republish the
               data (not the page) when rules change.
             </p>
           )}
           {state.family === "players" && (
             <p className="text-xs text-sky-400">
-              The roster itself — names, IDs, and which map each stored
+              The roster itself - names, IDs, and which map each stored
               .arkprofile came from. The profile <em>files</em> are backed up
               separately, per player, from the{" "}
               <Link to="/players" className="text-accent-400 hover:underline">
@@ -343,7 +343,7 @@ function FamilyCard({
           )}
           {record && (
             <p className="text-xs text-ink-400">
-              Last published {new Date(record.publishedAt).toLocaleString()} —
+              Last published {new Date(record.publishedAt).toLocaleString()} -
               commit{" "}
               <span className="mono">{record.commitSha.slice(0, 7)}</span> ·{" "}
               {record.commitMessage}

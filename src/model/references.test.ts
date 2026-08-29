@@ -41,7 +41,7 @@ describe("parseReferences", () => {
   });
 
   it("leaves a malformed token as plain text rather than dropping it", () => {
-    // No closing bracket — it is not a reference, and must survive as typed.
+    // No closing bracket - it is not a reference, and must survive as typed.
     expect(parseReferences("[[item:/Game/x")).toEqual([
       { type: "text", text: "[[item:/Game/x" },
     ]);

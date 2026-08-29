@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 ///
 /// Everything here identifies a repository by GitHub's **immutable numeric id**.
 /// Owner and name are cached for display and rebuilt whenever the id shows they
-/// have moved — a rename or a transfer is news about the same repository, not a
+/// have moved - a rename or a transfer is news about the same repository, not a
 /// reason to disconnect a project from it.
 const API: &str = "https://api.github.com";
 const API_VERSION: &str = "2022-11-28";
@@ -348,7 +348,7 @@ pub struct RepoIdentity {
     pub name: String,
     pub is_private: bool,
     pub default_branch: String,
-    /// Whether this token can write to it — decides whether Sync can work.
+    /// Whether this token can write to it - decides whether Sync can work.
     pub can_push: bool,
     /// True when the repository has no commits yet.
     pub is_empty: bool,
@@ -411,7 +411,7 @@ fn identity_from(repo: &serde_json::Value) -> Outcome<RepoIdentity> {
     })
 }
 
-/// Looks a repository up by owner and name — the first binding, before an id
+/// Looks a repository up by owner and name - the first binding, before an id
 /// is known.
 #[tauri::command]
 pub async fn github_repo_by_slug(
@@ -434,7 +434,7 @@ pub async fn github_repo_by_slug(
 ///
 /// This is how a rename or a transfer is noticed: the id still resolves, and
 /// the owner and name that come back are the current ones. Nothing else in the
-/// app is allowed to decide a repository has "gone" — only a 404 here means it
+/// app is allowed to decide a repository has "gone" - only a 404 here means it
 /// is genuinely unreachable.
 #[tauri::command]
 pub async fn github_repo_by_id(
@@ -844,7 +844,7 @@ mod tests {
         assert!(!identity.is_empty);
     }
 
-    /// A repository with no commits is a normal starting state, not a fault —
+    /// A repository with no commits is a normal starting state, not a fault -
     /// setup has to be able to tell it apart from a wrong branch name.
     #[test]
     fn a_repository_with_no_commits_reads_as_empty() {

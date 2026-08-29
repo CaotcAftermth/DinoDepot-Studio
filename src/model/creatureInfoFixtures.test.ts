@@ -32,7 +32,7 @@ describe("fixture set", () => {
     }
   });
 
-  it("every fixture records its wiki provenance", () => {
+  it("every fixture records source provenance", () => {
     for (const { fixture } of parsed) {
       expect(fixture.source.page, fixture.name).toBeTruthy();
       expect(fixture.source.revisionId, fixture.name).toBeGreaterThan(0);
@@ -104,7 +104,7 @@ describe("schema coverage", () => {
     expect(phases.some((p) => p.transitionNote)).toBe(true);
   });
 
-  it("keeps simple methods simple — not every phase carries outcomes", () => {
+  it("keeps simple methods simple - not every phase carries outcomes", () => {
     const phases = allMethods.flatMap((m) => m.phases);
     const bare = phases.filter(
       (p) => !p.repeatUntil && !p.completedWhen && !p.failureOrReset && !p.transitionNote,
@@ -123,7 +123,7 @@ describe("representative cases", () => {
       "knockout",
       "passive",
     ]);
-    // Two methods, same outcome — the case that proved outcome belongs on
+    // Two methods, same outcome - the case that proved outcome belongs on
     // the method rather than the creature.
     expect(new Set(info.methods.map((m) => m.outcome))).toEqual(
       new Set(["direct-tame"]),

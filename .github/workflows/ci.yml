@@ -1,7 +1,7 @@
 name: CI
 
 # Windows only, because Windows is the only officially supported platform for
-# release one — running the suite anywhere else would prove something about a
+# release one - running the suite anywhere else would prove something about a
 # build nobody ships.
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@stable
 
-      # libgit2 is vendored, so nothing has to be installed for it — but the
+      # libgit2 is vendored, so nothing has to be installed for it - but the
       # build is the slow part, and caching it keeps a pull request under a
       # couple of minutes.
       - uses: Swatinem/rust-cache@v2
@@ -43,7 +43,7 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
-      # The feedback service has its own tsconfig — a Worker runtime, no DOM —
+      # The feedback service has its own tsconfig - a Worker runtime, no DOM -
       # and the app's `include` does not reach it. It shares the report schemas
       # and the issue formatter with the app, so a change on either side that
       # breaks the other has to fail here rather than at deploy time.

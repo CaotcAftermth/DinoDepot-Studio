@@ -101,7 +101,6 @@ pub fn run() {
             misc::list_images,
             misc::discord_post,
             secrets::discord_webhook_adopt_legacy,
-            misc::wiki_fetch_page,
             mod_discovery::resolve_mods_root,
             mod_discovery::list_installed_mods,
             mod_discovery::read_installed_mods,

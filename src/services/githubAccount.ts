@@ -6,8 +6,8 @@ import type { RepoIdentity } from "../model/repoSetup";
 /**
  * The GitHub account, and looking repositories up.
  *
- * A credential crosses into the application exactly once — `connectAccount`,
- * with a token the administrator pasted — and never comes back out. Everything
+ * A credential crosses into the application exactly once - `connectAccount`,
+ * with a token the administrator pasted - and never comes back out. Everything
  * afterwards names an *account id*; the token stays in Windows Credential
  * Manager and is read only inside Rust.
  */
@@ -100,7 +100,7 @@ export async function disconnectAccount(accountId: string): Promise<void> {
   );
 }
 
-/** Looks a repository up by owner and name — the first binding. */
+/** Looks a repository up by owner and name - the first binding. */
 export async function repoBySlug(
   accountId: string,
   owner: string,

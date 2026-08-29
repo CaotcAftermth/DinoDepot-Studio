@@ -52,7 +52,7 @@ export const PUBLISH_STAGE_LABELS: Record<PublishStage, string> = {
   sending: "Publishing",
   "waiting-for-pages": "Waiting for GitHub Pages",
   live: "Live",
-  "timed-out": "Published — GitHub Pages is taking a while",
+  "timed-out": "Published - GitHub Pages is taking a while",
   blocked: "Cannot publish yet",
 };
 
@@ -256,7 +256,7 @@ export async function publishProject(context: PublishContext): Promise<PublishOu
     stage: live ? "live" : "timed-out",
     message: live
       ? "The public site is live."
-      : "Published. GitHub Pages has not finished building yet — it usually appears within a few minutes.",
+      : "Published. GitHub Pages has not finished building yet - it usually appears within a few minutes.",
     commit,
     sourceRevision: context.sourceRevision,
     manifest,
@@ -271,7 +271,7 @@ function deliveryBinding(local: LocalProjectState) {
  * Replaces the published tree and commits it as one change.
  *
  * On a rejection the answer is to fetch, take the remote wholesale, and
- * regenerate — never to merge. Generated files have no authorship, so combining
+ * regenerate - never to merge. Generated files have no authorship, so combining
  * two machines' output would produce a site neither of them built.
  */
 async function pushArtifact(

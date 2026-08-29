@@ -13,7 +13,7 @@ import {
  *
  * Right now an attachment travels inside the report and the service uploads it
  * where it needs to. That is the arrangement with the fewest moving parts, and
- * it is not the only one that could be right — object storage with a signed
+ * it is not the only one that could be right - object storage with a signed
  * URL would be better for large files, and the client would not have to change
  * if it arrived, because the client only ever asks this interface for an
  * attachment and hands what it gets to the report.
@@ -25,7 +25,7 @@ import {
  * that adds a screen-recording permission to the application's manifest, or
  * asking the reporter to take the screenshot themselves. The second is what is
  * implemented, because a bug reporting feature that makes the whole app
- * request screen capture at install time is a poor trade — and because a
+ * request screen capture at install time is a poor trade - and because a
  * screenshot the reporter took is a screenshot the reporter has seen.
  *
  * The seam is here regardless: an implementation of {@link AttachmentSource}
@@ -54,7 +54,7 @@ interface RawImage {
 /**
  * An image the reporter chose from disk.
  *
- * The decode, the re-encode and the metadata strip all happen in Rust — see
+ * The decode, the re-encode and the metadata strip all happen in Rust - see
  * `commands/feedback.rs`. The webview never sees the original bytes, which
  * means it also never sees the EXIF block that may have been on them.
  */

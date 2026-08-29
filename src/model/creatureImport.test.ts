@@ -59,7 +59,7 @@ function record(over: Partial<ImportRecord> = {}): ImportRecord {
 }
 
 describe("defaultDecision", () => {
-  it("accepts nothing — the reviewer opts in", () => {
+  it("accepts nothing - the reviewer opts in", () => {
     const d = defaultDecision();
     expect(Object.values(d.sections).every((s) => s === "reject")).toBe(true);
     expect(d.keepLocalStrategy).toBe(true);
@@ -69,8 +69,8 @@ describe("defaultDecision", () => {
 describe("applyImport", () => {
   const proposed = info({
     availability: "acquirable",
-    methods: [knockout("Knockout tame", "wiki strategy")],
-    notes: "wiki notes",
+    methods: [knockout("Knockout tame", "source strategy")],
+    notes: "source notes",
     technical: { dragWeight: 400 },
   });
 
@@ -85,7 +85,7 @@ describe("applyImport", () => {
     decision.sections.notes = "accept";
 
     const next = applyImport(current, proposed, decision);
-    expect(next.notes).toBe("wiki notes");
+    expect(next.notes).toBe("source notes");
     expect(next.technical.dragWeight).toBe(150); // rejected, untouched
     expect(next.methods).toEqual([]);
   });
@@ -107,7 +107,7 @@ describe("applyImport", () => {
       sections: { ...defaultDecision().sections, acquisition: "accept" },
       keepLocalStrategy: false,
     });
-    expect(next.methods[0].strategy).toBe("wiki strategy");
+    expect(next.methods[0].strategy).toBe("source strategy");
   });
 
   it("does not carry a strategy across differently-named methods", () => {
@@ -115,7 +115,7 @@ describe("applyImport", () => {
     const decision = defaultDecision();
     decision.sections.acquisition = "accept";
     expect(applyImport(current, proposed, decision).methods[0].strategy).toBe(
-      "wiki strategy",
+      "source strategy",
     );
   });
 
@@ -184,7 +184,7 @@ describe("mergeReimport", () => {
     expect(result.superseded).toEqual([]);
   });
 
-  it("supersedes rather than overwrites when the wiki moved on", () => {
+  it("supersedes rather than overwrites when the source moved on", () => {
     const existing = [record({ status: "accepted" })];
     const fresh = record({ id: "imp-2", source: { ...record().source, revisionId: 200 } });
     const result = mergeReimport(existing, [fresh]);

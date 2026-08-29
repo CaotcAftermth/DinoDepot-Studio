@@ -34,7 +34,7 @@ import { emptyHistory } from "./history";
 const find = (states: ReturnType<typeof outputsFor>, family: OutputFamily) =>
   states.find((s) => s.family === family)!;
 
-describe("buildOutputStates — semantic emptiness", () => {
+describe("buildOutputStates - semantic emptiness", () => {
   it("treats a brand-new project as having nothing to publish", () => {
     const states = outputsFor();
     for (const family of ["production", "remaps", "cosmetics"] as const) {
@@ -47,7 +47,7 @@ describe("buildOutputStates — semantic emptiness", () => {
 
   // The precise bug this model exists to kill. An empty CCM list really is an
   // empty string, so the old `content.length > 0` check happened to work for
-  // cosmetics — but production and remaps serialize to a JSON document that is
+  // cosmetics - but production and remaps serialize to a JSON document that is
   // structurally empty and textually not, and both read as dirty on a project
   // where nobody had done anything yet.
   it("is not fooled by an empty document that still has characters in it", () => {
@@ -97,7 +97,7 @@ describe("buildOutputStates — semantic emptiness", () => {
   });
 });
 
-describe("buildOutputStates — publish comparison", () => {
+describe("buildOutputStates - publish comparison", () => {
   it("is published when the draft matches what was published", () => {
     const fixture = { production: production(rule()) };
     const states = outputsFor({ ...fixture, history: historyMatching(fixture) });
@@ -117,7 +117,7 @@ describe("buildOutputStates — publish comparison", () => {
   });
 
   it("still reports a change when a published output is emptied", () => {
-    // The remote holds the old content — going empty is a real change.
+    // The remote holds the old content - going empty is a real change.
     const fixture = { production: production(rule()) };
     const history = historyMatching(fixture);
     const states = outputsFor({ history });
@@ -137,7 +137,7 @@ describe("buildOutputStates — publish comparison", () => {
   });
 });
 
-describe("buildOutputStates — applicability", () => {
+describe("buildOutputStates - applicability", () => {
   it("marks Player Data disabled when the module is off", () => {
     const output = find(outputsFor(), "players");
     expect(output.applicable).toBe(false);
@@ -162,7 +162,7 @@ describe("buildOutputStates — applicability", () => {
 
   it("hashes the roster without its generation stamp", () => {
     // Two builds moments apart must agree, or Player Data reads as dirty
-    // forever — the roster stamps `generatedAt` into its own output.
+    // forever - the roster stamps `generatedAt` into its own output.
     const fixture = {
       settings: settings({ modules: { "player-data": true } }),
       players: players(1),
@@ -228,7 +228,7 @@ describe("standaloneOutputs", () => {
   });
 });
 
-describe("buildOutputStates — viewer outputs", () => {
+describe("buildOutputStates - viewer outputs", () => {
   it("has no viewer data until production does", () => {
     expect(find(outputsFor(), "viewerData").hasContent).toBe(false);
   });
@@ -300,7 +300,7 @@ describe("summarizeOutputs", () => {
   });
 });
 
-describe("buildOutputStates — inputs", () => {
+describe("buildOutputStates - inputs", () => {
   it("builds from wholly empty inputs without a settings object", () => {
     // Overview renders before a project finishes loading.
     const states = buildOutputStates({

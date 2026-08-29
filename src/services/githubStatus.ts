@@ -8,7 +8,7 @@ import type { GithubConfig } from "../model/project";
  * Cached answers to the two GitHub questions that cost a round trip.
  *
  * Overview needs both to say anything honest about publishing readiness, and
- * Overview re-renders constantly — so neither is ever fetched during render.
+ * Overview re-renders constantly - so neither is ever fetched during render.
  * The token is read once per session; the connection is only ever recorded
  * from a test the admin actually ran, and is dropped the moment the
  * destination changes so a stale "verified" can never outlive the repo it
@@ -95,7 +95,7 @@ export const useGithubStatus = create<GithubStatusState>((set, get) => ({
   },
 }));
 
-/** Clears the session cache — used when a different project is opened. */
+/** Clears the session cache - used when a different project is opened. */
 export function resetGithubStatus() {
   tokenRead = null;
   tokenReadFor = "";

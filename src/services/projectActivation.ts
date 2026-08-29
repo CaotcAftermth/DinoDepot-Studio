@@ -15,7 +15,7 @@ export interface PackageActivation {
   catalog: CatalogFile;
   /**
    * Manifest or compatibility JSON on this machine for a local package.
-   * Recorded in local state only — never in shared project JSON.
+   * Recorded in local state only - never in shared project JSON.
    */
   localPackageSourcePath?: string;
 }
@@ -34,7 +34,7 @@ export interface PackageActivation {
  * dependencies merge by identity. The caller may report success only when
  * this resolves.
  *
- * A package-library entry may survive a failure. That is intentional — it is
+ * A package-library entry may survive a failure. That is intentional - it is
  * reconstructable cache, and keeping verified bytes costs nothing, while a
  * half-written project costs an administrator their afternoon.
  */

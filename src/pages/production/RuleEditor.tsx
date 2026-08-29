@@ -117,7 +117,7 @@ function DurationField({
  * A cap where zero means "no cap".
  *
  * Rendered empty with an "Unlimited" placeholder rather than as a literal `0`,
- * because `0` reads as "produce none of this" — the opposite of what it does.
+ * because `0` reads as "produce none of this" - the opposite of what it does.
  * The stored value is still 0, which is what the published file wants; only
  * the way it is shown changes.
  */
@@ -175,7 +175,7 @@ function ItemIdentity({ bpPath }: { bpPath: string }) {
             : "(no item selected)"}
         </div>
         <div className="mono text-xs text-ink-500 truncate" title={bpPath}>
-          {bpPath ? shortClassName(bpPath) : "—"}
+          {bpPath ? shortClassName(bpPath) : " - "}
         </div>
       </div>
     </div>
@@ -199,7 +199,7 @@ function SelectModeField({
       >
         {([0, 1, 2] as const).map((mode) => (
           <option key={mode} value={mode}>
-            {mode} — {SELECT_MODE_LABELS[mode]}
+            {mode} - {SELECT_MODE_LABELS[mode]}
           </option>
         ))}
       </Select>
@@ -300,7 +300,7 @@ export function RuleEditor({
    *
    * A rule with four cycles of six items each is a page of scrolling before
    * the second cycle's name is on screen. Cards default to open, so "folded"
-   * is the state that differs from the default — hence the inverted flag.
+   * is the state that differs from the default - hence the inverted flag.
    */
   function keepOnlyCycleOpen(cycleId: string) {
     for (const c of rule.cycles) setFold(`cycle:${c.id}`, c.id !== cycleId);
@@ -309,7 +309,7 @@ export function RuleEditor({
   /**
    * The first item this rule has ever had.
    *
-   * Up to that point the header is the only thing worth looking at — it is
+   * Up to that point the header is the only thing worth looking at - it is
    * where the creature and the chance are set. Once there is production to
    * read, it is a title bar taking up a third of the screen, so it folds
    * itself out of the way exactly once and stays wherever the admin puts it
@@ -346,7 +346,7 @@ export function RuleEditor({
         actions={
           <>
             {/* The label states what the rule *is*, not what the switch
-                would do — a switch already reads as its own verb, and
+                would do - a switch already reads as its own verb, and
                 "Enabled" beside an off switch is a sentence nobody can
                 parse in one look. */}
             <Toggle
@@ -386,7 +386,7 @@ export function RuleEditor({
             onChange={(v) => onChange({ ...rule, chanceToProduce: v })}
           />
         </div>
-        <Field label="Notes" hint="Internal only — never published">
+        <Field label="Notes" hint="Internal only - never published">
           <Input
             value={rule.notes}
             onChange={(e) => onChange({ ...rule, notes: e.target.value })}
@@ -444,7 +444,7 @@ export function RuleEditor({
           };
           onChange({ ...rule, cycles: [...rule.cycles, cycle] });
           // The new one is the one being worked on, so it is the one left
-          // open — the others are already written.
+          // open - the others are already written.
           keepOnlyCycleOpen(cycle.id);
         }}
       >

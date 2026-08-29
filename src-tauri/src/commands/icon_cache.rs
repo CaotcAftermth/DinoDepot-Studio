@@ -10,7 +10,7 @@ use tauri::Manager;
 /// Content-addressed by hash, so the same image fetched twice under two names
 /// is stored once and an image that changes gets a new key rather than a stale
 /// hit. Bounded by total bytes, evicted least-recently-used, and readable with
-/// no network at all — an administrator working offline still sees their icons.
+/// no network at all - an administrator working offline still sees their icons.
 ///
 /// Deliberately not Git LFS and not a custom asset service. These are small
 /// WebP/PNG files; the cheapest correct thing is a folder with a size limit.
@@ -50,7 +50,7 @@ fn root(app: &tauri::AppHandle) -> Outcome<PathBuf> {
 /// A cache key must be one safe file-name segment.
 ///
 /// Keys are content hashes the app computes, but they arrive here from the
-/// frontend — which renders untrusted modpack content — so the shape is checked
+/// frontend - which renders untrusted modpack content - so the shape is checked
 /// rather than trusted.
 fn key_path(dir: &Path, key: &str, extension: &str) -> Outcome<PathBuf> {
     let safe = key.len() >= 8
@@ -206,7 +206,7 @@ pub struct FetchedIcon {
 /// Fetches an icon over HTTP, here rather than in the webview.
 ///
 /// The webview cannot do this: `connect-src` is `'self'`, and `img-src` allows
-/// no remote host either. That is deliberate — a project's catalog is untrusted
+/// no remote host either. That is deliberate - a project's catalog is untrusted
 /// input, and an icon URL in it must not be able to make the page reach an
 /// arbitrary server or leak a page visit. Fetching in Rust and serving the
 /// result from the cache through the asset protocol keeps the rendering side
@@ -410,7 +410,7 @@ mod tests {
         assert_eq!(icon_extension(b"\x89PNG\r\n\x1a\nfixture"), Some("png"));
         assert_eq!(icon_extension(b"RIFF short"), None);
         assert_eq!(icon_extension(b""), None);
-        // RIFF but not WebP — a WAV file, say.
+        // RIFF but not WebP - a WAV file, say.
         assert_eq!(icon_extension(b"RIFF\0\0\0\0WAVEfmt "), None);
     }
 
@@ -471,7 +471,7 @@ mod tests {
         assert_eq!(entries.iter().filter(|e| e.is_icon).count(), 1);
     }
 
-    /// Under the limit, nothing is dropped — the common case.
+    /// Under the limit, nothing is dropped - the common case.
     #[test]
     fn pruning_leaves_a_cache_that_fits_alone() {
         let dir = tempfile::tempdir().unwrap();

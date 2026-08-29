@@ -13,7 +13,7 @@ import {
  * "Needs your decision".
  *
  * Everything the merge could settle on its own is already settled by the time
- * this opens; what is left is genuine disagreement — two people changed the
+ * this opens; what is left is genuine disagreement - two people changed the
  * same thing to different values. So the question is asked in exactly those
  * terms: here is the creature, here is the field, here is what each of you set
  * it to.
@@ -215,7 +215,7 @@ function ConflictRow({
           )}
           onClick={() => onChoose("both")}
         >
-          Keep both — theirs is added alongside yours
+          Keep both - theirs is added alongside yours
         </button>
       )}
     </div>
@@ -231,7 +231,7 @@ function ValueChoice({
 }: {
   label: string;
   value: unknown;
-  /** What to show when the value is absent — a deletion, not an empty value. */
+  /** What to show when the value is absent - a deletion, not an empty value. */
   missingLabel: string;
   selected: boolean;
   onSelect(): void;

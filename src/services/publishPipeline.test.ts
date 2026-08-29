@@ -272,7 +272,7 @@ describe("refusing to publish", () => {
 });
 
 describe("the privacy gate", () => {
-  /** Nothing has left this computer — the scan runs over the staged files. */
+  /** Nothing has left this computer - the scan runs over the staged files. */
   it("stops before anything is uploaded", async () => {
     const result = await publishProject(
       context({
@@ -317,7 +317,7 @@ describe("the privacy gate", () => {
 });
 
 describe("when someone else publishes at the same time", () => {
-  /** Regenerated, never merged — generated files have no authorship. */
+  /** Regenerated, never merged - generated files have no authorship. */
   it("takes the remote and regenerates rather than merging", async () => {
     pushRejectsOnce = true;
     const result = await publishProject(context().ctx);
@@ -347,7 +347,7 @@ describe("waiting for GitHub Pages", () => {
     expect(result.message).toContain("live");
   });
 
-  /** Published is still published — Pages being slow is not a failure. */
+  /** Published is still published - Pages being slow is not a failure. */
   it("says published-but-waiting when Pages takes too long", async () => {
     let clock = 0;
     const result = await publishProject(

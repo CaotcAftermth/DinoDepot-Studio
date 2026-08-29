@@ -67,7 +67,7 @@ function privacyProblemFor(topology: PublishTopology): string {
  *
  * A checklist rather than a wizard: each setup fact, in order, which the
  * administrator either has or has not done. A wizard hides where you are the
- * moment you close it, and this is a setup people come back to — when a token
+ * moment you close it, and this is a setup people come back to - when a token
  * expires, when a repository is renamed, when a second administrator joins.
  *
  * Repository creation stays on GitHub. Collaborator visibility and invitations
@@ -94,7 +94,7 @@ export function GitHubSetup() {
    * Whether the account has been asked about yet.
    *
    * A failed check leaves `status` null, which is the same value it holds
-   * while the check is still running — so without this the card cannot tell a
+   * while the check is still running - so without this the card cannot tell a
    * broken sign-in from one it has not looked at, and folds away over an
    * "Access expired" badge with the explanation hidden inside it.
    */
@@ -235,7 +235,7 @@ export function GitHubSetup() {
         prefKey="github:account"
         feedback={feedbackTarget("github-account")}
         // Folded once a token is stored, and open again the moment that token
-        // stops working — the reason is inside the card, so it must not be
+        // stops working - the reason is inside the card, so it must not be
         // the thing that is hidden. Stays folded until the check comes back,
         // rather than flashing open on every visit.
         defaultOpen={!accountId || (checked && (!status?.connected || Boolean(statusError)))}
@@ -288,7 +288,7 @@ export function GitHubSetup() {
             )}
             <p className="text-xs text-ink-400 mb-3">
               DinoDepot uses your own fine-grained token, limited to this
-              project's repositories. Every administrator uses their own — a
+              project's repositories. Every administrator uses their own - a
               shared one is not supported.
             </p>
             <p className="text-xs text-ink-300 mb-3">
@@ -304,7 +304,7 @@ export function GitHubSetup() {
                 ))}
               </ul>
               <div className="font-medium mt-2 mb-1">
-                Optional — direct invitations:
+                Optional - direct invitations:
               </div>
               <ul className="list-disc ml-5 flex flex-col gap-0.5 text-ink-400">
                 {OPTIONAL_TOKEN_ACCESS.map((line) => (
@@ -353,7 +353,7 @@ export function GitHubSetup() {
         blurb={
           local?.topology === "single-public"
             ? "Holds the project and generated viewer together. It is public, so this arrangement is available only to projects that have never held Player Data."
-            : "Holds the project itself — including shared project data and history. It must be private. Local backups and raw profiles are never committed."
+            : "Holds the project itself - including shared project data and history. It must be private. Local backups and raw profiles are never committed."
         }
         disabled={!accountId}
         busyKey={busy}

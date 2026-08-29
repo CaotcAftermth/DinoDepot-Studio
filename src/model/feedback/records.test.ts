@@ -351,7 +351,7 @@ describe("reportFrom", () => {
 
 /**
  * A report is written while working on one cluster and is not part of the
- * next one's history. The file stays machine-local either way — the scoping is
+ * next one's history. The file stays machine-local either way - the scoping is
  * about what My Reports lists, not about where the bytes go.
  */
 describe("recordsForProject", () => {
@@ -368,7 +368,7 @@ describe("recordsForProject", () => {
 
   /**
    * The welcome screen has no project. A report written there must not attach
-   * itself to whichever project is opened next — that is the behaviour this
+   * itself to whichever project is opened next - that is the behaviour this
    * replaced.
    */
   it("keeps a report written with no project out of every project", () => {

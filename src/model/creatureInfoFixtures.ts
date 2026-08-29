@@ -3,21 +3,15 @@ import type { CreatureInfo, MethodTag } from "./creatureInfo";
 /**
  * Verified acquisition fixtures.
  *
- * Every record here was written from that creature's own page on the ARK
- * Official Community Wiki (ark.wiki.gg) at the revision recorded in `source`,
- * not from memory — an earlier pass classified Gigantoraptor as combat
- * assistance from recollection and was wrong.
- *
- * These exist to exercise the schema end to end: every availability, every
- * outcome, every tag, every input reference type and role, phase-level
- * outcomes, and variant inheritance. They double as the seed for the wiki
- * importer's staging flow.
+ * Records retain source revisions from the legacy fixture dataset. They exist
+ * to exercise the schema end to end: every availability, outcome, tag, input
+ * reference type and role, phase-level outcome, and variant inheritance.
  */
 
 export interface FixtureSource {
-  /** Wiki page title. */
+  /** Legacy source page title. */
   page: string;
-  /** Revision the text was read at — the anchor for reimport comparison. */
+  /** Revision the text was read at - the anchor for reimport comparison. */
   revisionId: number;
   /** Which game the information applies to. */
   game: "ASA" | "ASE" | "both";
@@ -38,7 +32,7 @@ export interface CreatureFixture {
 let seq = 0;
 const id = (p: string) => `${p}-${++seq}`;
 
-/** Terser fixture authoring — the defaults are filled in by the schema. */
+/** Terser fixture authoring - the defaults are filled in by the schema. */
 function phase(
   name: string,
   steps: string[],
@@ -160,7 +154,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
   {
     bpPath: P.dodo,
     name: "Dodo",
-    covers: "ordinary passive — the simplest possible record",
+    covers: "ordinary passive - the simplest possible record",
     source: { page: "Dodo", revisionId: 586871, game: "both" },
     info: {
       availability: "acquirable",
@@ -177,7 +171,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
   {
     bpPath: P.diplo,
     name: "Diplodocus",
-    covers: "two valid routes on one creature — wiki: 'both traditionally knockout tamed or passive tamed'",
+    covers: "two valid routes on one creature from the legacy source text",
     source: { page: "Diplodocus", revisionId: 585428, game: "both" },
     info: {
       availability: "acquirable",
@@ -187,7 +181,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
         }),
         method("Passive tame", "direct-tame", ["passive"], {
           strategy:
-            "Its nudge deals no direct damage — the risk is fall damage on uneven terrain. Standing at the base of its neck or under its belly keeps you out of nudge range.",
+            "Its nudge deals no direct damage - the risk is fall damage on uneven terrain. Standing at the base of its neck or under its belly keeps you out of nudge range.",
           phases: [
             phase("Feed", ["Feed from the last hotbar slot"], {
               failureOrReset: "hitting it loses taming effectiveness",
@@ -218,7 +212,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
               repeatUntil: "it is fully tamed",
               failureOrReset: "it stops trusting you, or dies",
               transitionNote:
-                "This is the temporary-control stage — it ends by becoming a full tame.",
+                "This is the temporary-control stage - it ends by becoming a full tame.",
             }),
           ],
         }),
@@ -230,7 +224,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
   {
     bpPath: P.giganto,
     name: "Gigantoraptor",
-    covers: "nest + baby mimicry minigame; adult is untameable — corrected from combat-assist",
+    covers: "nest + baby mimicry minigame; adult is untameable - corrected from combat-assist",
     source: { page: "Gigantoraptor", revisionId: 593622, game: "ASA" },
     info: {
       availability: "acquirable",
@@ -250,12 +244,12 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
                 "Wait for the adult to go and crack it open",
               ],
               {
-                note: "The parent must be awake and able to return — traps are not viable.",
+                note: "The parent must be awake and able to return - traps are not viable.",
                 completedWhen: "the adult is occupied with the egg",
                 failureOrReset:
                   "if the egg actually hatches the adult aggros and kills the babies",
                 transitionNote:
-                  "Once it destroys the egg it returns to the nest — leave, run off, and throw another.",
+                  "Once it destroys the egg it returns to the nest - leave, run off, and throw another.",
               },
             ),
             phase(
@@ -274,7 +268,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
           ],
           completion: "The baby is claimed and imprinted on",
           strategy:
-            "Keep spare fertilized eggs in range, on a tame parked away from the nest. Clear nearby threats first — anything attacking you, the adult or the baby can ruin it. Killing the parents prevents imprinting on their babies.",
+            "Keep spare fertilized eggs in range, on a tame parked away from the nest. Clear nearby threats first - anything attacking you, the adult or the baby can ruin it. Killing the parents prevents imprinting on their babies.",
         }),
       ],
     },
@@ -284,7 +278,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
   {
     bpPath: "",
     name: "Edmontonia",
-    covers: "combat assistance — you fight alongside it without attacking it (mod creature)",
+    covers: "combat assistance - you fight alongside it without attacking it (mod creature)",
     source: {
       page: "Mod:Additions Ascended/Edmontonia",
       revisionId: 588874,
@@ -323,14 +317,14 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
                 note: "The spawned creature fixates on the Edmontonia and will not deliberately attack you.",
                 repeatUntil: "the Edmontonia is tamed",
                 failureOrReset:
-                  "failing to contribute enough fire damage before the target dies reduces effectiveness — it prompts a warning first",
+                  "failing to contribute enough fire damage before the target dies reduces effectiveness - it prompts a warning first",
               },
             ),
           ],
           effectiveness:
             "Affinity is based on how much fire damage you personally contributed. Damage the Edmontonia takes does not affect effectiveness.",
           strategy:
-            "A Fire Wyvern cannot be used — the fire damage has to come from the player. Heal it with Sweet Vegetable Cake between waves.",
+            "A Fire Wyvern cannot be used - the fire damage has to come from the player. Heal it with Sweet Vegetable Cake between waves.",
         }),
       ],
     },
@@ -340,7 +334,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
   {
     bpPath: "",
     name: "Wyvern",
-    covers: "egg theft then raise — adults cannot be tamed",
+    covers: "egg theft then raise - adults cannot be tamed",
     source: { page: "Wyvern", revisionId: 587899, game: "both" },
     info: {
       availability: "acquirable",
@@ -360,7 +354,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     },
   },
 
-  // ---- 8. HOST / IMPREGNATION — creature reference ---------------------
+  // ---- 8. HOST / IMPREGNATION - creature reference ---------------------
   {
     bpPath: "",
     name: "Rhyniognatha",
@@ -430,7 +424,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
   {
     bpPath: "",
     name: "Fasolasuchus",
-    covers: "unique knockout — no tranquilizers involved",
+    covers: "unique knockout - no tranquilizers involved",
     source: { page: "Fasolasuchus", revisionId: 593540, game: "ASA" },
     info: {
       availability: "acquirable",
@@ -453,7 +447,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
                 note: "Metal, crystal and raw salt give more torpor than plain rock. Trees give none.",
                 repeatUntil: "it is knocked out",
                 failureOrReset:
-                  "the control bar hitting 0, or going airborne off a cliff, dismounts you — lose aggro and wait for it to bury again",
+                  "the control bar hitting 0, or going airborne off a cliff, dismounts you - lose aggro and wait for it to bury again",
               },
             ),
           ],
@@ -466,7 +460,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
   {
     bpPath: P.phoenix,
     name: "Phoenix",
-    covers: "environmental — only exists during a specific weather event",
+    covers: "environmental - only exists during a specific weather event",
     source: { page: "Phoenix", revisionId: 595665, game: "both" },
     info: {
       availability: "acquirable",
@@ -495,7 +489,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
   {
     bpPath: P.lio,
     name: "Liopleurodon",
-    covers: "temporary control — reverts on a timer",
+    covers: "temporary control - reverts on a timer",
     source: { page: "Liopleurodon", revisionId: 586858, game: "both" },
     info: {
       availability: "acquirable",
@@ -514,7 +508,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
   {
     bpPath: "",
     name: "Alpha Rex",
-    covers: "unavailable — nothing to record beyond that",
+    covers: "unavailable - nothing to record beyond that",
     source: { page: "Alpha Rex", revisionId: 265022, game: "both" },
     info: { availability: "unavailable" },
   },
@@ -524,7 +518,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
     bpPath: "",
     name: "Aberrant Gigantoraptor",
     covers:
-      "variant inheritance — wiki: 'tamable via usual Gigantoraptor taming methods'; stores nothing itself",
+      "variant inheritance from legacy source text; stores nothing itself",
     source: { page: "Gigantoraptor", revisionId: 593622, game: "ASA" },
     info: {
       // Deliberately empty: it inherits every section from Gigantoraptor.
@@ -543,14 +537,14 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
       availability: "acquirable",
       methods: [
         method("Feed and ride", "direct-tame", ["passive", "minigame", "mounted"], {
-          requirements: "Ghillie recommended — it flees when startled",
+          requirements: "Ghillie recommended - it flees when startled",
           inputs: [
             item(P.rockarrot, "taming-food", "", "in the far-right hotbar slot"),
             item(P.troodonKibble, "taming-food", "31 for a level 150", "best food"),
           ],
           phases: [
             phase("Feed", ["Feed it one food item when the prompt appears"], {
-              transitionNote: "Then mount it immediately — it must be ridden to continue.",
+              transitionNote: "Then mount it immediately - it must be ridden to continue.",
             }),
             phase("Stay mounted", ["Calm it with food each time it tries to buck you off"], {
               repeatUntil: "the taming bar fills",
@@ -589,7 +583,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
             ),
           ],
           strategy:
-            "Clear other Andrewsarchus and hostiles first — Giganotosaurus spawn alongside them and will kill it.",
+            "Clear other Andrewsarchus and hostiles first - Giganotosaurus spawn alongside them and will kill it.",
         }),
       ],
     },
@@ -696,7 +690,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
       availability: "acquirable",
       methods: [
         method("Drop items", "direct-tame", ["passive"], {
-          requirements: "A happy Gacha — sad ones ignore you",
+          requirements: "A happy Gacha - sad ones ignore you",
           inputs: [text("Anything droppable", "offering", "", "rarer items give a higher level")],
           phases: [
             phase("Drop it", ["Drop items on the ground near it"], {
@@ -722,7 +716,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
           inputs: [text("Your own tames", "offering", "", "must belong to you or your tribe")],
           phases: [
             phase("Let it kill", ["Allow it to kill your tames for combat experience"], {
-              repeatUntil: "affinity is met — 343 + (32 × level)",
+              repeatUntil: "affinity is met - 343 + (32 × level)",
               note: "Only kills of your own or tribe creatures count. Requirement drops to 40% at night.",
             }),
           ],
@@ -735,7 +729,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
   {
     bpPath: "",
     name: "Yi Ling",
-    covers: "knockout where tranquilizers do nothing — a timed stun window instead",
+    covers: "knockout where tranquilizers do nothing - a timed stun window instead",
     source: { page: "Yi Ling", revisionId: 593265, game: "ASA" },
     info: {
       availability: "acquirable",
@@ -775,7 +769,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
   {
     bpPath: "",
     name: "Enforcer",
-    covers: "craft-and-assemble — never tamed at all",
+    covers: "craft-and-assemble - never tamed at all",
     source: { page: "Enforcer", revisionId: 586878, game: "both" },
     info: {
       availability: "acquirable",
@@ -791,7 +785,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
             }),
             phase("Craft it", ["Craft at a City Terminal or Tek Replicator"]),
           ],
-          completion: "A crafted Enforcer — level 1 without a better blueprint",
+          completion: "A crafted Enforcer - level 1 without a better blueprint",
         }),
       ],
     },
@@ -801,7 +795,7 @@ export const CREATURE_FIXTURES: CreatureFixture[] = [
   {
     bpPath: "",
     name: "Fenrir",
-    covers: "reward — obtained only by beating a boss",
+    covers: "reward - obtained only by beating a boss",
     source: { page: "Fenrir", revisionId: 587905, game: "both" },
     info: {
       availability: "acquirable",

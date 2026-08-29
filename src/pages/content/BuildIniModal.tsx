@@ -109,7 +109,7 @@ export function BuildIniModal({
   }
 
   return (
-    <Modal title={`Build INI — ${source.name}`} onClose={onClose} xl>
+    <Modal title={`Build INI - ${source.name}`} onClose={onClose} xl>
       <div className="grid grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-4 items-start">
         {/* Composer */}
         <div>
@@ -176,7 +176,7 @@ export function BuildIniModal({
         <div className="sticky top-0">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-semibold text-ink-300 uppercase tracking-wide">
-              Generated INI — {lineCount} line{lineCount === 1 ? "" : "s"}
+              Generated INI - {lineCount} line{lineCount === 1 ? "" : "s"}
             </span>
             <div className="flex gap-2">
               <Button
@@ -199,7 +199,7 @@ export function BuildIniModal({
             </div>
           </div>
           <p className="text-xs text-ink-500 mb-1">
-            Choices are kept with the mod — reopening picks up where you left
+            Choices are kept with the mod - reopening picks up where you left
             off.
           </p>
           <pre className="mono bg-ink-950 border border-ink-700 rounded-md p-3 h-[64vh] overflow-auto text-ink-200 whitespace-pre-wrap break-all">
@@ -249,7 +249,7 @@ function BuildRow({
       name={name}
       options={options.get(name.toLowerCase()) ?? []}
       selected={choices[name.toLowerCase()] ?? []}
-      // The declared type constrains the value only — a key placeholder holds
+      // The declared type constrains the value only - a key placeholder holds
       // creature names, which have nothing to do with it.
       type={inValue ? setting.type : ""}
       // Key placeholders carry a value per option, so a whole creature list
@@ -453,7 +453,7 @@ function MiniValueEditor({
 }
 
 /**
- * Multi-select over a placeholder's options — one INI line per selection.
+ * Multi-select over a placeholder's options - one INI line per selection.
  * For key placeholders each option also carries its own value, so a whole
  * creature list can be configured individually in a single pass.
  */

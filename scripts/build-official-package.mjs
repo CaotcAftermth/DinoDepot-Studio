@@ -88,10 +88,9 @@ const content = {
   // inherit the rest. The compiled catalog declares parents for items only.
   variantParents: CREATURE_VARIANT_PARENTS,
   itemInfo: {},
-  // Availability, spawn maps, drag weight and drops from the ARK wiki;
-  // acquisition steps from an AI capture that is not wiki-verified. See
-  // scripts/creature-info.mjs. Arrives as a defaults layer, so an
-  // administrator's own edits win and none of it lands in a project file.
+  // Imported availability, spawn, drop, and acquisition defaults. See
+  // scripts/creature-info.mjs. Administrator edits win, and none of these
+  // defaults land in a project file.
   creatureInfo: creatureInfoFor(catalog),
 };
 
@@ -213,6 +212,6 @@ console.log(
 
 // Re-stage immediately. The staged copy under src-tauri/resources is what the
 // desktop app installs from, and it is verified against the integrity in
-// index.json — so a rebuild that leaves it behind makes the current version
+// index.json - so a rebuild that leaves it behind makes the current version
 // read as missing, with nothing to say why. Building and staging are one act.
 await import("./stage-bundled-official.mjs");

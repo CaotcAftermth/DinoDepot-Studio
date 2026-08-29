@@ -11,9 +11,9 @@ import { shortClassName } from "../services/spawnCommands";
  * offer the parent and keep the children out of the way until they are asked
  * for.
  *
- * Kept as a pure function because the interesting behaviour — which entry
+ * Kept as a pure function because the interesting behaviour - which entry
  * represents a group, what happens when a search only matches a hidden child,
- * what happens when no parent can be resolved — is exactly what a component
+ * what happens when no parent can be resolved - is exactly what a component
  * test cannot reach comfortably.
  */
 
@@ -24,7 +24,7 @@ export interface PickerRow {
   hiddenVariants: number;
   /**
    * Names of collapsed children that matched the search when this row's own
-   * name and path did not — "Rex — matched Aberrant Rex".
+   * name and path did not - "Rex - matched Aberrant Rex".
    */
   matchedVia: string[];
 }
@@ -89,7 +89,7 @@ export function buildPickerRows(opts: PickerRowOptions): PickerRow[] {
 }
 
 interface Group {
-  /** Row that represents the group — the parent, once one is found. */
+  /** Row that represents the group - the parent, once one is found. */
   head: { entry: CatalogEntry; source: ContentSource } | null;
   /** Everything filed under the group that is not the head. */
   children: { entry: CatalogEntry; source: ContentSource }[];
@@ -196,7 +196,7 @@ function collapseRows(
         matchedVia: group.headMatched ? [] : group.matchedChildren.slice(0, 3),
       });
     } else {
-      // The group's parent was resolvable but is not itself in the catalog —
+      // The group's parent was resolvable but is not itself in the catalog -
       // emit the children so nothing is silently unreachable.
       for (const child of group.children) {
         if (!matchesQuery(child.entry, q)) continue;

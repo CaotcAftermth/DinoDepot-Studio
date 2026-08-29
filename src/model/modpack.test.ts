@@ -358,7 +358,7 @@ describe("applyModpack", () => {
 
   /**
    * A pack's own artwork is never copied into the project, so a `file:` row
-   * pointing at it would name bytes the project does not hold — and publishing
+   * pointing at it would name bytes the project does not hold - and publishing
    * reports every one of those as missing artwork.
    */
   it("does not take a pack's file: icons as project icons", () => {

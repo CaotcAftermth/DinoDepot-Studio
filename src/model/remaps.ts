@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * Internal editor model for creature type remaps.
- * Published format: {"dinoMappings":[{"fromClass","toClass"}]} — see
+ * Published format: {"dinoMappings":[{"fromClass","toClass"}]} - see
  * StructureExample/Passive Production Remap Structure.json5
  */
 

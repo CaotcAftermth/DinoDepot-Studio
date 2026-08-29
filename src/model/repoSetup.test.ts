@@ -152,7 +152,7 @@ describe("checking a repository is suitable", () => {
     expect(blockingIssues(issues)).not.toHaveLength(0);
   });
 
-  /** A repository with files might be the right one — so warn, do not refuse. */
+  /** A repository with files might be the right one - so warn, do not refuse. */
   it("warns without blocking when the repository is not empty", () => {
     const issues = checkSuitability(
       identity({ isEmpty: false }),
@@ -203,7 +203,7 @@ describe("keeping a binding current", () => {
   });
 
   /**
-   * The id matched, so this is the same repository under a new name — applied
+   * The id matched, so this is the same repository under a new name - applied
    * and mentioned, never treated as the repository having disappeared.
    */
   it("follows a rename", () => {

@@ -3,8 +3,8 @@ use serde::Serialize;
 /// A failure the frontend can branch on.
 ///
 /// Shared by the Git layer and the GitHub HTTP layer, because the two produce
-/// the same *kinds* of problem — an expired credential, a repository that is
-/// gone, a rate limit — and the retry logic upstream must not have to care
+/// the same *kinds* of problem - an expired credential, a repository that is
+/// gone, a rate limit - and the retry logic upstream must not have to care
 /// which of them raised it.
 ///
 /// The codes match the TypeScript `StudioErrorCode` values exactly. Returning a
@@ -90,7 +90,7 @@ pub fn redact(text: &str) -> String {
 
 /// Turns an HTTP status into something an administrator can act on.
 ///
-/// `what` names the thing being reached for — "the project repository" — so the
+/// `what` names the thing being reached for - "the project repository" - so the
 /// message reads as advice rather than as a status line.
 pub fn classify_status(
     status: u16,
@@ -142,7 +142,7 @@ pub fn classify_status(
         .retry_after(retry_after),
         s if s >= 500 => Failure::new(
             "network.serverError",
-            "GitHub is having trouble right now. Your work is saved on this computer — try again in a moment.",
+            "GitHub is having trouble right now. Your work is saved on this computer - try again in a moment.",
             detail,
         ),
         _ => Failure::new(
@@ -153,7 +153,7 @@ pub fn classify_status(
     }
 }
 
-/// Classifies a transport failure — no connection, DNS, TLS, timeout.
+/// Classifies a transport failure - no connection, DNS, TLS, timeout.
 pub fn classify_transport(error: &reqwest::Error, what: &str) -> Failure {
     if error.is_timeout() {
         return Failure::new(

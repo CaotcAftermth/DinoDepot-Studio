@@ -2,7 +2,7 @@
 
 The automated suite proves that the pieces behave as written: 1,543 frontend
 tests, 103 Rust tests, a type check and a production build, on every pull
-request. None of it proves the thing that actually matters here — that two
+request. None of it proves the thing that actually matters here - that two
 people on two machines can edit one cluster's configuration all week without
 losing work or leaking a player's address.
 
@@ -11,7 +11,7 @@ document is the list.
 
 ## How to use this
 
-Work top to bottom. Later sections assume the earlier ones passed — there is no
+Work top to bottom. Later sections assume the earlier ones passed - there is no
 point testing conflict resolution if a single machine cannot save a file.
 
 Each test states what it *proves*, not just what to click, because a test whose
@@ -34,20 +34,20 @@ actionable.
 
 | | |
 |---|---|
-| **0.1** | Two Windows machines, or one machine and one Windows VM. Several tests cannot be faked with two folders — they need two installs, two locks and two clocks. |
+| **0.1** | Two Windows machines, or one machine and one Windows VM. Several tests cannot be faked with two folders - they need two installs, two locks and two clocks. |
 | **0.2** | Two GitHub accounts, or one account and one collaborator, so "somebody else changed it" is genuinely somebody else. |
 | **0.3** | A fine-grained PAT per administrator: **Metadata read**, **Contents read/write**, on the test repositories only. No Administration, no Workflows. |
 | **0.4** | A private test **source** repository and a separate test **site** repository. |
-| **0.5** | A test project with a handful of production rules, a few remaps, a cosmetics list, and at least two players — enough that a merge has something to merge. |
+| **0.5** | A test project with a handful of production rules, a few remaps, a cosmetics list, and at least two players - enough that a merge has something to merge. |
 | **0.6** | At least one real `.arkprofile` that still contains a network address. The privacy tests are meaningless against a file that never had one. |
 
 ---
 
-## A. Single machine — functional
+## A. Single machine - functional
 
 Everything here is one install, one administrator. If any of it fails, stop.
 
-### A1 — A new project reaches a repository
+### A1 - A new project reaches a repository
 
 **Proves** the onboarding path works end to end for somebody who has never used
 the app.
@@ -65,13 +65,13 @@ the app.
 **Fails as** a status stuck on *Cannot sync yet* with no stated reason, or any
 screen showing the token after it was saved.
 
-### A2 — The credential never reaches the web layer
+### A2 - The credential never reaches the web layer
 
 **Proves** the boundary the whole design rests on: the frontend may learn a
 credential exists, never what it is.
 
 1. With an account connected, open the developer tools console.
-2. Search the app's own storage — `localStorage`, `sessionStorage`, IndexedDB —
+2. Search the app's own storage - `localStorage`, `sessionStorage`, IndexedDB -
    for the token.
 3. Trigger a sync and watch the network and IPC traffic.
 
@@ -81,15 +81,15 @@ Manager by account id; there is no command that returns it.
 **Fails as** any occurrence of the token string. Treat a single hit as a
 release blocker, not a bug to schedule.
 
-### A3 — Edits survive a restart
+### A3 - Edits survive a restart
 
 1. Edit a production rule. Do **not** sync.
 2. Close the app. Reopen it.
 
-**Expect** the edit is there, and status says **Local changes** — it knows the
+**Expect** the edit is there, and status says **Local changes** - it knows the
 work has not been shared.
 
-### A4 — Two instances cannot fight over one project
+### A4 - Two instances cannot fight over one project
 
 **Proves** the advisory lock. Two instances autosaving one folder is a
 lost-work problem, not a merge problem.
@@ -97,21 +97,21 @@ lost-work problem, not a merge problem.
 1. Open the project. Leave it open.
 2. Start a second instance on the same machine, open the same project.
 
-**Expect** the second refuses, and names what holds it — machine and instance,
+**Expect** the second refuses, and names what holds it - machine and instance,
 not just "locked".
 
 **Fails as** the second instance opening happily. Both then hold the project in
 memory and the last debounce to fire wins the file outright.
 
-### A5 — A stale lock does not strand the project
+### A5 - A stale lock does not strand the project
 
 1. With the project open, kill the app (Task Manager, End Task).
 2. Reopen.
 
-**Expect** it opens — the lock is recognised as its own and stale. It must not
+**Expect** it opens - the lock is recognised as its own and stale. It must not
 require deleting a file by hand.
 
-### A6 — Every editor page round-trips
+### A6 - Every editor page round-trips
 
 For each of Production Rules, Remaps, Content Sources, Cosmetics, Player Data,
 Simulator: make one change, save, sync, close, reopen.
@@ -119,20 +119,20 @@ Simulator: make one change, save, sync, close, reopen.
 **Expect** the value survives, and the generated output files under
 `dinodepot/` match what the page shows.
 
-### A7 — Recent Activity reads as English
+### A7 - Recent Activity reads as English
 
 **Proves** the structured commit trailers are doing their job.
 
 1. Make three different kinds of change across three syncs.
 2. Open Overview → Recent Activity.
 
-**Expect** one readable line per change — what changed, who, when. Shas only
+**Expect** one readable line per change - what changed, who, when. Shas only
 under advanced details.
 
 **Fails as** raw commit subjects, or an entry counted as *undescribed* for a
 change this build wrote itself.
 
-### A8 — No Git vocabulary reaches the normal UI
+### A8 - No Git vocabulary reaches the normal UI
 
 Walk the app with the source repository **renamed** on GitHub so every sync
 fails.
@@ -143,11 +143,11 @@ appear only behind **Show advanced details**.
 
 ---
 
-## B. Single machine — recovery
+## B. Single machine - recovery
 
 The tests nobody runs until the day they need them.
 
-### B1 — A corrupted project file is quarantined, not eaten
+### B1 - A corrupted project file is quarantined, not eaten
 
 1. Close the app. Open `players.json` in a text editor and truncate it
    mid-object. Save.
@@ -157,16 +157,16 @@ The tests nobody runs until the day they need them.
 `recovery/` folder with a timestamped name. The original bytes are still there
 to inspect.
 
-**Fails as** a silent rebuild from nothing — that is a roster deleted without
+**Fails as** a silent rebuild from nothing - that is a roster deleted without
 anybody being told.
 
-### B2 — A damaged file can be restored from history
+### B2 - A damaged file can be restored from history
 
 1. After B1, use the restore path to bring the file back from the repository.
 
 **Expect** the roster returns as it was at the last sync.
 
-### B3 — An interrupted sync leaves a recoverable state
+### B3 - An interrupted sync leaves a recoverable state
 
 1. Start a sync on a large change and kill the app mid-operation, or pull the
    network cable at the moment it sends.
@@ -175,7 +175,7 @@ anybody being told.
 **Expect** the app notices the incomplete operation, and either finishes it or
 reports what was left. Nothing on disk is half-written.
 
-### B4 — A project from an older schema migrates
+### B4 - A project from an older schema migrates
 
 1. Take a project written by an older build (schema v1 or v2).
 2. Open it in this build.
@@ -184,10 +184,10 @@ reports what was left. Nothing on disk is half-written.
 binding and materialized content, and says what it did. Sources that already
 carry an exact modpack ID and version become materialized exact dependencies;
 their existing content remains the offline fallback. In particular the binding
-must survive — an empty `githubId` on a migrated project must not silently
+must survive - an empty `githubId` on a migrated project must not silently
 discard the repository connection.
 
-### B5 — A project from a *newer* schema is refused
+### B5 - A project from a *newer* schema is refused
 
 1. Hand-edit a project's schema version to one higher than this build knows.
 2. Open it.
@@ -197,27 +197,27 @@ not understand.
 
 ---
 
-## C. Two machines — synchronization and conflict
+## C. Two machines - synchronization and conflict
 
 The heart of it. Machine **A** and machine **B**, two accounts, one repository.
 
-### C1 — Straight handoff
+### C1 - Straight handoff
 
 1. A edits a rule, syncs.
 2. B syncs.
 
 **Expect** B has A's change, without being asked anything.
 
-### C2 — Both edited, different things
+### C2 - Both edited, different things
 
 1. Both A and B start from the same state.
 2. A edits rule X. B edits rule Y. Neither syncs yet.
 3. A syncs. Then B syncs.
 
 **Expect** B ends with both changes, and is asked nothing. This is the case
-that must never become a conflict — it is the ordinary week.
+that must never become a conflict - it is the ordinary week.
 
-### C3 — Both edited the same thing
+### C3 - Both edited the same thing
 
 1. A and B both edit **the same field of the same rule** to different values.
 2. A syncs. B syncs.
@@ -228,23 +228,23 @@ plain language, and picks. Status reads **Needs your decision**.
 **Fails as** a merge that silently keeps one side, or any resolution screen
 showing conflict markers or diff hunks.
 
-### C4 — Both added something new
+### C4 - Both added something new
 
 1. A adds a creature. B adds a *different* creature with the same name.
 2. Sync both.
 
-**Expect** the add-vs-add case offers **Keep both** — B's is added alongside
-A's — as well as choosing one.
+**Expect** the add-vs-add case offers **Keep both** - B's is added alongside
+A's - as well as choosing one.
 
-### C5 — Bulk resolution
+### C5 - Bulk resolution
 
 With several conflicts pending, use **Keep all of mine** and **Keep all of
 theirs**.
 
 **Expect** they apply to every pending conflict, and the result is what was
-chosen — verified by reopening on the other machine.
+chosen - verified by reopening on the other machine.
 
-### C6 — Identity survives a rename
+### C6 - Identity survives a rename
 
 **Proves** merging is by stable id, never by name or position.
 
@@ -254,22 +254,22 @@ chosen — verified by reopening on the other machine.
 **Expect** one rule, renamed, with B's values. Not two rules, and not a
 conflict.
 
-### C7 — Reordering is not a change
+### C7 - Reordering is not a change
 
 1. A reorders the rule list. B edits an unrelated rule.
 2. Sync both.
 
 **Expect** no conflict.
 
-### C8 — Only they changed things
+### C8 - Only they changed things
 
 1. B makes no local edits. A syncs several changes.
 2. B syncs.
 
-**Expect** B fast-forwards silently and reports **Synchronized** — not
+**Expect** B fast-forwards silently and reports **Synchronized** - not
 *integrated*, since B integrated nothing.
 
-### C9 — An outside edit is handled
+### C9 - An outside edit is handled
 
 1. Edit a file directly on GitHub's web interface.
 2. Sync from A.
@@ -277,7 +277,7 @@ conflict.
 **Expect** the change is integrated and appears in Recent Activity marked as
 not written by Studio.
 
-### C10 — Offline, then back
+### C10 - Offline, then back
 
 1. Disconnect A's network. Make edits. Observe status.
 2. Reconnect. Sync.
@@ -285,7 +285,7 @@ not written by Studio.
 **Expect** **Offline** while disconnected, edits kept locally, and a clean sync
 on reconnection. No lost edits, no duplicate commits.
 
-### C11 — Expired access
+### C11 - Expired access
 
 1. Revoke A's PAT on GitHub.
 2. Sync.
@@ -300,7 +300,7 @@ generic failure, and not the token in the error text.
 The tests that decide whether this app is safe to point at a real cluster.
 **A single failure here blocks release.**
 
-### D1 — An address never reaches the repository
+### D1 - An address never reaches the repository
 
 1. Import a `.arkprofile` that contains a real `SavedNetworkAddress`.
 2. Back it up. Sync.
@@ -309,21 +309,21 @@ The tests that decide whether this app is safe to point at a real cluster.
 
 **Expect** absent. Search the raw file, not the app's rendering of it.
 
-### D2 — The local file is untouched
+### D2 - The local file is untouched
 
 After D1, check the profile still on disk.
 
 **Expect** it still contains the address. Sanitizing is for what leaves the
 machine; the administrator's own copy stays complete.
 
-### D3 — The roster carries no address
+### D3 - The roster carries no address
 
 Search `dinodepot/players.json` in the clone for the address, and for any
 IP-shaped string.
 
 **Expect** none. The summary schema has no field for one and drops it if fed.
 
-### D4 — A profile that cannot be cleaned is not uploaded
+### D4 - A profile that cannot be cleaned is not uploaded
 
 1. Corrupt a `.arkprofile` so it will not parse.
 2. Attempt a backup.
@@ -332,7 +332,7 @@ IP-shaped string.
 player is the administrator's decision; uploading raw bytes is never the
 fallback.
 
-### D5 — Restore checks on the way in
+### D5 - Restore checks on the way in
 
 1. Hand-edit a backed-up profile in the repository to put an address back.
 2. Restore it.
@@ -340,7 +340,7 @@ fallback.
 **Expect** refusal. A backup taken by an older build does not get to put an
 address on this disk unnoticed.
 
-### D6 — The whole repository is clean
+### D6 - The whole repository is clean
 
 With everything synced, clone the source repository and search all of it for:
 the test address, any IP-shaped string, the PAT, and the word `token`.
@@ -351,14 +351,14 @@ the test address, any IP-shaped string, the PAT, and the word `token`.
 
 ## E. Publishing
 
-### E1 — A publish produces the expected tree
+### E1 - A publish produces the expected tree
 
 Publish to the test site repository.
 
 **Expect** under `docs/`: `.nojekyll`, `index.html`,
 `dinodepot-build.json`, `data/`, `assets/icons/`. Nothing else.
 
-### E2 — The public boundary holds
+### E2 - The public boundary holds
 
 Search the entire published `docs/` tree for: any player's real name, any IP
 address, the roster file, and any `.arkprofile`.
@@ -366,7 +366,7 @@ address, the roster file, and any `.arkprofile`.
 **Expect** nothing. The site is world-readable forever once pushed; this is the
 test that matters.
 
-### E3 — The build manifest points home
+### E3 - The build manifest points home
 
 Open `dinodepot-build.json`.
 
@@ -374,22 +374,22 @@ Open `dinodepot-build.json`.
 repository, a unique `publishOperationId`, the output version, and the Studio
 version that built it.
 
-### E4 — The site renders
+### E4 - The site renders
 
 Enable Pages on the test site repository, serving `main:/docs`. Open the URL.
 
 **Expect** the viewer loads, creature icons appear, and the data shown matches
-the project. Check the browser console for blocked requests — the page must not
+the project. Check the browser console for blocked requests - the page must not
 depend on anything it cannot fetch.
 
-### E5 — Republishing is clean
+### E5 - Republishing is clean
 
 Change one rule and publish again.
 
 **Expect** one new commit, the change visible, no orphaned files left from the
 previous publish, and a new `publishOperationId`.
 
-### E6 — Publishing is refused when it should be
+### E6 - Publishing is refused when it should be
 
 Try to publish with no site repository bound, and with a revoked token.
 
@@ -408,45 +408,45 @@ install of `v0.2.1` as the baseline, and `v0.3.0` published as the newer one.
 > after that still works, but you lose the chance to see *Up to date* behave
 > correctly first.
 
-### F1 — Baseline installs
+### F1 - Baseline installs
 
 1. On a clean machine, download and run
    `DinoDepot.Studio_0.2.1_x64-setup.exe` from the v0.2.1 release.
-2. Expect a SmartScreen "unknown publisher" prompt — the installer is
+2. Expect a SmartScreen "unknown publisher" prompt - the installer is
    updater-signed but not Authenticode-signed. **This is the known, accepted
    state, not a defect.** Choose *More info* → *Run anyway*.
 3. Launch. Confirm Help/About or the title reports **0.2.1**.
 
-### F2 — Up to date, when it is
+### F2 - Up to date, when it is
 
 With only `v0.2.1` published, check for updates.
 
 **Expect** **Up to date**. Nothing offered, nothing downloaded.
 
-### F3 — An update is offered, never silently
+### F3 - An update is offered, never silently
 
 With `v0.3.0` published, check for updates from the 0.2.1 install.
 
 **Expect** the banner names the version and waits. Nothing installs on its own,
 and nothing restarts without being told to.
 
-### F4 — Update and restart
+### F4 - Update and restart
 
 Accept the update.
 
 **Expect** it downloads, installs, and relaunches into **0.3.0**. The project
 opens afterwards with its settings, its repository binding and its account
-still in place — an update that loses the binding is a failed update.
+still in place - an update that loses the binding is a failed update.
 
 Confirm the new **app icon** is what Windows shows in the taskbar, the Start
 menu and the window.
 
-### F5 — Signature rejection
+### F5 - Signature rejection
 
 **Proves** the only thing making an update trustworthy.
 
 1. On a copy, edit the `latest.json` the install will fetch, or stand up a
-   local endpoint, so the download is a build **not signed by the real key** —
+   local endpoint, so the download is a build **not signed by the real key** -
    or leave the signature field intact but corrupt one byte of the installer it
    points at.
 2. Check for updates and accept.
@@ -457,9 +457,9 @@ menu and the window.
 security model and blocks any further release.
 
 > Do this against a *test* endpoint or a copied install. Do not modify the
-> published v0.3.0 release — it is immutable and it is what real installs see.
+> published v0.3.0 release - it is immutable and it is what real installs see.
 
-### F6 — Downgrade prevention
+### F6 - Downgrade prevention
 
 1. On the 0.3.0 install, point the check at a manifest advertising 0.2.1.
 2. Check for updates.
@@ -468,7 +468,7 @@ security model and blocks any further release.
 ones; the extra rule in `appUpdate.ts` is what stops a mistagged release
 rolling everybody backwards.
 
-### F7 — The endpoint itself
+### F7 - The endpoint itself
 
 Fetch `https://github.com/CaotcAftermth/DinoDepot-Studio/releases/latest/download/latest.json`
 in a browser.
@@ -480,7 +480,7 @@ URL resolving to that release's installer, and a populated signature.
 
 ## G. Project repositories and administrators
 
-### G1 — A second administrator can be added
+### G1 - A second administrator can be added
 
 Give the second account access to the test source repository, have them create
 their own PAT and connect it on their own machine.
@@ -488,15 +488,15 @@ their own PAT and connect it on their own machine.
 **Expect** they can open, edit and sync. No credential is shared between the
 two people at any point.
 
-### G2 — Least privilege actually suffices
+### G2 - Least privilege actually suffices
 
 Confirm the PAT has only Metadata read and Contents read/write.
 
 **Expect** every normal operation works. If anything demands more, that is a
-finding — record exactly which operation and what it asked for rather than
+finding - record exactly which operation and what it asked for rather than
 widening the token.
 
-### G3 — Removing an administrator
+### G3 - Removing an administrator
 
 Revoke the second account's repository access.
 
@@ -506,7 +506,7 @@ disk.
 
 ## H. Managed icons and exact content packages
 
-### H1 — No icon folder setup
+### H1 - No icon folder setup
 
 Create or open a project without configuring any image path. Open Content
 Sources and Settings.
@@ -516,7 +516,7 @@ an exact `official-asa` dependency, available official creature/item images
 render from the managed package library, and entries without one show their
 normal category/default icon.
 
-### H2 — Missing pack icons do not block a mod
+### H2 - Missing pack icons do not block a mod
 
 Import a legacy pack whose JSON references one PNG/WebP file that is absent, or
 use Discovery and choose **Add without pack**.
@@ -525,7 +525,7 @@ use Discovery and choose **Add without pack**.
 is omitted, its entry displays the default icon, and the success message reports
 the fallback rather than an installation failure.
 
-### H3 — Only WebP and PNG are accepted
+### H3 - Only WebP and PNG are accepted
 
 Try equivalent `.webp`, `.png`, and `.jpg` package icons, including a file whose
 extension does not match its bytes.
@@ -534,7 +534,7 @@ extension does not match its bytes.
 also works, and JPEG/mislabeled bytes are ignored or rejected as icon bytes
 without preventing locally discovered mod content from being added.
 
-### H4 — Published versions remain immutable
+### H4 - Published versions remain immutable
 
 Open projects pinned to Anomalocaris package `1.0.0` and `1.0.1` on the same
 machine.
@@ -542,7 +542,7 @@ machine.
 **Expect** both versions coexist. `1.0.0` retains its PNG asset; `1.0.1` uses
 the WebP set. Neither project silently changes its exact dependency.
 
-### H5 — Content-addressed package versions reuse bytes
+### H5 - Content-addressed package versions reuse bytes
 
 Install two v3 package versions that reference at least one identical image,
 then inspect `%APPDATA%/com.ggfizz.dinodepotstudio/content/`.
@@ -552,7 +552,7 @@ offline, and only one verified image exists below `blobs/sha256/`. A filesystem
 that supports hard links does not allocate a second copy for either logical
 path. V2 package folders continue to render without conversion.
 
-### H6 — Compatibility imports do not populate project images
+### H6 - Compatibility imports do not populate project images
 
 Add the same legacy `modpack.json` through the registry, a pasted HTTPS link,
 and a local file. Test once with complete icons and once with one missing icon.
@@ -568,5 +568,5 @@ images remain untouched.
 
 All of A through H passing means the release is sound for the cluster it was
 built for. It does not mean the app is finished, and it does not cover
-Authenticode — the SmartScreen prompt in F1 is deliberate and deferred, not a
+Authenticode - the SmartScreen prompt in F1 is deliberate and deferred, not a
 defect to be reported here.

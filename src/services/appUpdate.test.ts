@@ -66,7 +66,7 @@ describe("explaining why nothing was installed", () => {
 describe("update failures", () => {
   /**
    * A signature failure means the file on the release is not one this build
-   * will trust — a broken upload, or something worse. Either way it must not be
+   * will trust - a broken upload, or something worse. Either way it must not be
    * installed, and the administrator is told to go and fetch it themselves.
    */
   it("is explicit about a signature that did not verify", () => {

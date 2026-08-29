@@ -13,7 +13,7 @@ import type { LogLevel, SanitizedLogEntry } from "./types";
  *
  * ## Two forms, deliberately
  *
- * {@link RawLogEntry} is what the app writes — whatever the failure said. It
+ * {@link RawLogEntry} is what the app writes - whatever the failure said. It
  * never leaves this module. {@link SanitizedLogEntry} is what a report may
  * carry, and the only way to get one is {@link sanitizeLogEntry}. Keeping them
  * as different types means "forgot to sanitize" is a compile error rather than
@@ -42,7 +42,7 @@ export interface RawLogEntry {
  * The ring itself.
  *
  * Module scope rather than a store, because logging has to work from anywhere
- * — including modules that load before React does — and because a log that
+ * - including modules that load before React does - and because a log that
  * re-renders anything is a log that will eventually cause the bug it is meant
  * to record.
  */
@@ -77,7 +77,7 @@ export const studioLog = {
     console.warn(`[${scope}] ${message}`);
   },
   /**
-   * Records a failure. `code` is a StudioErrorCode when the caller has one —
+   * Records a failure. `code` is a StudioErrorCode when the caller has one -
    * it is what lets a maintainer tell "GitHub was down" from "the token was
    * revoked" without reading the message.
    */
@@ -109,7 +109,7 @@ export function logSize(): number {
 /**
  * Absolute paths, in the three shapes this app produces.
  *
- * Windows drive paths dominate — every project folder, every mod directory —
+ * Windows drive paths dominate - every project folder, every mod directory -
  * and every one of them contains the administrator's Windows account name.
  * That is a real person's name, published in a public issue, in exchange for
  * nothing: the folder layout is never what a bug turns on.
@@ -227,7 +227,7 @@ export function sanitizeLogEntry(entry: RawLogEntry): SanitizedLogEntry {
  *
  * Entries the Feedback Center itself wrote are left out. They describe the act
  * of reporting rather than the problem being reported, and by the time a
- * report is being assembled they are the newest entries — so keeping them
+ * report is being assembled they are the newest entries - so keeping them
  * would push the interesting ones off the end of the limit.
  */
 export function sanitizedLogs(limit: number): SanitizedLogEntry[] {

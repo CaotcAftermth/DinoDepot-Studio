@@ -4,7 +4,7 @@
  *
  * Four files carry it, and they are updated by hand: package.json, Cargo.toml,
  * tauri.conf.json, and the STUDIO_VERSION constant the UI and the project
- * manifest read. A disagreement between them is not cosmetic — the updater
+ * manifest read. A disagreement between them is not cosmetic - the updater
  * compares the version in `latest.json` against the one baked into the running
  * binary, so a mismatch is how an installer ships a build that then offers to
  * "update" the user back to what they already have, or refuses a real update.
@@ -36,7 +36,7 @@ const SOURCES = [
   {
     label: "src-tauri/Cargo.toml",
     file: "src-tauri/Cargo.toml",
-    // Only the [package] version — the first one in the file. A dependency's
+    // Only the [package] version - the first one in the file. A dependency's
     // `version = "2"` must not be mistaken for the app's.
     read: (text) => /^version\s*=\s*"([^"]+)"/m.exec(text)?.[1],
     write: (text, version) =>
@@ -109,7 +109,7 @@ if (distinct.size > 1) {
 
 if (failed) {
   console.error(
-    "\nFix the versions before building a release — the updater compares this " +
+    "\nFix the versions before building a release - the updater compares this " +
       "against what is in latest.json.",
   );
   process.exit(1);

@@ -23,7 +23,7 @@ import { TexturePickerModal } from "../pages/content/TexturePickerModal";
 import { toast } from "./toast";
 
 // convertFileSrc is a pure string transform (asset: URL); safe to import in
-// browser mock mode too — we just never render file icons there.
+// browser mock mode too - we just never render file icons there.
 import { convertFileSrc } from "@tauri-apps/api/core";
 
 /** Absolute folder currently scanned for icon images. */
@@ -43,7 +43,7 @@ export function EntityIcon({
 }: {
   bpPath: string;
   kind: "creatures" | "items";
-  /** Display name — improves images-folder matching (e.g. Achatina.png). */
+  /** Display name - improves images-folder matching (e.g. Achatina.png). */
   name?: string;
   size?: number;
   className?: string;
@@ -128,7 +128,7 @@ const MAP_EMOJI_PALETTE = [
 ];
 
 /**
- * An icon value in the app's shared format — an emoji, `file:<relative path>`
+ * An icon value in the app's shared format - an emoji, `file:<relative path>`
  * into the images folder, or an https image URL.
  */
 export function useIconSrc(): (icon: string) => string | null {
@@ -230,7 +230,7 @@ export function IconChooserModal({
   officialKind?: "creatures" | "items";
   /** Folder the import panel files a new icon under, usually the mod's name. */
   iconGroup?: string;
-  /** Pre-fills the image search — usually the thing being given an icon. */
+  /** Pre-fills the image search - usually the thing being given an icon. */
   imageSearchSeed?: string;
   /** Shown bottom-left, e.g. what happens with no assignment. */
   fallbackNote?: ReactNode;

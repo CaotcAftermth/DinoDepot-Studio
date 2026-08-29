@@ -303,9 +303,9 @@ fn install_at(
 /// The install itself, once the bytes are in hand however they arrived.
 ///
 /// Downloads reach this through base64 over IPC; the bundled package reaches
-/// it straight off disk. Both verify identically — every file is checked
+/// it straight off disk. Both verify identically - every file is checked
 /// against the size and SHA-256 its manifest pins, and images against their
-/// own signature — so "it shipped with us" buys no trust at all.
+/// own signature - so "it shipped with us" buys no trust at all.
 fn install_bytes(
     root: &Path,
     manifest_json: &str,
@@ -429,7 +429,7 @@ fn install_bytes(
 ///
 /// The bundled official package is thousands of files. Carrying them through
 /// IPC meant one round trip per file, base64 in both directions, and the whole
-/// library held in the webview's memory before a single byte was written —
+/// library held in the webview's memory before a single byte was written -
 /// seconds of it on first launch, for files that were already on this disk.
 fn install_from_disk(root: &Path, manifest_path: &Path) -> Result<PackageInstallInfo, String> {
     let manifest_json = fs::read_to_string(manifest_path)

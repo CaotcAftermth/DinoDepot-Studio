@@ -8,7 +8,7 @@ export function classNameOf(bpPath: string): string {
   return /_C$/.test(last) ? last : `${last}_C`;
 }
 
-/** Short class name (no _C) — e.g. `Achatina_Character_BP`. */
+/** Short class name (no _C) - e.g. `Achatina_Character_BP`. */
 export function shortClassName(bpPath: string): string {
   return (bpPath.split(".").pop() ?? bpPath).replace(/_C$/, "");
 }
@@ -31,7 +31,7 @@ export interface SpawnCommand {
 
 /**
  * Which identifier `-p=` carries. Dino Depot accepts either the in-game Player
- * ID or the account's EOS ID, and they are not interchangeable — sending one
+ * ID or the account's EOS ID, and they are not interchangeable - sending one
  * where the other is expected silently delivers the creature to nobody.
  */
 export type PlayerIdKind = "playerId" | "eosId";
@@ -71,7 +71,7 @@ export interface ColorAssignment {
 }
 
 export interface TraitAssignment {
-  /** Local row id — traits are not unique, so the token cannot be the key. */
+  /** Local row id - traits are not unique, so the token cannot be the key. */
   id: string;
   token: string;
   /** 1, 2 or 3; written into the command as [0], [1], [2]. */
@@ -113,7 +113,7 @@ export const DEFAULT_CREATURE_PARAMS: CreatureSpawnParams = {
   traits: [],
 };
 
-/** True once any stat carries points — `-s=` replaces `-l=`, so this decides. */
+/** True once any stat carries points - `-s=` replaces `-l=`, so this decides. */
 export function hasStatPoints(stats: StatPoints): boolean {
   return SPAWN_STATS.some((s) => (stats[s.key] ?? 0) > 0);
 }
@@ -151,7 +151,7 @@ export function buildCreatureCommands(
   const path = objectPath(bpPath);
 
   const useStats = hasStatPoints(p.stats);
-  // Only regions that were actually assigned something count as "set" —
+  // Only regions that were actually assigned something count as "set" -
   // an all-zero -r= would be six explicit no-ops taking up console budget.
   const usedColors = p.colors.filter((c) => c.colorId > 0);
   const traits = serializeTraits(p.traits);
@@ -172,13 +172,13 @@ export function buildCreatureCommands(
 
   const commands: SpawnCommand[] = [
     {
-      label: "Dino Depot — Spawn in ball",
+      label: "Dino Depot - Spawn in ball",
       hint: "Gives the creature to a player as a captured ball (Dino Depot scriptcommand)",
       command: ballCommand,
       warning: !p.playerId
-        ? `Set the ${PLAYER_ID_KIND_LABELS[p.playerIdKind]} — the command needs -p=`
+        ? `Set the ${PLAYER_ID_KIND_LABELS[p.playerIdKind]} - the command needs -p=`
         : ballCommand.length > 290
-          ? `Command is ${ballCommand.length} chars — over the 290 console limit`
+          ? `Command is ${ballCommand.length} chars - over the 290 console limit`
           : undefined,
     },
     {
@@ -187,7 +187,7 @@ export function buildCreatureCommands(
         ? // GMSummon's level excludes the taming bonus, so the creature that
           // lands is higher than the number typed. Saying "level N" here sent
           // admins looking for a bug in the command.
-          `Tamed, at your crosshair — level is before the taming bonus, so ${p.level} arrives around ${Math.round(p.level * 1.5)}`
+          `Tamed, at your crosshair - level is before the taming bonus, so ${p.level} arrives around ${Math.round(p.level * 1.5)}`
         : "Spawns a wild creature at your crosshair (level from map rules)",
       command: p.tamed
         ? `admincheat GMSummon "${cls}" ${p.level}`
@@ -203,18 +203,18 @@ export function buildCreatureCommands(
         ? "SDF (tamed, exact level)"
         : "SDF (wild, exact level)",
       hint:
-        `Matches on part of the class name — ${p.tamed ? "tamed" : "wild"} at exactly level ${p.level}` +
+        `Matches on part of the class name - ${p.tamed ? "tamed" : "wild"} at exactly level ${p.level}` +
         (p.tamed
           ? `, no taming bonus (drop the last argument to 0 for ${Math.round(p.level * 1.5)})`
           : ""),
       // The last two arguments are ASA-only:
-      //   bLoadIfUnloaded=1 — ASA does not keep creature data in memory unless
+      //   bLoadIfUnloaded=1 - ASA does not keep creature data in memory unless
       //     that creature already exists in the world, so without it the
       //     command silently does nothing for anything not already nearby.
-      //   bSkipAddingTamedLevels — 1 spawns at exactly the level given; 0 adds
+      //   bSkipAddingTamedLevels - 1 spawns at exactly the level given; 0 adds
       //     the perfect-tame bonus, turning 150 into 225. Exact is what every
       //     other command in this modal does, so it is what the level field is
-      //     taken to mean here too. Irrelevant when wild, and the wiki's own
+      //     taken to mean here too. Irrelevant when wild; retained examples
       //     wild example passes 0.
       command: `admincheat SDF ${shortClassName(bpPath)} ${p.tamed ? 1 : 0} ${p.level} 1 ${p.tamed ? 1 : 0}`,
     },
@@ -247,7 +247,7 @@ export function buildItemCommands(
     },
     {
       label: "GiveItemToPlayer",
-      hint: "Same, but to a specific player — replace <PlayerID>",
+      hint: "Same, but to a specific player - replace <PlayerID>",
       command: `admincheat GiveItemToPlayer <PlayerID> "Blueprint'${path}'" ${p.quantity} ${p.quality} ${p.asBlueprint ? 1 : 0}`,
     },
   ];

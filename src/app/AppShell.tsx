@@ -106,7 +106,7 @@ export function AppShell() {
             modules.map((item) => <NavItem key={item.to} {...item} />)
           ) : (
             <p className="mx-3 px-3 py-2 text-xs text-ink-600 leading-relaxed border border-dashed border-ink-700 rounded-md">
-              Additional pages appear here — turn them on in Settings.
+              Additional pages appear here - turn them on in Settings.
             </p>
           )}
         </nav>
@@ -146,7 +146,7 @@ export function AppShell() {
         )}
         <div className="p-6 w-full">
           {/* Around the routed page rather than the whole shell: a page that
-              throws should leave the sidebar — and the way out of it — intact. */}
+              throws should leave the sidebar - and the way out of it - intact. */}
           <ErrorBoundary name="This page">
             <Outlet />
           </ErrorBoundary>
@@ -177,7 +177,7 @@ function HelpRow() {
         title={`Report a bug, suggest an improvement, or request a feature (${FEEDBACK_SHORTCUT})`}
         className="flex items-center gap-2.5 text-xs text-ink-400 hover:text-white cursor-pointer w-full"
       >
-        {/* A speech bubble with lines in it — what "leave us a note" looks
+        {/* A speech bubble with lines in it - what "leave us a note" looks
             like everywhere else. The umbrella that used to be here read as
             shelter or weather, neither of which is what the button does. */}
         <svg

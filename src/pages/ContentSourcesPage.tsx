@@ -62,7 +62,6 @@ import { AssociationModal } from "./content/AssociationModal";
 import { AddModpackModal } from "./content/AddModpackModal";
 import { ExportModpackModal } from "./content/ExportModpackModal";
 import { defaultModpackRegistry } from "../model/modpack";
-import { WikiImportModal } from "./content/WikiImportModal";
 import {
   hasCreatureInfo,
   resolveCreatureInfo,
@@ -105,7 +104,7 @@ import {
 } from "../model/catalogDuplicates";
 import { feedbackTarget } from "../model/feedback/targets";
 
-/** Discord's wordmark glyph, inlined — the app ships no external assets. */
+/** Discord's wordmark glyph, inlined - the app ships no external assets. */
 function DiscordIcon() {
   return (
     <svg
@@ -218,7 +217,7 @@ export function ContentSourcesPage() {
 
   const official = useMemo(() => effectiveOfficialSource(catalog), [catalog]);
   const allSources = useMemo(
-    // Official ASA is pinned first — it is the baseline every mod adds to, not
+    // Official ASA is pinned first - it is the baseline every mod adds to, not
     // one entry among them. The mods themselves sort by name, because the only
     // way anyone looks for a mod in a list this long is alphabetically.
     () => [
@@ -267,7 +266,7 @@ export function ContentSourcesPage() {
     });
   }
 
-  /** Patches any mod by id — the source list edits rows other than the selected one. */
+  /** Patches any mod by id - the source list edits rows other than the selected one. */
   function updateSourceById(id: string, patch: Partial<ContentSource>) {
     const source = catalog.sources.find((s) => s.id === id);
     setCatalog({
@@ -321,7 +320,7 @@ export function ContentSourcesPage() {
       });
     }
     // Everything catalogued under the mod goes with it: the entries, and the
-    // per-path data hanging off them. Only paths nothing else claims — two
+    // per-path data hanging off them. Only paths nothing else claims - two
     // mods can ship the same class, and an official path stays official.
     const remaining = catalog.sources.filter((s) => s.id !== selected.id);
     const pruned = { ...catalog, sources: remaining };
@@ -342,7 +341,7 @@ export function ContentSourcesPage() {
   /**
    * Moves entries (by id) from the selected source into another source.
    *
-   * A class the destination — or any other source — already catalogues is left
+   * A class the destination - or any other source - already catalogues is left
    * where it is and reported. The old check only looked at the destination and
    * dropped anything it matched without saying so, which quietly lost entries.
    */
@@ -367,7 +366,7 @@ export function ContentSourcesPage() {
     const plan = planEntryMove(owners, moving);
     if (plan.moved.length === 0) {
       toast.error(
-        `Nothing moved — ${plural(plan.skipped.length, "class")} already catalogued elsewhere (${plan.skipped[0]?.conflictsWith})`,
+        `Nothing moved - ${plural(plan.skipped.length, "class")} already catalogued elsewhere (${plan.skipped[0]?.conflictsWith})`,
       );
       return;
     }
@@ -427,7 +426,7 @@ export function ContentSourcesPage() {
     toast.success(
       `Moved ${plan.moved.length} ${kind} to "${target?.name ?? "?"}"` +
         (plan.skipped.length > 0
-          ? ` — ${plan.skipped.length} kept here (already catalogued: ${plan.skipped
+          ? ` - ${plan.skipped.length} kept here (already catalogued: ${plan.skipped
               .slice(0, 3)
               .map((s) => s.conflictsWith)
               .join(", ")})`
@@ -439,23 +438,16 @@ export function ContentSourcesPage() {
     <div {...feedbackTarget("content-sources")}>
       <PageHeader
         title="Content Sources"
-        subtitle="The mods, creatures, and items this project can reference — mods watched for updates are managed here too"
+        subtitle="The mods, creatures, and items this project can reference - mods watched for updates are managed here too"
         actions={
           <>
-            {/* The two places this data actually comes from, one click away. */}
-            <Button
-              onClick={() => void openExternal("https://ark.wiki.gg/")}
-              title="ark.wiki.gg — the source the bundled official catalog is compiled from"
-            >
-              Ark Wiki ↗
-            </Button>
             <Button
               onClick={() =>
                 void openExternal(
                   "https://www.curseforge.com/ark-survival-ascended",
                 )
               }
-              title="CurseForge — ASA mod listings"
+              title="CurseForge - ASA mod listings"
             >
               CurseForge ↗
             </Button>
@@ -503,7 +495,7 @@ export function ContentSourcesPage() {
         <div className="flex flex-col gap-1.5">
           {allSources.map((source) => (
             // The status badge is its own control, so the row is a div rather
-            // than a button — nesting a button inside a button is invalid and
+            // than a button - nesting a button inside a button is invalid and
             // the inner click would never be reliable.
             <div
               key={source.id}
@@ -534,8 +526,8 @@ export function ContentSourcesPage() {
                       }}
                       title={
                         source.enabled
-                          ? `${source.name} is enabled and watched for updates — click to disable`
-                          : `${source.name} is disabled and not watched — click to enable`
+                          ? `${source.name} is enabled and watched for updates - click to disable`
+                          : `${source.name} is disabled and not watched - click to enable`
                       }
                       className="cursor-pointer hover:brightness-125 transition-[filter]"
                     >
@@ -631,7 +623,7 @@ function CurseforgeIdField({
           const clash = findSourceByCurseforgeId(modSources, trimmed, source.id);
           if (clash) {
             toast.error(
-              `Project ID ${trimmed} already belongs to "${clash.name}" — IDs must be unique`,
+              `Project ID ${trimmed} already belongs to "${clash.name}" - IDs must be unique`,
             );
             return;
           }
@@ -688,7 +680,7 @@ function CatalogHealthBanner({
         className="w-full flex items-center justify-between gap-3 cursor-pointer text-left"
       >
         <span className="text-sm text-amber-300">
-          ⚠ {plural(total, "duplicate")} in this project —{" "}
+          ⚠ {plural(total, "duplicate")} in this project - {" "}
           {[
             duplicateClasses.length > 0 &&
               plural(duplicateClasses.length, "blueprint class"),
@@ -714,7 +706,7 @@ function CatalogHealthBanner({
               <span className="mono text-ink-400">
                 {dup.locations[0].bpPath}
               </span>{" "}
-              —{" "}
+ - {" "}
               {dup.locations
                 .map((l) => `"${l.entryName}" in ${l.sourceName}`)
                 .join(" · ")}
@@ -728,7 +720,7 @@ function CatalogHealthBanner({
           {duplicateIds.map((dup) => (
             <div key={dup.curseforgeId} className="text-ink-300">
               CurseForge ID <span className="mono">{dup.curseforgeId}</span> is
-              on {dup.sourceNames.join(" and ")} — the enabled-mod list would
+              on {dup.sourceNames.join(" and ")} - the enabled-mod list would
               repeat it and the watcher can only track one.
             </div>
           ))}
@@ -804,7 +796,6 @@ function SourceDetail({
   const [discordOpen, setDiscordOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [asaReviewOpen, setAsaReviewOpen] = useState(false);
-  const [wikiImportOpen, setWikiImportOpen] = useState(false);
   const [cleanupOpen, setCleanupOpen] = useState(false);
 
   useEffect(() => {
@@ -876,7 +867,7 @@ function SourceDetail({
     if (tab !== "creatures" || !groupVariants) return null;
     // Every path some creature has been assigned as its parent. A creature in
     // this set keys its group by its own path, which is how it ends up in the
-    // same bucket as the children pointing at it — left to the name-based
+    // same bucket as the children pointing at it - left to the name-based
     // heuristic it keys by name, and an assigned parent would sit outside the
     // very group it heads.
     const assignedParents = new Set(
@@ -934,7 +925,7 @@ function SourceDetail({
       !linkedSourceIds.has(s.id),
   );
   const cfUrl = sourceCurseforgeUrl(source);
-  // Official ASA content belongs to the bundled catalog — moving it out
+  // Official ASA content belongs to the bundled catalog - moving it out
   // would misrepresent where it came from.
   const showCheckboxes = moveMode && !globalSearch && !isOfficial;
 
@@ -1068,7 +1059,7 @@ function SourceDetail({
               icon={<span>📖</span>}
               setLabel="Docs ↗"
               addLabel="Add docs"
-              addTitle="Add a wiki / docs link for this mod"
+              addTitle="Add a documentation link for this mod"
               onEdit={() => setDocsOpen(true)}
             />
             <LinkChip
@@ -1085,7 +1076,7 @@ function SourceDetail({
           !isOfficial && (
             <>
               {/* Enabled lives on the badge in the mod list, and update
-                  watching now follows it — a mod you run is a mod you want to
+                  watching now follows it - a mod you run is a mod you want to
                   know about, and the two were always set together. */}
               <Toggle
                 checked={source.removed}
@@ -1107,7 +1098,7 @@ function SourceDetail({
       >
         {isOfficial ? (
           <p className="text-xs text-ink-400">
-            {source.notes} — bundled content is read-only, but you can add
+            {source.notes} - bundled content is read-only, but you can add
             missing creatures and items below.
           </p>
         ) : (
@@ -1216,7 +1207,7 @@ function SourceDetail({
           tab === "ini" || globalSearch || packageLinked ? null : (
             // Six buttons competed for attention when only one is used often.
             // Adding an entry stays a button; the rest are occasional jobs and
-            // live behind one menu. Move mode is the exception — while it is
+            // live behind one menu. Move mode is the exception - while it is
             // on, the whole list looks different, so the way out has to be
             // visible rather than one level down.
             <>
@@ -1254,15 +1245,6 @@ function SourceDetail({
                     hint: "Paste a list of names and paths",
                     onSelect: () => setBulkOpen(true),
                   },
-                  ...(tab === "creatures"
-                    ? [
-                        {
-                          label: "Import from wiki…",
-                          hint: "Stage acquisition info for review",
-                          onSelect: () => setWikiImportOpen(true),
-                        },
-                      ]
-                    : []),
                   ...(tab === "creatures" && !isOfficial && !packageLinked
                     ? [
                         {
@@ -1360,7 +1342,7 @@ function SourceDetail({
         {showCheckboxes && (
           <div className="flex items-center gap-2 mb-3 px-3 py-2 bg-ink-800 border border-ink-600 rounded-md">
             <span className="text-sm text-ink-200">
-              {selection.size} selected — pick entries below, then choose a
+              {selection.size} selected - pick entries below, then choose a
               destination
             </span>
             <Select
@@ -1431,7 +1413,7 @@ function SourceDetail({
           kind={entryTab}
           onClose={() => setBulkOpen(false)}
           onImport={(imported) => {
-            // Checked against every source, not just this one — the same class
+            // Checked against every source, not just this one - the same class
             // catalogued under two mods is what makes the picker ambiguous.
             const plan = planEntryInsert(
               buildEntryOwners(allSources, entryTab),
@@ -1447,7 +1429,7 @@ function SourceDetail({
                 entryTab === "creatures" ? "creature" : "item",
               )}` +
                 (plan.skipped.length > 0
-                  ? ` — ${plan.skipped.length} skipped (${[
+                  ? ` - ${plan.skipped.length} skipped (${[
                       inCatalog > 0 && `${inCatalog} already in the catalog`,
                       inBatch > 0 && `${inBatch} repeated in this paste`,
                     ]
@@ -1577,8 +1559,8 @@ function SourceDetail({
 
       {docsOpen && (
         <LinkModal
-          title={`Docs link — ${source.name}`}
-          blurb="A second reference link for this mod: its wiki, a Google Doc, a spawn code sheet — anything you want one click away."
+          title={`Docs link - ${source.name}`}
+          blurb="A second reference link for this mod: documentation, a Google Doc, or a spawn code sheet."
           current={source.docsUrl}
           placeholder="https://…"
           savedLabel="Docs link"
@@ -1589,7 +1571,7 @@ function SourceDetail({
 
       {discordOpen && (
         <LinkModal
-          title={`Discord — ${source.name}`}
+          title={`Discord - ${source.name}`}
           blurb="The mod's Discord: an invite link, or a deep link straight to its support or changelog channel."
           current={source.discordUrl}
           placeholder="https://discord.gg/…"
@@ -1610,11 +1592,6 @@ function SourceDetail({
       {asaReviewOpen && (
         <AsaReviewModal onClose={() => setAsaReviewOpen(false)} />
       )}
-
-      {wikiImportOpen && (
-        <WikiImportModal onClose={() => setWikiImportOpen(false)} />
-      )}
-
 
       {cleanupOpen && (
         <NameCleanupModal
@@ -1681,7 +1658,7 @@ function NameCleanupModal({
   const applyCount = proposals.length - excluded.size;
 
   return (
-    <Modal title={`Clean up names — ${source.name}`} onClose={onClose} wide>
+    <Modal title={`Clean up names - ${source.name}`} onClose={onClose} wide>
       {proposals.length === 0 ? (
         <EmptyState title="Nothing to clean up">
           Every creature here already resolves to a sensible name.
@@ -1689,7 +1666,7 @@ function NameCleanupModal({
       ) : (
         <>
           <p className="text-xs text-ink-400 mb-3">
-            Names rebuilt from the matching official creature — useful after
+            Names rebuilt from the matching official creature - useful after
             importing a live file, where names are derived from blueprint
             paths. Untick anything you want to keep as-is.
             {!source.variantTag && (
@@ -1751,12 +1728,10 @@ type AsaFilter = "all" | "unreviewed" | "confirmed" | "absent";
 /**
  * ASA availability review of the bundled official catalog.
  *
- * The bundled dataset comes from a wiki that documents both ASE and ASA, so it
- * carries entries that never made the jump (the Electrical Outlet and friends).
- * There is no marker on the wiki that separates them, so this is a review
- * surface rather than an automatic filter: verdicts can be set by hand, or in
- * bulk by diffing against a known-good list exported from the actual server.
- * Nothing is deleted — `absent` entries are hidden and stay recoverable.
+ * Legacy bundled data covers both ASE and ASA, including entries that never
+ * shipped in ASA. This review surface accepts manual verdicts or a bulk diff
+ * against a known-good server export. Nothing is deleted; `absent` entries are
+ * hidden and stay recoverable.
  */
 function AsaReviewModal({ onClose }: { onClose: () => void }) {
   const { catalog, setCatalog } = useDraftsStore();
@@ -1821,7 +1796,7 @@ function AsaReviewModal({ onClose }: { onClose: () => void }) {
         message:
           "They disappear from Content Sources and every picker. Production rules and remaps still referencing them will start showing missing-content warnings.",
         details: [
-          "Reversible — filter to \"Not in ASA\" here and set them back.",
+          "Reversible - filter to \"Not in ASA\" here and set them back.",
         ],
         confirmLabel: "Mark not in ASA",
         danger: true,
@@ -1837,11 +1812,9 @@ function AsaReviewModal({ onClose }: { onClose: () => void }) {
   return (
     <Modal title="ASA availability review" onClose={onClose} xl>
       <p className="text-xs text-ink-400 mb-3">
-        The bundled catalog is compiled from a wiki that documents both ASE and
-        ASA, so some entries — the Electrical Outlet, for one — never shipped to
-        ASA. Nothing on the wiki marks them, so confirm them here. The quickest
-        route is a known-good list pulled from your own server; anything it
-        doesn't mention gets flagged for you to review.
+        The legacy bundled catalog covers both ASE and ASA without marking the
+        difference. Confirm entries here using a known-good list from your own
+        server; anything it omits gets flagged for review.
       </p>
 
       <div className="flex items-center gap-3 mb-3">
@@ -1972,7 +1945,7 @@ function AsaReviewModal({ onClose }: { onClose: () => void }) {
           })}
           {shown.length > 400 && (
             <p className="text-xs text-ink-500 px-3 py-2">
-              Showing the first 400 — narrow the search to reach the rest.
+              Showing the first 400 - narrow the search to reach the rest.
             </p>
           )}
         </div>
@@ -2016,7 +1989,7 @@ function AsaReviewModal({ onClose }: { onClose: () => void }) {
 
 /**
  * Diffs the bundled catalog against a list of what the server actually has.
- * Matching is lenient — blueprint paths and bare class names both work, since
+ * Matching is lenient - blueprint paths and bare class names both work, since
  * every practical source of truth (a spawn-code sheet, a dev-kit dump, an
  * in-game item list) emits one or the other.
  */
@@ -2060,7 +2033,7 @@ function AsaListImportModal({
   return (
     <Modal title={`Import known-good ASA ${kind}`} onClose={onClose} wide>
       <p className="text-xs text-ink-400 mb-3">
-        Paste what your server actually has — one blueprint path or class name
+        Paste what your server actually has - one blueprint path or class name
         per line. Anything the list mentions is confirmed; the rest can be
         flagged for review in one go.
       </p>
@@ -2095,7 +2068,7 @@ function AsaListImportModal({
       {result.unmatched.length > 0 && flagUnmatched && result.lines > 0 && (
         <p className="text-xs text-amber-400 mt-2">
           {result.unmatched.length} of {entries.length} {kind} would be hidden.
-          If that looks too aggressive, the list is probably partial — turn the
+          If that looks too aggressive, the list is probably partial - turn the
           toggle off and only confirm what matched.
         </p>
       )}
@@ -2191,7 +2164,7 @@ function LinkModal({
 
 // ---------------------------------------------------------------------------
 
-/** Freeform notes about the mod itself — the counterpart to the INI tab's. */
+/** Freeform notes about the mod itself - the counterpart to the INI tab's. */
 function SourceNotesModal({
   source,
   onSave,
@@ -2203,7 +2176,7 @@ function SourceNotesModal({
 }) {
   const [text, setText] = useState(source.notes);
   return (
-    <Modal title={`Notes — ${source.name}`} onClose={onClose} wide>
+    <Modal title={`Notes - ${source.name}`} onClose={onClose} wide>
       <p className="text-xs text-ink-400 mb-2">
         Anything worth remembering about this mod: who maintains it, why it's
         on the cluster, balance decisions, things to re-check after an update.
@@ -2215,7 +2188,7 @@ function SourceNotesModal({
         rows={14}
         autoFocus
         className="w-full bg-ink-950 border border-ink-600 rounded-md p-3 text-sm text-ink-100 focus:outline-none focus:border-accent-500/60"
-        placeholder={"e.g. Kept for the Tek variants only — vanilla dinos disabled in its config.\nAuthor is responsive on Discord; ping before a major version bump."}
+        placeholder={"e.g. Kept for the Tek variants only - vanilla dinos disabled in its config.\nAuthor is responsive on Discord; ping before a major version bump."}
       />
       <div className="flex justify-end gap-2 mt-3">
         <Button variant="ghost" onClick={onClose}>
@@ -2251,7 +2224,7 @@ interface EntryRowProps {
   mapColor: string;
   /**
    * The map of origin is switched off for this cluster. The entry is still
-   * fully usable — it may well be obtainable on a map that is running — so
+   * fully usable - it may well be obtainable on a map that is running - so
    * this only earns a Caution marker, never a filter.
    */
   mapDisabled: boolean;
@@ -2275,7 +2248,7 @@ interface EntryRowProps {
   onSpawn: () => void;
   /** Creatures only: parent/child configuration. */
   onAssociation: () => void;
-  /** Name, blueprint path, class and icon — the entry's own record. */
+  /** Name, blueprint path, class and icon - the entry's own record. */
   onEntryData: () => void;
   onInfo: () => void;
   /** Creatures only: opens the read-only summary card. */
@@ -2392,8 +2365,8 @@ function EntryRow(props: EntryRowProps) {
               className="text-ink-500 shrink-0"
               title={
                 isCreature
-                  ? "Information is recorded for this creature — click its icon to see it"
-                  : "Information is recorded for this item — click its icon to see it"
+                  ? "Information is recorded for this creature - click its icon to see it"
+                  : "Information is recorded for this item - click its icon to see it"
               }
             >
               <InfoMark />
@@ -2442,7 +2415,7 @@ function EntryRow(props: EntryRowProps) {
           {mapDisabled && (
             <span
               className="shrink-0"
-              title={`${mapLabel} is switched off for this cluster. This entry is still available — it may be obtainable on a map you do run — but check before promising it.`}
+              title={`${mapLabel} is switched off for this cluster. This entry is still available - it may be obtainable on a map you do run - but check before promising it.`}
             >
               <Badge tone="warn">Caution</Badge>
             </span>
@@ -2559,7 +2532,7 @@ function SpawnCommandModal({
    * Switches which identifier `-p=` carries, keeping the same player.
    *
    * The two ids are never interchangeable, so the value cannot simply carry
-   * over — but making the admin find the player again to say the same thing a
+   * over - but making the admin find the player again to say the same thing a
    * different way is busywork. When the roster knows who the current value
    * belongs to, their other id is filled in; otherwise the field clears rather
    * than leave a value that looks right and is not.
@@ -2595,7 +2568,7 @@ function SpawnCommandModal({
   };
 
   return (
-    <Modal title={`Spawn commands — ${entry.name}`} onClose={onClose} wide>
+    <Modal title={`Spawn commands - ${entry.name}`} onClose={onClose} wide>
       {kind === "creatures" ? (
         <div className="grid grid-cols-4 gap-3 mb-4">
           <Field label="Level">
@@ -2612,7 +2585,7 @@ function SpawnCommandModal({
             />
           </Field>
           <Field
-            // Only the words switch the identifier — without this the whole
+            // Only the words switch the identifier - without this the whole
             // field, input padding and hint included, was one big toggle.
             interactiveLabel
             // The label *is* the switch: there are only two identifiers, so a
@@ -2621,7 +2594,7 @@ function SpawnCommandModal({
               <button
                 type="button"
                 onClick={swapIdentifierKind}
-                title={`Showing ${PLAYER_ID_KIND_LABELS[creatureParams.playerIdKind]} — click to switch to ${PLAYER_ID_KIND_LABELS[otherIdKind]}`}
+                title={`Showing ${PLAYER_ID_KIND_LABELS[creatureParams.playerIdKind]} - click to switch to ${PLAYER_ID_KIND_LABELS[otherIdKind]}`}
                 className="inline-flex items-center gap-1 cursor-pointer hover:text-accent-400 transition-colors"
               >
                 {PLAYER_ID_KIND_LABELS[creatureParams.playerIdKind]}
@@ -2805,11 +2778,11 @@ function ItemInfoModal({
   }
 
   return (
-    <Modal title={`Item info — ${entry.name}`} onClose={onClose}>
+    <Modal title={`Item info - ${entry.name}`} onClose={onClose}>
       <div className="grid grid-cols-2 gap-3">
         <Field
           label="Type"
-          hint={bundled.type ? `Wiki: ${bundled.type}` : undefined}
+          hint={bundled.type ? `Bundled: ${bundled.type}` : undefined}
         >
           <Select
             value={draft.type}
@@ -2840,8 +2813,8 @@ function ItemInfoModal({
           label="Stack size"
           hint={
             bundled.stackSize !== null && bundled.stackSize !== undefined
-              ? `Wiki: ${bundled.stackSize}`
-              : "Not in the bundled wiki data"
+              ? `Bundled: ${bundled.stackSize}`
+              : "Not in the bundled data"
           }
         >
           <Input
@@ -2914,7 +2887,7 @@ function InfoModal({
   }
 
   return (
-    <Modal title={`Viewer info — ${entry.name}`} onClose={onClose} wide>
+    <Modal title={`Viewer info - ${entry.name}`} onClose={onClose} wide>
       <p className="text-xs text-ink-400 mb-2">
         Taming / utility notes shown on the public cluster viewer page. Simple
         markdown supported: <span className="mono"># headers</span>,{" "}
@@ -2928,7 +2901,7 @@ function InfoModal({
         rows={12}
         autoFocus
         className="w-full bg-ink-950 border border-ink-600 rounded-md p-3 text-sm text-ink-100 focus:outline-none focus:border-accent-500/60"
-        placeholder={`## Taming\nKnockout tame — prefers Sweet Vegetable Cake…\n\n## Utility\nPassive Achatina Paste production, great for Cementing Paste supply.`}
+        placeholder={`## Taming\nKnockout tame - prefers Sweet Vegetable Cake…\n\n## Utility\nPassive Achatina Paste production, great for Cementing Paste supply.`}
       />
       <div className="flex justify-end gap-2 mt-3">
         <Button variant="ghost" onClick={onClose}>
@@ -2983,7 +2956,7 @@ function AddEntryModal({
         {conflict && (
           <p className="text-xs rounded-lg border border-danger/30 bg-danger/5 text-red-300 px-3 py-2">
             This class is already catalogued as {describeOwner(conflict)}. A
-            class in two places makes pickers and validation ambiguous — edit
+            class in two places makes pickers and validation ambiguous - edit
             the existing entry instead, or move it here.
           </p>
         )}
@@ -3052,7 +3025,7 @@ function BulkImportModal({
     <Modal title={`Bulk import ${kind}`} onClose={onClose} wide>
       <p className="text-xs text-ink-400 mb-3">
         One entry per line: <span className="mono">Name | /Game/…/Thing.Thing</span>{" "}
-        — or just a blueprint path (a name will be derived).
+ - or just a blueprint path (a name will be derived).
       </p>
       <textarea
         value={text}

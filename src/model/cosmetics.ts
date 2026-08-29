@@ -2,8 +2,8 @@ import { z } from "zod";
 
 /**
  * Internal model for the Custom Cosmetic Mod list.
- * Published format is pipe-delimited text: `modId|1|1|,modId|1|1|` — see
- * StructureExample/Custom Cosmetic Mod List — Improved Commented Structure Guide.
+ * Published format is pipe-delimited text: `modId|1|1|,modId|1|1|` - see
+ * StructureExample/Custom Cosmetic Mod List - Improved Commented Structure Guide.
  */
 
 export const CosmeticEntrySchema = z.object({
@@ -23,8 +23,8 @@ export const CosmeticEntrySchema = z.object({
    * When a completed scrape last failed to find this mod on CurseForge; null
    * while it is still listed.
    *
-   * Deprecated entries keep everything known about them — the id, the name,
-   * the last-seen date — because "this mod used to be in our list" is exactly
+   * Deprecated entries keep everything known about them - the id, the name,
+   * the last-seen date - because "this mod used to be in our list" is exactly
    * the thing an admin needs when a player asks why their skin vanished. They
    * are simply held back from the published list, since a delisted mod in the
    * CCM list is a download every client retries and fails.
@@ -47,7 +47,7 @@ export type ScrapedMod = z.infer<typeof ScrapedModSchema>;
 
 /**
  * What the last applied scrape changed, kept so its Discord post can be
- * recovered after navigating away — a collector run takes several minutes and
+ * recovered after navigating away - a collector run takes several minutes and
  * the post is the whole point of it.
  */
 export const ScrapeResultSchema = z.object({

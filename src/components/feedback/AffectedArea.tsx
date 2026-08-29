@@ -8,7 +8,7 @@ import { Button, cx } from "../ui";
  * Which part of the app a report is about.
  *
  * Shown as a trail rather than an id, because the reporter has to be able to
- * confirm the picker chose what they meant — `production-rule-cycle-quantity`
+ * confirm the picker chose what they meant - `production-rule-cycle-quantity`
  * is for the maintainer, and "Production Rules › Creature Rule › Quantity" is
  * for the person who clicked it.
  *
@@ -18,7 +18,7 @@ import { Button, cx } from "../ui";
 
 export function AffectedArea({
   target,
-  optionalLabel = "Optional — helps us find the right code",
+  optionalLabel = "Optional - helps us find the right code",
 }: {
   target: FeedbackTargetSnapshot | null;
   optionalLabel?: string;

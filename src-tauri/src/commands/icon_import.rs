@@ -1,7 +1,7 @@
 //! Turning an extracted game texture into a project icon.
 //!
 //! Mod artwork arrives at whatever size and format the mod author cooked it
-//! at — 512x512 BC7, 1024x1024 with padding, occasionally something odd. What
+//! at - 512x512 BC7, 1024x1024 with padding, occasionally something odd. What
 //! the project stores is always the same thing: a 160x160 lossless WebP in the
 //! project's own images folder, which is precedence 1 in icon resolution and
 //! the only place a project-owned image is allowed to live.
@@ -33,7 +33,7 @@ const MAX_STEM_DEPTH: usize = 2;
 /// A relative name safe to write inside the images folder.
 ///
 /// One forward slash is allowed, so icons can be filed under the mod they
-/// came from — `AAHelicoprion/Helicoprion AA`. Everything else is rejected
+/// came from - `AAHelicoprion/Helicoprion AA`. Everything else is rejected
 /// rather than sanitised: a name that needed rewriting is a name the caller
 /// got wrong, and quietly storing an icon somewhere other than where it was
 /// asked for is worse than refusing.
@@ -122,7 +122,7 @@ pub fn icon_webp_from_bytes(bytes: &[u8], invert: bool) -> Result<Vec<u8>, Strin
         .map_err(|e| format!("Could not decode the image: {e}"))?;
     let mut source = decoded.to_rgba8();
     // Before scaling, so the resampler blends inverted colours rather than
-    // inverting the blend — the difference shows on antialiased edges.
+    // inverting the blend - the difference shows on antialiased edges.
     if invert {
         invert_colour(&mut source);
     }
@@ -150,7 +150,7 @@ fn images_dir(project_dir: &str, images_dir: &str) -> PathBuf {
 
 /// Writes one extracted texture into the project as `<stem>.webp`.
 ///
-/// Returns the file name, which is what a `file:` icon reference stores — the
+/// Returns the file name, which is what a `file:` icon reference stores - the
 /// images folder is the root those are resolved against, so a path never
 /// travels in shared project JSON.
 #[tauri::command]

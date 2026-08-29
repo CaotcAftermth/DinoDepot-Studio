@@ -21,7 +21,7 @@ import type { ReconcileInput, ReconcileResult } from "./sync";
  *
  * Nothing here touches Git's own merge machinery. A line-based merge of JSON
  * produces conflict markers *inside* the file, which the app then cannot parse
- * — turning a recoverable disagreement into a broken project.
+ * - turning a recoverable disagreement into a broken project.
  */
 
 /** The full result, including the conflicts the UI needs to present. */
@@ -44,7 +44,7 @@ export interface ReconcileOptions {
  *
  * `history.json` and `activity.json` are this install's record of what it did.
  * The shared record is the Git history itself, which is exactly why the spec
- * says not to synchronize them as append-only files — two administrators would
+ * says not to synchronize them as append-only files - two administrators would
  * fight over the same array forever.
  */
 const NOT_MERGED: string[] = [PROJECT_FILE.history, PROJECT_FILE.activity];
@@ -176,7 +176,7 @@ function mergeFile(
   const mine = parseOrUndefined(mineText);
   const theirs = parseOrUndefined(theirsText);
 
-  // Unparseable on either side is not something to merge — it is something to
+  // Unparseable on either side is not something to merge - it is something to
   // stop for. The quarantine path handles the local case; this covers a file
   // that arrived damaged.
   if (mine === undefined || theirs === undefined) {
@@ -265,7 +265,7 @@ export function applyAnswers(
  * Keeps both sides of a collision, under distinct identities.
  *
  * Only meaningful when two administrators added *different things* that happen
- * to share an id — which the merge already reports as `add-vs-add`. Theirs is
+ * to share an id - which the merge already reports as `add-vs-add`. Theirs is
  * re-identified rather than mine, so the ids on this computer stay stable and
  * nothing else referring to them breaks.
  *
@@ -289,7 +289,7 @@ function keepBoth(text: string, conflict: Conflict): string | null {
 
   const theirs = { ...(conflict.theirs as Record<string, unknown>) };
   // Derived from the original rather than random, so re-running the same merge
-  // produces the same file — a merge that is not deterministic shows a change
+  // produces the same file - a merge that is not deterministic shows a change
   // on every sync.
   const idKey = ["id", "modId"].find((key) => typeof theirs[key] === "string");
   if (!idKey) return null;
@@ -375,7 +375,7 @@ function writeResolution(
 /**
  * Finds the object carrying `id` anywhere in the tree and sets one field on it.
  *
- * An empty `field` replaces the whole item — which is what a delete-vs-edit or
+ * An empty `field` replaces the whole item - which is what a delete-vs-edit or
  * an add-vs-add answer means.
  */
 function setByItemId(
@@ -402,7 +402,7 @@ function setByItemId(
   }
   if (!isRecord(node)) return false;
 
-  // A map keyed by the id itself — icon assignments and the like.
+  // A map keyed by the id itself - icon assignments and the like.
   if (field !== "" && Object.prototype.hasOwnProperty.call(node, field)) {
     const looksLikeMap = Object.values(node).every(
       (v) => typeof v === "string" || typeof v === "number",

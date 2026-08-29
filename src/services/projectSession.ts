@@ -107,7 +107,7 @@ export async function lockStatus(dir: string): Promise<LockStatus> {
     return await ipc<LockStatus>("project_lock_status", { dir });
   } catch {
     // Browser mock mode, or an older backend. A lock that cannot be read is
-    // treated as absent — it is an advisory, and refusing to open a project
+    // treated as absent - it is an advisory, and refusing to open a project
     // because the advisory system is unavailable helps nobody.
     return NO_LOCK;
   }
@@ -154,7 +154,7 @@ export async function loadLocalState(
   try {
     text = await ipc<string | null>("local_state_get", { projectId });
   } catch {
-    /* first run, or no app-data folder — fall through to a fresh record */
+    /* first run, or no app-data folder - fall through to a fresh record */
   }
   if (!text) return newLocalProjectState(projectId, dir, name);
 
@@ -164,7 +164,7 @@ export async function loadLocalState(
     // mourned. The repository binding is re-established on next connect.
     return newLocalProjectState(projectId, dir, name);
   }
-  // The folder may have been moved since last time. The record follows it —
+  // The folder may have been moved since last time. The record follows it -
   // the id is the identity, not the path.
   return { ...parsed.data, localPath: dir, name, openedAt: new Date().toISOString() };
 }
@@ -208,7 +208,7 @@ export interface MigrationOutcome {
  *
  * The transformation is pure and already tested against fixtures; what happens
  * here is the part that touches files. Rust takes a complete snapshot, stages
- * every new file, reads them back, and only then swaps them in — so a failure
+ * every new file, reads them back, and only then swaps them in - so a failure
  * before the swap leaves the project exactly as it was, and a failure during it
  * leaves a snapshot to restore from.
  */
@@ -238,7 +238,7 @@ export async function runMigration(
     throw asStudioError(
       e,
       "migration.failed",
-      "This project could not be updated. Nothing was changed — your original is untouched.",
+      "This project could not be updated. Nothing was changed - your original is untouched.",
     );
   }
 
@@ -266,8 +266,8 @@ export interface QuarantineResult {
 /**
  * Sets a file aside that could not be understood.
  *
- * Called instead of carrying on with empty data. The old behaviour — hydrate
- * empty, keep going — meant the next autosave wrote nothing over a file that
+ * Called instead of carrying on with empty data. The old behaviour - hydrate
+ * empty, keep going - meant the next autosave wrote nothing over a file that
  * was merely unreadable, turning a recoverable problem into a lost roster.
  */
 export async function quarantineFile(
@@ -377,7 +377,7 @@ function parseSettings(text: string, readOnly: boolean): ProjectSettings {
     format: PROJECT_FORMAT,
     projectId: typeof record.projectId === "string" ? record.projectId : newId(),
     // Coerced so the in-memory copy satisfies this build's schema. Safe only
-    // because a read-only project is never written back — the file on disk
+    // because a read-only project is never written back - the file on disk
     // keeps its real version, and its unknown fields, untouched.
     schemaVersion: CURRENT_PROJECT_SCHEMA,
     name: typeof record.name === "string" && record.name ? record.name : "Unknown project",

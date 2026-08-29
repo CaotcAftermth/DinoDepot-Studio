@@ -9,10 +9,10 @@ application before any of it was written.
 **The webview cannot reach the network.** `tauri.conf.json` sets
 `connect-src 'self' ipc: http://ipc.localhost asset: http://asset.localhost`
 and nothing else. Every outbound request goes through Rust, exactly as package
-downloads and the wiki importer already do.
+downloads and other network-backed features already do.
 
 **The frontend cannot read a credential.** There is deliberately no
-`secret_get` command — see `src-tauri/src/commands/secrets.rs`. That is what
+`secret_get` command - see `src-tauri/src/commands/secrets.rs`. That is what
 makes "a report can never contain a GitHub token" a structural fact rather than
 a promise about redaction.
 
@@ -37,7 +37,7 @@ GitHub Issues · CaotcAftermth/DinoDepot-Studio
 
 Nothing in the desktop binary can file an issue, and nothing in it needs to. An
 installation that was fully compromised gains the ability to POST text to a
-rate-limited public endpoint — which is the ability it already had.
+rate-limited public endpoint - which is the ability it already had.
 
 ---
 
@@ -55,7 +55,7 @@ rate-limited public endpoint — which is the ability it already had.
 
 Behaviour lives in the store and the model, not in components. This project's
 test runner has `environment: "node"` and no DOM, so anything that needs a
-renderer to exercise is effectively untested — putting the decisions where they
+renderer to exercise is effectively untested - putting the decisions where they
 can be tested is what makes the coverage real.
 
 ---
@@ -67,7 +67,7 @@ can be tested is what makes the coverage real.
 `GET /api/health`, so an old installation is told plainly rather than failing
 oddly.
 
-The same Zod schemas validate the request on both sides — the service imports
+The same Zod schemas validate the request on both sides - the service imports
 them through `services/feedback-api/src/shared.ts`. Client and server cannot
 disagree about the shape, because there is only one declaration of it.
 
@@ -77,7 +77,7 @@ disagree about the shape, because there is only one declaration of it.
 
 `src/model/feedback/diagnostics.ts` builds the bundle from named fields.
 Anything nobody wrote a line for is simply not collected. The other
-arrangement — gather everything, then redact — fails the first time a field is
+arrangement - gather everything, then redact - fails the first time a field is
 added, because the redactor does not know about the field added yesterday.
 
 Collected:
@@ -88,7 +88,7 @@ Collected:
 - the selected component, when enabled: stable id and area plus the visible
   control label used by the element picker
 - up to 50 sanitized log entries
-- **opt-in, off by default:** project *shape* — counts and schema version
+- **opt-in, off by default:** project *shape* - counts and schema version
 
 Never collected or accepted:
 
@@ -107,7 +107,7 @@ what the implementation actually guarantees.
 ### Log sanitization
 
 `src/model/feedback/log.ts` holds a 100-entry ring in memory, never on disk.
-Sanitization happens **on the way out**, not on the way in — the developer
+Sanitization happens **on the way out**, not on the way in - the developer
 console should still show the real path while somebody is debugging, and only
 the copy that travels is reduced.
 
@@ -128,7 +128,7 @@ One that says `content-source-creature-editor` costs them a grep.
 
 Every reportable part of the interface is registered in
 `src/model/feedback/targets.ts`. Ids never describe where something sits on
-screen — `div:nth-child(4) > input` identifies a position in a layout, which is
+screen - `div:nth-child(4) > input` identifies a position in a layout, which is
 the thing that changes when somebody fixes the bug being reported.
 
 ### Adding a target
@@ -148,7 +148,7 @@ the thing that changes when somebody fixes the bug being reported.
    <div {...feedbackTarget("spawn-command-color-selector")}>
    ```
 
-   On a `Card` or `CollapsibleCard`, use the prop instead — it avoids a wrapper
+   On a `Card` or `CollapsibleCard`, use the prop instead - it avoids a wrapper
    element that could move the layout:
 
    ```tsx
@@ -156,8 +156,8 @@ the thing that changes when somebody fixes the bug being reported.
    ```
 
 TypeScript rejects an unregistered id. `targets.test.ts` also checks the naming
-rules for every entry, that every area has at least one target, and — the one
-that matters most in practice — that **every registered id has a call site**.
+rules for every entry, that every area has at least one target, and - the one
+that matters most in practice - that **every registered id has a call site**.
 
 That last check exists because the opposite failure is invisible: an id in the
 registry with nothing spreading it promises coverage the interface does not
@@ -186,7 +186,7 @@ Dynamic detail travels separately:
 Context is not an arbitrary object that gets serialized. Keys must be on
 `ALLOWED_CONTEXT_KEYS`; values must be scalars, are trimmed to 60 characters,
 and are **dropped entirely** if they look like a path, a URL, a token or a
-credential — because a value shaped like a drive path is a variable somebody
+credential - because a value shaped like a drive path is a variable somebody
 passed by mistake, and losing one line of context is cheaper than publishing an
 administrator's folder layout.
 
@@ -200,7 +200,7 @@ page-sized wrapper from swallowing its buttons. Input values are never used to
 name a target. The resolver is written against a small `TargetNode` interface
 rather than `HTMLElement`, which is why it can be tested without a DOM.
 
-Subtrees marked `data-feedback-ignore` are skipped — that is how the Feedback
+Subtrees marked `data-feedback-ignore` are skipped - that is how the Feedback
 Center avoids offering to file a bug against its own Cancel button.
 
 ---
@@ -234,12 +234,12 @@ submitted.
 
 Two searches, in `src/model/feedback/duplicates.ts`:
 
-1. `repo:o/r is:issue in:body "<component-id>"` — nearly an identity match,
+1. `repo:o/r is:issue in:body "<component-id>"` - nearly an identity match,
    because reports filed from the app carry the id in the body.
 2. `repo:o/r is:issue in:title,body <top keywords>`
 
 Neither filters by `area:` label: a repository whose labels have not been
-created yet would otherwise return nothing at all. Closed issues are included —
+created yet would otherwise return nothing at all. Closed issues are included -
 "fixed in 1.3.9" is often the answer the reporter wanted.
 
 Ranking happens on the client, against the full text of the draft, which the
@@ -259,7 +259,7 @@ anything.
 
 GitHub is the record; there is no database. The one caveat is that GitHub's
 search index lags creation by seconds, so a retry inside that window could in
-principle file twice — which is why the client also refuses to submit while a
+principle file twice - which is why the client also refuses to submit while a
 submission is in flight, and why that guard is claimed *before* the first
 `await` rather than after it.
 
@@ -276,13 +276,13 @@ An HTML comment in a reporter's own words cannot forge a marker:
 
 Records live in `%APPDATA%/com.ggfizz.dinodepotstudio/feedback/reports.json`,
 written by `feedback_state_set`. Machine-local, like the project records beside
-them, and never inside a project — a bug report is about the application, and
+them, and never inside a project - a bug report is about the application, and
 putting it in the project would synchronize one administrator's complaints to
 everybody on the cluster.
 
 There is deliberately **no** "list everything this installation reported"
 endpoint. Answering that would mean the service keeping a report-to-installation
-mapping — a database of exactly the kind this design avoids. The app knows its
+mapping - a database of exactly the kind this design avoids. The app knows its
 own issue numbers and asks about those.
 
 Refresh happens on opening My Reports, and only if the last one was more than
@@ -325,7 +325,7 @@ Feedback is non-critical and is built so it cannot take anything else down.
 
 ### The GitHub fallback
 
-With no service configured — or when one cannot be reached — the report opens
+With no service configured - or when one cannot be reached - the report opens
 in the browser at the repository's new-issue page with everything filled in
 except the diagnostics.
 
@@ -346,7 +346,7 @@ unsent reports can coexist safely.
 
 The picked file is decoded and re-encoded to lossless WebP **in Rust**
 (`feedback_read_image`). Re-encoding is the point: it proves the file really is
-an image — an executable renamed to `.png` fails to decode and is refused — and
+an image - an executable renamed to `.png` fails to decode and is refused - and
 it drops every scrap of metadata, including the EXIF GPS position that phone
 screenshots routinely carry.
 
@@ -360,7 +360,7 @@ was not kept.
 
 There is no automatic screen capture. Tauri 2 has no window-capture command,
 and adding a plugin would make the whole application request screen-recording
-permission at install time — a poor trade for a bug reporting feature. The seam
+permission at install time - a poor trade for a bug reporting feature. The seam
 is there: an `AttachmentSource` that captures a window drops in without
 touching anything above it.
 
@@ -371,14 +371,14 @@ touching anything above it.
 | Concern | How it is handled |
 | --- | --- |
 | GitHub credential in the app | There is none. The service authenticates as a GitHub App. |
-| Private key exposure | Lives in the service's secret store. Never in a response body — asserted by a test. |
+| Private key exposure | Lives in the service's secret store. Never in a response body - asserted by a test. |
 | Token in a report | The frontend has no command that returns a secret. Logs are sanitized, and credential-shaped reporter text is rejected on both sides. |
 | Project data leaking | Collection reads counts only and is off by default. Target metadata excludes entity names; an explicitly selected control may contribute its visible label. |
 | Reporter identity | A random `dd-install-<uuid>`, generated locally, deletable. No hardware, MAC, serial or IP fingerprinting. |
 | Rate-limit keys | Installation id and source address are salted and SHA-256 hashed. Only the digest is used, and it is useless outside the deployment. |
 | Markdown injection | HTML comments, `<details>`/`<summary>` and unclosed fences are neutralized. Users may still write Markdown. |
 | Request forgery | Nothing is authenticated by cookie or origin, so there is no session to ride. Abuse is a rate-limiting problem and is treated as one. |
-| Redirects | The Rust client sets `redirect: none` — the service has no reason to issue one, and following one would send a report somewhere the administrator did not name. |
+| Redirects | The Rust client sets `redirect: none` - the service has no reason to issue one, and following one would send a report somewhere the administrator did not name. |
 
 ### GitHub App permissions
 
@@ -405,7 +405,7 @@ See `services/feedback-api/README.md` for the full sequence. In outline:
 3. Optionally bind a KV namespace (durable rate limiting) and an R2 bucket
    (attachments).
 4. `wrangler deploy`.
-5. Create the labels — `labelSetupCommands()` prints the commands.
+5. Create the labels - `labelSetupCommands()` prints the commands.
 6. Ship the URL as `VITE_FEEDBACK_API_URL`. Development and self-hosted builds
    without a packaged URL may instead set one in **Settings › Feedback**.
 
@@ -423,7 +423,7 @@ context menu, and hides every visible entry point.
 
 The API address resolves in this order: `VITE_FEEDBACK_API_URL` at build time,
 then the administrator's setting only when the build has no managed address,
-then empty. Empty is a working configuration — the browser fallback needs no
+then empty. Empty is a working configuration - the browser fallback needs no
 service at all. A managed build shows connection status but does not expose an
 address editor, because changing it would redirect diagnostics and screenshots.
 
@@ -473,4 +473,4 @@ lag. Rare, and only possible if the client was restarted mid-submission.
 approximate. Bind one.
 
 **Inspector highlights nothing.** Nothing registered is under the pointer.
-Add a target, or report without one — the area is always optional.
+Add a target, or report without one - the area is always optional.

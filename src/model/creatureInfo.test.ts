@@ -207,7 +207,7 @@ describe("legacy migration", () => {
     }) as CreatureInfo;
     const input = out.methods[0].inputs[0];
     expect(input.role).toBe("host-creature");
-    // It pointed at an item, so it now needs re-picking — but the path is
+    // It pointed at an item, so it now needs re-picking - but the path is
     // kept rather than dropped so the reviewer can see what it was.
     expect(input.referenceType).toBe("creature");
     expect(input.bpPath).toBe("/Game/x/Thing.Thing");
@@ -658,7 +658,7 @@ describe("pruneCreatureInfo", () => {
     expect(out.abilities[0].rows.map((r) => r.id)).toEqual(["r2"]);
   });
 
-  it("keeps a row that has only a percentage — the item may come later", () => {
+  it("keeps a row that has only a percentage - the item may come later", () => {
     const out = pruneCreatureInfo(
       info({
         abilities: [
@@ -832,7 +832,7 @@ describe("override migration for pre-inheritance records", () => {
 
   it("keeps a legacy variant's own data visible instead of its parent's", () => {
     // The bug: a pre-inheritance record detected as a variant inherited every
-    // section, hiding its own work — and claiming a section then overwrote it.
+    // section, hiding its own work - and claiming a section then overwrote it.
     const legacy = CreatureInfoSchema.parse({
       methods: [{ id: "mine", name: "My own route" }],
       notes: "my own notes",

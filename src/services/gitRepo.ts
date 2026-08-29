@@ -11,7 +11,7 @@ import {
  *
  * Everything the app knows about Git goes through this interface, and the
  * implementation behind it is libgit2 in Rust. Keeping the boundary here means
- * the synchronization engine never names a Git concept it does not need — and
+ * the synchronization engine never names a Git concept it does not need - and
  * that replacing the implementation is one module's problem.
  *
  * Rust rejects with a JSON-encoded failure carrying a code. Decoding it here
@@ -38,7 +38,7 @@ export interface RepoState {
 
 export interface PushOutcome {
   pushed: boolean;
-  /** The branch moved on. Refetch and reconcile — never retry the same push. */
+  /** The branch moved on. Refetch and reconcile - never retry the same push. */
   rejected: boolean;
   commit: string;
 }
@@ -48,8 +48,8 @@ const KNOWN_CODES = new Set<string>(STUDIO_ERROR_CODES);
 /**
  * Turns a rejection from the Rust side into a StudioError.
  *
- * The Git layer serializes `{ code, message, detail }`; anything else — a
- * command that does not exist, a panic — falls through to the generic wrapper
+ * The Git layer serializes `{ code, message, detail }`; anything else - a
+ * command that does not exist, a panic - falls through to the generic wrapper
  * rather than being mistaken for a classified failure.
  */
 function decodeFailure(e: unknown, fallback: string): StudioError {
@@ -175,7 +175,7 @@ export interface FastForwardOutcome {
 /**
  * Takes the other administrators' work when this computer has none of its own.
  *
- * Refuses on a divergence or an unsaved edit rather than resolving either — the
+ * Refuses on a divergence or an unsaved edit rather than resolving either - the
  * first belongs to the semantic merge, and the second must never be checked
  * out over.
  */

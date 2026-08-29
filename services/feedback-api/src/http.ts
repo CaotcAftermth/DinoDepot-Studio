@@ -45,7 +45,7 @@ export function rateLimited(message: string, retryAfterSeconds: number): ApiErro
  * Permissive CORS, on purpose.
  *
  * The endpoint carries no credential and sets no cookie, so there is no
- * session for another origin to ride on — which is what the same-origin policy
+ * session for another origin to ride on - which is what the same-origin policy
  * exists to protect. Restricting the origin would buy nothing and would break
  * the browser build the interface is developed against. Abuse is a rate
  * limiting problem, and it is handled as one.
@@ -123,7 +123,7 @@ export async function readJson(request: Request): Promise<unknown> {
  * The address the request came from.
  *
  * `CF-Connecting-IP` where the platform sets it, falling back to the first
- * entry of `X-Forwarded-For`. Only ever hashed — see `security/identity.ts` —
+ * entry of `X-Forwarded-For`. Only ever hashed - see `security/identity.ts` -
  * and never stored, logged or put in an issue.
  */
 export function clientAddress(request: Request): string {

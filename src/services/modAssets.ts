@@ -6,8 +6,8 @@ import { ipc, isTauri } from "./ipc";
  * Discovery catalogues a mod's creatures and items from its manifest, which is
  * plain text and says nothing about what any asset *is*. Icons need the real
  * containers opened, which is what the asset sidecar does. Matching icons to
- * entries automatically does not work — measured across the local corpus, only
- * 5.5% of items have a name-matching icon — so the administrator picks, and
+ * entries automatically does not work - measured across the local corpus, only
+ * 5.5% of items have a name-matching icon - so the administrator picks, and
  * these functions are what a picker is built on.
  */
 
@@ -32,7 +32,7 @@ export function modFolderPath(
 /**
  * Every texture one mod carries, without decoding any of them.
  *
- * Seconds, not instant: the largest mod on the test corpus — 3,294 assets —
+ * Seconds, not instant: the largest mod on the test corpus - 3,294 assets -
  * takes about 7 seconds, a small one about one. Worth caching per mod for as
  * long as a picker is open.
  */
@@ -58,7 +58,7 @@ export async function modTexturePng(
  * Writes an image into the project as a 160x160 lossless WebP.
  *
  * Returns the file name, which is what a `file:` icon stores. The conversion
- * lives in the backend so the rule holds however the image was obtained — a
+ * lives in the backend so the rule holds however the image was obtained - a
  * mod texture, a file on disk, anything later.
  */
 export async function writeProjectIcon(
@@ -81,7 +81,7 @@ export async function writeProjectIcon(
 /**
  * Where an entry's icon is filed inside the project images folder.
  *
- * Grouped one level deep by the mod it came from — `AAHelicoprion/Rex` — so a
+ * Grouped one level deep by the mod it came from - `AAHelicoprion/Rex` - so a
  * project that has assigned a few hundred icons stays navigable, and two mods
  * both shipping a "Rex" cannot overwrite each other. Anything the filesystem
  * dislikes is replaced rather than dropped, so two distinct names cannot
@@ -108,7 +108,7 @@ export function iconFileStem(group: string, entryName: string): string {
  * A mod's art is overwhelmingly these: for every icon there are a dozen
  * 4096x4096 surfaces feeding a shader. Excluding them by default is the
  * difference between a list somebody can read and one they have to dig
- * through — but which words those are is a judgement about how mod authors
+ * through - but which words those are is a judgement about how mod authors
  * happen to name things, so the list is a starting point the administrator
  * edits rather than a rule.
  */
@@ -162,7 +162,7 @@ function nameTokens(name: string): string[] {
  * Whether one keyword marks this texture.
  *
  * Short keywords match whole words only. `ao` as a substring would hit
- * "Chaos", and `metal` would hit "Metalwork" — hiding art somebody wanted is
+ * "Chaos", and `metal` would hit "Metalwork" - hiding art somebody wanted is
  * worse than showing a surface map they can skip past.
  */
 export function matchesKeyword(name: string, keyword: string): boolean {
@@ -223,7 +223,7 @@ export function rankTextures(
     (texture.width <= 512 && texture.height <= 512 ? 0 : 2);
 
   // Deduplicated by path first. The list is rendered keyed by path, and React
-  // does not define what a list with repeated keys does on re-render — the
+  // does not define what a list with repeated keys does on re-render - the
   // observed symptom was a search box that filtered nothing, because the
   // rendered rows never reconciled.
   const distinct = [...new Map(textures.map((t) => [t.path, t])).values()];

@@ -39,12 +39,12 @@ describe("renderDiscordPost", () => {
 
   it("still renders the id and the updated date when asked for", () => {
     const out = renderDiscordPost(
-      format({ header: "", line: "- [{name}](<{url}>) — `{id}`{updatedSuffix}" }),
+      format({ header: "", line: "- [{name}](<{url}>) - `{id}`{updatedSuffix}" }),
       mods,
     );
     expect(out).toBe(
-      "- [Hat Pack](<https://cf/hat>) — `111` (updated 2 days ago)\n" +
-        "- [Cape Pack](<https://cf/cape>) — `222`",
+      "- [Hat Pack](<https://cf/hat>) - `111` (updated 2 days ago)\n" +
+        "- [Cape Pack](<https://cf/cape>) - `222`",
     );
   });
 
@@ -202,7 +202,7 @@ describe("renderMention", () => {
   });
 
   /**
-   * Half a mention is not a ping — Discord renders `<@&>` as literal text in
+   * Half a mention is not a ping - Discord renders `<@&>` as literal text in
    * the middle of an announcement, which is worse than pinging nobody.
    */
   it("renders nothing for a role or user with no id", () => {

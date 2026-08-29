@@ -45,7 +45,7 @@ import { Badge, Button, Card, cx, Field, Input, Modal, Select } from "./ui";
  * from a real profile the game produced and rewrites the fields that are
  * mapped out, leaving every unmapped byte exactly as the game wrote it. That
  * is the difference between a file the server accepts and a plausible-looking
- * one it rejects — and it is why the template picker is step one rather than
+ * one it rejects - and it is why the template picker is step one rather than
  * an option.
  */
 
@@ -75,7 +75,7 @@ function draftFromSummary(summary: ProfileSummary): Draft {
     eosId: summary.eosId,
     tribeId: summary.tribeId,
     level: String(summary.level),
-    // One decimal, and written back at the same precision — rounding harder
+    // One decimal, and written back at the same precision - rounding harder
     // would show up as an edit to a field the admin never touched.
     experience: String(Math.round(summary.experience * 10) / 10),
     engramPoints: String(summary.engramPoints),
@@ -106,7 +106,7 @@ function editsFrom(draft: Draft, template: ProfileSummary): ProfileEdits {
     engramPoints: Number(draft.engramPoints) || 0,
     explorerNotes: Number(draft.explorerNotes) || 0,
     // A rebuilt survivor gets their level but none of the template's
-    // allocation — the player spends the points themselves in game.
+    // allocation - the player spends the points themselves in game.
     clearStatPoints: true,
     skillTrees: Object.fromEntries(
       Object.entries(draft.skillTrees).map(([name, v]) => [
@@ -118,7 +118,7 @@ function editsFrom(draft: Draft, template: ProfileSummary): ProfileEdits {
     // it does not, `applyProfileEdits` reports it as skipped rather than
     // inventing one.
     ascension: draft.ascension.trim() ? Number(draft.ascension) || 0 : undefined,
-    // Only retarget when it actually differs — a no-op rewrite of the level
+    // Only retarget when it actually differs - a no-op rewrite of the level
     // names is a change worth not making.
     mapPackage:
       targetPackage && targetPackage !== template.mapPackage ? targetPackage : undefined,
@@ -276,7 +276,7 @@ export function CreateProfileModal({
     setSaving(true);
     try {
       const bytes = serializeArkProfile(preview.profile);
-      // Read back what was actually written rather than trusting the draft —
+      // Read back what was actually written rather than trusting the draft -
       // if an edit did not land, the roster must not claim it did.
       const summary = readProfileSummary(parseArkProfile(bytes));
 
@@ -314,7 +314,7 @@ export function CreateProfileModal({
 
       onCreated(roster, updated.id);
       toast.success(
-        `Profile created — copy it to the server as ${profileFileNameFor(summary.eosId)}`,
+        `Profile created - copy it to the server as ${profileFileNameFor(summary.eosId)}`,
       );
       onClose();
     } catch (e) {
@@ -328,9 +328,9 @@ export function CreateProfileModal({
     <Modal title="Create a player profile" onClose={onClose} xl>
       <p className="text-sm text-ink-300 mb-4">
         Rebuilds a lost <span className="mono">.arkprofile</span> from one the
-        game produced. Identity and progression are rewritten; everything else —
+        game produced. Identity and progression are rewritten; everything else -
         appearance, engrams, explorer notes, the parts of this format nobody has
-        mapped out — is inherited from the template byte for byte.
+        mapped out - is inherited from the template byte for byte.
       </p>
 
       {!template ? (
@@ -339,7 +339,7 @@ export function CreateProfileModal({
             A clean slate is the right starting point for a rebuild: a fresh
             spawn with nothing spent, so the player levels and assigns their own
             points. Any other profile from the same map works too, but whatever
-            it carries — engrams, appearance, notes — carries into the new one.
+            it carries - engrams, appearance, notes - carries into the new one.
           </p>
 
           <div className="rounded-lg border border-ink-700 bg-ink-850 p-3 mb-3">
@@ -354,7 +354,7 @@ export function CreateProfileModal({
             {slates.length === 0 ? (
               <p className="text-xs text-ink-400">
                 None registered yet. Make a fresh character on each map, take its
-                profile, and register it here — it becomes the one-click starting
+                profile, and register it here - it becomes the one-click starting
                 point for every rebuild on that map.
               </p>
             ) : (
@@ -409,7 +409,7 @@ export function CreateProfileModal({
           </div>
           {!isTauri && (
             <p className="text-xs text-amber-400 mt-3">
-              Reading a template file from disk needs the desktop app — a profile
+              Reading a template file from disk needs the desktop app - a profile
               already in the roster works here.
             </p>
           )}
@@ -437,7 +437,7 @@ export function CreateProfileModal({
                   hint={
                     eosOk
                       ? `File will be named ${profileFileNameFor(draft!.eosId)}`
-                      : "32 hex characters — the game finds a profile by this"
+                      : "32 hex characters - the game finds a profile by this"
                   }
                 >
                   <Input
@@ -553,7 +553,7 @@ export function CreateProfileModal({
               <Card title="4 · Skill trees">
                 <p className="text-sm text-ink-300 mb-3">
                   Each tree stores two numbers the game calls Level and Index.
-                  What they mean is not documented — these are the template's
+                  What they mean is not documented - these are the template's
                   values, to adjust and test against a live server.
                 </p>
                 <div className="flex flex-col gap-2">
@@ -605,7 +605,7 @@ export function CreateProfileModal({
                 </div>
                 <p className="text-xs text-ink-400 mt-3">
                   The template's {template.summary.completedMilestones} completed
-                  milestones carry over as they are — which specific milestones a
+                  milestones carry over as they are - which specific milestones a
                   survivor has done is a list of names, not a number, so it is not
                   something this can synthesise.
                 </p>
@@ -636,11 +636,11 @@ export function CreateProfileModal({
                       <span className="text-ink-300">{change.field}</span>
                       <div className="flex items-baseline gap-1.5 mono">
                         <span className="text-ink-500 line-through truncate max-w-[110px]">
-                          {change.from || "—"}
+                          {change.from || " - "}
                         </span>
                         <span className="text-ink-500">→</span>
                         <span className="text-accent-400 truncate max-w-[110px]">
-                          {change.to || "—"}
+                          {change.to || " - "}
                         </span>
                       </div>
                     </li>
@@ -648,7 +648,7 @@ export function CreateProfileModal({
                 </ul>
               ) : (
                 <p className="text-sm text-ink-400">
-                  Nothing yet — the draft still matches the template.
+                  Nothing yet - the draft still matches the template.
                 </p>
               )}
               {preview && preview.skipped.length > 0 && (
@@ -677,7 +677,7 @@ export function CreateProfileModal({
                 Stop the server, drop the file into{" "}
                 <span className="mono">
                   {/* The folder on disk carries the package name, not the
-                      friendly one — sending an admin to "Scorched Earth/"
+                      friendly one - sending an admin to "Scorched Earth/"
                       would send them to a folder that does not exist. */}
                   ShooterGame/Saved/SavedArks/
                   {packageForMap(draft!.map) || template.summary.mapPackage || "…"}/

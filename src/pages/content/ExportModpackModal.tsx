@@ -28,7 +28,7 @@ import { toast } from "../../components/toast";
  *
  * Saving to disk and opening a pull request build the same folder, so what a
  * submitter inspects locally is exactly what would be proposed. The PR route
- * always shows its plan — which repository, which branch, which files — and
+ * always shows its plan - which repository, which branch, which files - and
  * waits for a deliberate confirmation, because opening a pull request on a
  * public repository is not something to discover after the fact.
  */
@@ -54,7 +54,7 @@ export function ExportModpackModal({
   const [busy, setBusy] = useState("");
   const [prUrl, setPrUrl] = useState("");
 
-  /** The images folder icons are read from — the setting, else the project's. */
+  /** The images folder icons are read from - the setting, else the project's. */
   const imagesDir = imagesDirSetting?.trim() || (dir ? `${dir}/images` : "");
 
   const pack: Modpack = sourceToModpack(source, catalog, {
@@ -94,7 +94,7 @@ export function ExportModpackModal({
       const sep = target.includes("\\") && !target.includes("/") ? "\\" : "/";
       await writePackToDisk(assembled, `${target}${sep}${dirName}`);
       toast.success(
-        `Saved ${dirName}/ — ${assembled.files.length} file${assembled.files.length === 1 ? "" : "s"}` +
+        `Saved ${dirName}/ - ${assembled.files.length} file${assembled.files.length === 1 ? "" : "s"}` +
           (assembled.missingIcons.length
             ? ` · ${assembled.missingIcons.length} icon(s) could not be read`
             : ""),
@@ -140,7 +140,7 @@ export function ExportModpackModal({
 
   return (
     <Modal
-      title={`Export modpack — ${source.name}`}
+      title={`Export modpack - ${source.name}`}
       onClose={onClose}
       wide
       footer={
@@ -200,7 +200,7 @@ export function ExportModpackModal({
               placeholder="Your name or Discord handle"
             />
           </Field>
-          <Field label="Pack id" hint="Stable across versions — set once">
+          <Field label="Pack id" hint="Stable across versions - set once">
             <Input value={pack.meta.id} readOnly className="text-ink-400" />
           </Field>
         </div>

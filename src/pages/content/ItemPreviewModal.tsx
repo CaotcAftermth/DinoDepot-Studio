@@ -9,7 +9,7 @@ import { MarkdownText } from "../../components/ReferenceText";
 import { Badge, Button, Modal } from "../../components/ui";
 
 /**
- * A read-only wrap-up of everything recorded for one item — the counterpart to
+ * A read-only wrap-up of everything recorded for one item - the counterpart to
  * CreaturePreviewModal, opened the same way, from the row's icon.
  *
  * Deliberately much smaller than the creature version: an item's record is
@@ -28,8 +28,7 @@ export function ItemPreviewModal({
   const settings = useProjectStore((s) => s.settings);
   const key = normalizeBpPath(entry.bpPath);
 
-  // The resolved view: what the admin recorded, falling back to the bundled
-  // wiki figures — which is what the row and the viewer both show.
+  // Resolved view: administrator values with bundled defaults.
   const info = itemInfoOf(catalog, entry.bpPath);
   const bundled = bundledItemInfo(entry.bpPath);
   const stored = catalog.itemInfo[key];
@@ -44,7 +43,7 @@ export function ItemPreviewModal({
     facts.push({
       label: "Type",
       value: info.type,
-      source: !stored?.type && bundled.type ? "from the bundled wiki data" : undefined,
+      source: !stored?.type && bundled.type ? "from bundled data" : undefined,
     });
   }
   if (info.rarity) facts.push({ label: "Rarity", value: info.rarity });
@@ -54,7 +53,7 @@ export function ItemPreviewModal({
       value: String(info.stackSize),
       source:
         stored?.stackSize === null || stored?.stackSize === undefined
-          ? "from the bundled wiki data"
+          ? "from bundled data"
           : undefined,
     });
   }
@@ -70,15 +69,15 @@ export function ItemPreviewModal({
 
   return (
     <Modal
-      title={`Preview — ${entry.name}`}
+      title={`Preview - ${entry.name}`}
       onClose={onClose}
       wide
       footer={
         <div className="flex items-center justify-between">
           <span className="text-xs text-ink-500">
             {stored
-              ? "Values recorded for this cluster, over the bundled wiki data."
-              : "Nothing recorded for this cluster — showing bundled wiki data."}
+              ? "Values recorded for this cluster override bundled data."
+              : "Nothing recorded for this cluster; showing bundled data."}
           </span>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>

@@ -7,8 +7,8 @@ import { Button, Modal } from "./ui";
  * `window.confirm` is unreliable inside the Tauri webview, so destructive
  * actions use this instead: styled like the rest of the app, works in browser
  * mock mode, and can spell out exactly what is about to be lost. Some
- * decisions aren't yes/no — picking a parent creature over its variant, or
- * saving versus discarding — so a prompt can offer several named answers.
+ * decisions aren't yes/no - picking a parent creature over its variant, or
+ * saving versus discarding - so a prompt can offer several named answers.
  */
 
 export interface ChoiceOption {
@@ -23,7 +23,7 @@ export interface ChoiceOption {
 interface ChoiceRequest {
   title: string;
   message: string;
-  /** Extra detail lines — e.g. what will be deleted along with it. */
+  /** Extra detail lines - e.g. what will be deleted along with it. */
   details?: string[];
   options: ChoiceOption[];
   /** Label for the dismiss button; null hides it (Esc still dismisses). */
@@ -85,7 +85,7 @@ export function ConfirmHost() {
   const answer = useConfirmStore((s) => s.answer);
   if (!request) return null;
 
-  // Stacked buttons once there is more than one real answer — side-by-side
+  // Stacked buttons once there is more than one real answer - side-by-side
   // options with sentence-long labels are a coin flip to read.
   const stacked = request.options.length > 1;
 

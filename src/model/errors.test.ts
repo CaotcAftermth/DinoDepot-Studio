@@ -155,7 +155,7 @@ describe("redactSecrets", () => {
 
   /**
    * A fine-grained token starts `github_pat_`, which also matches nothing in
-   * the shorter pattern — but only if the longer one is tried first. Getting
+   * the shorter pattern - but only if the longer one is tried first. Getting
    * that order wrong leaves the tail of the token in the log.
    */
   it("redacts a fine-grained token whole", () => {

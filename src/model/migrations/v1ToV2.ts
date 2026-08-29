@@ -11,7 +11,7 @@ import type { MigrationOutcome, MigrationStep, ProjectFiles } from "./types";
  *
  * 1. The project gains an immutable `projectId`. Until now a project was
  *    identified by its folder path and its repository name, both of which
- *    change — a rename orphaned every binding that pointed at it.
+ *    change - a rename orphaned every binding that pointed at it.
  * 2. The GitHub repository and the two local folder paths move out to
  *    machine-local state. Sharing a project meant sharing one administrator's
  *    `C:\Users\…` paths, and the first save on the other machine overwrote
@@ -56,7 +56,7 @@ export const v1ToV2: MigrationStep = {
       schemaVersion: 2,
       minimumStudioVersion: "0.2.0",
       // Schema 1 never recorded when a project was made. Stamping the
-      // migration time is honest — it is the oldest moment we can prove.
+      // migration time is honest - it is the oldest moment we can prove.
       createdAt: context.now.toISOString(),
       capabilities: {},
       ...carried,
@@ -73,7 +73,7 @@ export const v1ToV2: MigrationStep = {
       modsDir: asString(raw.modsDir),
     };
     if (owner && repo) {
-      // Bound by name only — schema 1 never knew GitHub's numeric id. The
+      // Bound by name only - schema 1 never knew GitHub's numeric id. The
       // binding is completed the first time the repository is reached, which
       // is also when a rename since the last session gets noticed.
       localHints.source = {
@@ -112,7 +112,7 @@ export const v1ToV2: MigrationStep = {
  * Drops `lastKnownIp` wherever it appears in the roster.
  *
  * Walks the tree rather than reaching into `players[].profile.summary`,
- * because the field also lands on clean-slate summaries — and a privacy sweep
+ * because the field also lands on clean-slate summaries - and a privacy sweep
  * that only covers the places it was expected is not a sweep.
  */
 function stripLastKnownIp(text: string): { text: string; removed: number } {

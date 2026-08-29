@@ -40,11 +40,11 @@ describe("official ASA overlay", () => {
 
   it("carries the reference links through", () => {
     const catalog = emptyCatalog();
-    catalog.official.docsUrl = "https://ark.wiki.gg/wiki/Server_configuration";
+    catalog.official.docsUrl = "https://docs.example.com/server-configuration";
     catalog.official.iniNotes = "[ServerSettings]\nXPMultiplier=2.0";
 
     const source = effectiveOfficialSource(catalog);
-    expect(source.docsUrl).toContain("ark.wiki.gg");
+    expect(source.docsUrl).toContain("docs.example.com");
     expect(source.iniNotes).toContain("XPMultiplier");
   });
 

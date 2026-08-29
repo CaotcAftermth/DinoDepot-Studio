@@ -51,7 +51,7 @@ const mediaType = (file) => {
 // A development build writes to a gitignored tree of its own. It must never
 // land inside the published pack folder, because everything under
 // Public_Content is an immutable artifact other administrators resolve by
-// integrity — a half-finished local iteration has no business being there.
+// integrity - a half-finished local iteration has no business being there.
 const versionDir = dev
   ? path.join(repository, "dev-packages", packageId, version)
   : path.join(packDir, "versions", version);

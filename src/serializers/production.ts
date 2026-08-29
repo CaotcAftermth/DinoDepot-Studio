@@ -75,7 +75,7 @@ export function parseProduction(text: string): ProductionDraft {
   if (!result.success) {
     const issue = result.error.issues[0];
     throw new Error(
-      `Not a valid Dino Depot v2 production file: ${issue.path.join(".")} — ${issue.message}`,
+      `Not a valid Dino Depot v2 production file: ${issue.path.join(".")} - ${issue.message}`,
     );
   }
   const rules: CreatureRule[] = result.data.production.map((rule) => ({

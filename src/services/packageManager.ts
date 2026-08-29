@@ -518,7 +518,7 @@ export function downloadedAsLegacyInstall(downloaded: DownloadedPackage): {
 }
 
 /**
- * Installs any supported local package folder — `modpack` or `official`.
+ * Installs any supported local package folder - `modpack` or `official`.
  *
  * Same verification as a download: manifest shape and identity, per-file size
  * and SHA-256, traversal safety, and PNG/WebP file signatures. The path itself
@@ -543,8 +543,8 @@ export async function installBundledOfficialPackage(
 ): Promise<InstalledPackage | null> {
   if (!isTauri) return null;
   // Installed natively: the files are already on this disk, and carrying a
-  // few thousand of them through IPC as base64 — once out to be hashed, once
-  // back to be written — was seconds of first-launch delay for no gain. Every
+  // few thousand of them through IPC as base64 - once out to be hashed, once
+  // back to be written - was seconds of first-launch delay for no gain. Every
   // file is still verified against the manifest, and the manifest against the
   // project's pin, by whoever reads the installed copy back.
   const info = await ipc<InstalledPackageInfo | null>(

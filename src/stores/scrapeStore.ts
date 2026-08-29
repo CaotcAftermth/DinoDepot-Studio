@@ -14,7 +14,7 @@ import type { ScrapedMod } from "../model/cosmetics";
  *
  * The run takes several minutes and sweeps every page of the category. It used
  * to live in the Collector component's state, with the event listener released
- * on unmount — so opening Settings to check something mid-run detached the
+ * on unmount - so opening Settings to check something mid-run detached the
  * stream, dropped the log and the partial results, and left the sidecar
  * grinding away with nobody listening. The work was gone even though the
  * browser was still doing it.
@@ -23,8 +23,8 @@ import type { ScrapedMod } from "../model/cosmetics";
  * sidecar exits, whatever is or is not on screen in between. Coming back to
  * the page re-reads the same state and the progress is still counting.
  *
- * Deliberately not persisted: a run cannot survive the app closing — the
- * sidecar goes with it — so writing it to disk would only produce a stuck
+ * Deliberately not persisted: a run cannot survive the app closing - the
+ * sidecar goes with it - so writing it to disk would only produce a stuck
  * "Scraping…" on the next launch.
  */
 
@@ -40,7 +40,7 @@ export interface ScrapeState {
    * result has been applied. Keyed by CurseForge project id.
    */
   result: Map<string, ScrapedMod> | null;
-  /** Set when the run ended without a `done` — cancelled, crashed, blocked. */
+  /** Set when the run ended without a `done` - cancelled, crashed, blocked. */
   endedWithoutResult: boolean;
   /** Mods seen so far this run. Drives the progress readout mid-sweep. */
   collectedCount: number;
@@ -96,7 +96,7 @@ export const useScrapeStore = create<ScrapeState>((set, get) => {
         );
         break;
       case "done":
-        pushLog(`Scrape complete — ${event.count} mods collected`);
+        pushLog(`Scrape complete - ${event.count} mods collected`);
         set({ result: new Map(collected), endedWithoutResult: false });
         break;
       case "error":

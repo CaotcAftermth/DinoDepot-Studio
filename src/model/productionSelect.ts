@@ -19,7 +19,7 @@ import { shortClassName } from "../services/spawnCommands";
  * class sneaks a second rule past it.
  *
  * Disabled rules count. Two rules for one creature is a mistake whether or not
- * one of them is currently switched off — and a disabled rule is usually one
+ * one of them is currently switched off - and a disabled rule is usually one
  * the admin means to switch back on.
  */
 export function findDuplicateRule(
@@ -40,7 +40,7 @@ export function findDuplicateRule(
 }
 
 /**
- * A rule the admin has not put anything into yet — scaffolding created by
+ * A rule the admin has not put anything into yet - scaffolding created by
  * "+ Add rule" that is safe to clear away when the choice lands elsewhere.
  */
 export function isUntouchedRule(rule: CreatureRule): boolean {
@@ -57,7 +57,7 @@ export function isUntouchedRule(rule: CreatureRule): boolean {
  * path came from the picker or was typed by hand: manual parent assignment
  * first, then the official class-stem match, then the mod's variant tag.
  *
- * A path that is in no content source still resolves — the class stem is
+ * A path that is in no content source still resolves - the class stem is
  * enough to recognise `Rex_Character_BP_Aberrant` as a Rex.
  */
 export function resolveSelectionParent(

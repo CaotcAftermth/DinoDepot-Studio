@@ -40,7 +40,7 @@ import { Badge, Button, cx, Modal } from "../../components/ui";
  * Tabbed rather than one long scroll: the record has six sections, and an
  * ability that is itself a per-item table ends up four levels deep if every
  * section shares one column. Giving each section the full width costs a click
- * and buys back a readable shape — which is the whole point of a preview.
+ * and buys back a readable shape - which is the whole point of a preview.
  */
 export function CreaturePreviewModal({
   entry,
@@ -96,9 +96,9 @@ export function CreaturePreviewModal({
   const originStyle = origin ? mapStyle(settings, origin) : null;
   const entryNote = catalog.notes[key] ?? "";
 
-  /** How much each section has to show — drives the tab bar and its counts. */
+  /** How much each section has to show - drives the tab bar and its counts. */
   const counts: Record<InfoSection, number> = {
-    // Availability is acquisition content in its own right — a creature marked
+    // Availability is acquisition content in its own right - a creature marked
     // Unavailable with no methods has been described, not left blank.
     acquisition: info.methods.length + (info.availability ? 1 : 0),
     spawns: info.spawnMaps.length,
@@ -121,7 +121,7 @@ export function CreaturePreviewModal({
 
   return (
     <Modal
-      title={`Preview — ${entry.name}`}
+      title={`Preview - ${entry.name}`}
       onClose={onClose}
       wide
       footer={
@@ -242,7 +242,7 @@ export function CreaturePreviewModal({
                   {info.methods.length === 0 && (
                     <span className="text-ink-500">
                       {" "}
-                      — no routes recorded yet.
+ - no routes recorded yet.
                     </span>
                   )}
                 </div>
@@ -417,8 +417,8 @@ function ItemChip({ bpPath, name }: { bpPath: string; name: string }) {
 /**
  * One acquisition route, in full.
  *
- * The phases and their steps are the point of the record — a count of them
- * tells a reader nothing they can act on — so they are always expanded here.
+ * The phases and their steps are the point of the record - a count of them
+ * tells a reader nothing they can act on - so they are always expanded here.
  */
 function MethodCard({
   method,

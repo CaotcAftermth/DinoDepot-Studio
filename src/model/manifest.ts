@@ -7,7 +7,7 @@ import { compareVersions, STUDIO_NAME, STUDIO_VERSION } from "./studio";
  *
  * Hydrating a project means running it through a schema built for one exact
  * shape. Doing that first would mean a project written by a *newer* Studio
- * fails to parse and looks corrupt — when in fact it is fine and this build is
+ * fails to parse and looks corrupt - when in fact it is fine and this build is
  * simply behind. So the header is read as raw JSON, on its own, and it decides
  * what happens next: open, migrate, or open read-only.
  *
@@ -33,7 +33,7 @@ export const MINIMUM_STUDIO_VERSION = "0.3.0";
  * Optional feature flags a project may declare.
  *
  * A capability is a promise about the project's *contents*, not about the
- * Studio that wrote it — "this project's roster has been sanitized", say. An
+ * Studio that wrote it - "this project's roster has been sanitized", say. An
  * unknown capability is preserved and ignored, never an error.
  */
 export const ProjectCapabilitiesSchema = z.record(z.string(), z.boolean()).default({});
@@ -43,7 +43,7 @@ export const ProjectHeaderSchema = z.object({
   format: z.literal(PROJECT_FORMAT),
   /**
    * Immutable identity. Repository names and folder paths both change; this
-   * does not, which is why it — and never a path — is what local state,
+   * does not, which is why it - and never a path - is what local state,
    * delivery manifests and repository bindings are keyed by.
    */
   projectId: z.string().min(1),
@@ -105,7 +105,7 @@ export function readProjectHeader(text: string): ReadHeaderResult {
     return { ...empty, reason: e instanceof Error ? e.message : String(e) };
   }
   if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
-    // Parsed fine, so the file is not damaged — it is simply not a project.
+    // Parsed fine, so the file is not damaged - it is simply not a project.
     return {
       ...empty,
       kind: "not-a-project",
@@ -135,7 +135,7 @@ export function readProjectHeader(text: string): ReadHeaderResult {
   }
 
   // Schema 1 predates the format marker. It is recognised by the combination
-  // of `schemaVersion: 1` and the two fields every v1 project had — matching on
+  // of `schemaVersion: 1` and the two fields every v1 project had - matching on
   // `schemaVersion` alone would claim any JSON file that happens to carry one.
   const looksLegacy =
     schemaVersion === 1 && typeof record.name === "string" && "defaults" in record;
@@ -166,7 +166,7 @@ export function readProjectHeader(text: string): ReadHeaderResult {
 export type ProjectCompatibility =
   /** Open normally. */
   | "open"
-  /** Older schema — run migrations, then open. */
+  /** Older schema - run migrations, then open. */
   | "migrate"
   /** Newer schema, or a Studio requirement this build fails. Open read-only. */
   | "read-only"
@@ -188,7 +188,7 @@ export interface CompatibilityResult {
  *
  * The rule that matters most is the read-only one: an older Studio must never
  * write to a newer schema. It cannot know what it would be dropping, and the
- * project is shared — the damage lands on somebody else's machine.
+ * project is shared - the damage lands on somebody else's machine.
  */
 export function assessCompatibility(
   header: ReadHeaderResult,
@@ -223,7 +223,7 @@ export function assessCompatibility(
     };
   }
 
-  // A project may demand a newer Studio even at a schema this build knows —
+  // A project may demand a newer Studio even at a schema this build knows -
   // that is the escape hatch for a change that is compatible on paper but not
   // in practice.
   if (compareVersions(studioVersion, header.minimumStudioVersion) < 0) {

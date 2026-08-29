@@ -27,7 +27,7 @@ import {
  * The admin-facing view of a `.arkprofile`: the handful of fields that identify
  * a survivor and describe their progression, lifted out of the property tree.
  *
- * Reading is safe on any profile. Writing is not a solved problem — see
+ * Reading is safe on any profile. Writing is not a solved problem - see
  * `applyProfileEdits`, which is deliberately narrow about what it will touch.
  */
 
@@ -42,7 +42,7 @@ const STATS = ["MyData", "MyPersistentCharacterStats"];
 /**
  * ARK's character stat order. The game stores allocated points as repeated
  * `ByteProperty` entries carrying this index, and omits any stat still at zero
- * — so the index is the identity of the stat, never its position in a list.
+ * - so the index is the identity of the stat, never its position in a list.
  */
 export const PROFILE_STATS = [
   { index: 0, label: "Health" },
@@ -66,7 +66,7 @@ const COMPLETED_MILESTONES_PROP = "CompletedMilestones";
 const CURRENT_MILESTONES_PROP = "CurrentMilestones";
 
 /**
- * Ascension has not appeared in any profile inspected so far — not as an empty
+ * Ascension has not appeared in any profile inspected so far - not as an empty
  * field, but absent entirely, which this format also does for any value still
  * at its default. So the property's real name is unknown, and inventing one
  * would produce a file the server has no reason to accept.
@@ -87,7 +87,7 @@ const ASCENSION_CANDIDATES = [
 /**
  * ASA map package names to the names used on the Maps setting. Derived from the
  * level name the profile records, which is the only statement of origin a
- * profile carries — and a profile is per-map, so it matters.
+ * profile carries - and a profile is per-map, so it matters.
  */
 const MAP_PACKAGES: [packageName: string, mapName: string][] = [
   ["TheIsland_WP", "The Island"],
@@ -132,7 +132,7 @@ export const ProfileStatPointsSchema = z.object({
 export type ProfileStatPoints = z.infer<typeof ProfileStatPointsSchema>;
 
 /**
- * One entry of `MilestoneLevelsAndIndexes` — the skill tree. Each tree the map
+ * One entry of `MilestoneLevelsAndIndexes` - the skill tree. Each tree the map
  * offers ("Global", plus one named after the map) carries an IntPoint whose two
  * halves the game calls Level and Index. What they mean exactly is not
  * documented, so they are carried through as the two numbers they are rather
@@ -151,7 +151,7 @@ export type ProfileSkillTree = z.infer<typeof ProfileSkillTreeSchema>;
  * player record down with it.
  */
 export const ProfileSummarySchema = z.object({
-  /** EOS product user id as lowercase hex — also the file's proper name. */
+  /** EOS product user id as lowercase hex - also the file's proper name. */
   eosId: z.string().default(""),
   /** Identity provider the id belongs to, e.g. "RedpointEOS". */
   platform: z.string().default(""),
@@ -159,7 +159,7 @@ export const ProfileSummarySchema = z.object({
   accountName: z.string().default(""),
   /** In-game survivor name. */
   characterName: z.string().default(""),
-  /** The number `ListPlayers` reports, as a string — it is a uint64. */
+  /** The number `ListPlayers` reports, as a string - it is a uint64. */
   playerDataId: z.string().default(""),
   tribeId: z.string().default(""),
   /** Friendly map name, empty when the package name is not recognised. */
@@ -174,22 +174,22 @@ export const ProfileSummarySchema = z.object({
   engramPoints: z.number().default(0),
   engramsLearned: z.number().default(0),
   explorerNotes: z.number().default(0),
-  /** Words in the note bitmask — 32 bits each, so the ceiling for a note count. */
+  /** Words in the note bitmask - 32 bits each, so the ceiling for a note count. */
   noteCapacity: z.number().default(0),
   deaths: z.number().default(0),
   statPoints: z.array(ProfileStatPointsSchema).default([]),
-  /** Total allocated points — should equal `extraLevel` at the default rate. */
+  /** Total allocated points - should equal `extraLevel` at the default rate. */
   spentPoints: z.number().default(0),
   /** Persistent buffs still applied at logout, by blueprint name. */
   activeBuffs: z.array(z.string()).default([]),
-  /** Save format version — 5, or 7 for the Unreal 5.5 maps. */
+  /** Save format version - 5, or 7 for the Unreal 5.5 maps. */
   saveVersion: z.number().default(5),
   /** Skill tree progress per tree. Empty on maps that have no skill tree. */
   skillTrees: z.array(ProfileSkillTreeSchema).default([]),
   completedMilestones: z.number().default(0),
   currentMilestones: z.number().default(0),
   /**
-   * Ascension count, or null when the profile carries no such field — which
+   * Ascension count, or null when the profile carries no such field - which
    * so far is every profile seen. Null means "unknown", not "zero".
    */
   ascension: z.number().nullable().default(null),
@@ -198,7 +198,7 @@ export const ProfileSummarySchema = z.object({
 });
 export type ProfileSummary = z.infer<typeof ProfileSummarySchema>;
 
-/** The player data object — the one every profile leads with. */
+/** The player data object - the one every profile leads with. */
 export function playerObject(profile: ArkProfile) {
   return (
     profile.objects.find((o) => o.className.includes("PrimalPlayerDataBP")) ??
@@ -218,7 +218,7 @@ function statPointsOf(profile: ArkProfile): ProfileStatPoints[] {
 
 /**
  * Skill tree state. Each element of `MilestoneLevelsAndIndexes` is a struct of
- * a tree name and an IntPoint, which is packed binary — two int32s.
+ * a tree name and an IntPoint, which is packed binary - two int32s.
  */
 function skillTreesOf(profile: ArkProfile): ProfileSkillTree[] {
   const stats = findPath(playerObject(profile).properties, STATS);
@@ -267,7 +267,7 @@ function ascensionOf(profile: ArkProfile): { value: number | null; prop: string 
  *
  * Version 5 named the buff in the object's own class path. Version 7 gives
  * every one of them the same generic class and puts the real identity in a
- * `ForPrimalBuffClassString` property, so that is preferred where it exists —
+ * `ForPrimalBuffClassString` property, so that is preferred where it exists -
  * otherwise a Lost Colony profile reads as four buffs all called
  * "PrimalBuffPersistentData".
  */
@@ -294,7 +294,7 @@ function activeBuffsOf(profile: ArkProfile): string[] {
  * The IP the account last connected from.
  *
  * Read on demand and never stored. It used to sit in `ProfileSummary`, which is
- * kept alongside the roster — so it travelled into `players.json` and, once the
+ * kept alongside the roster - so it travelled into `players.json` and, once the
  * roster started synchronizing, into a repository's permanent history. It is
  * personal data with no operational use beyond the moment an administrator is
  * looking at an imported file, so that is the only place it now exists.
@@ -383,7 +383,7 @@ export function isValidEosId(value: string): boolean {
 
 /**
  * The fields a generated profile may set. Everything omitted is inherited from
- * the template unchanged — which is the point: the parts of this format nobody
+ * the template unchanged - which is the point: the parts of this format nobody
  * has mapped out are exactly the parts worth not touching.
  */
 export interface ProfileEdits {
@@ -406,7 +406,7 @@ export interface ProfileEdits {
   /**
    * How many explorer notes to mark found. Approximate by nature: the game
    * stores one bit per note and nobody has mapped bits to notes, so this sets
-   * the first N bits — the count comes out right, the specific notes may not.
+   * the first N bits - the count comes out right, the specific notes may not.
    */
   explorerNotes?: number;
   /** Skill tree progress by tree name. Trees absent from the template are skipped. */
@@ -415,7 +415,7 @@ export interface ProfileEdits {
   ascension?: number;
   /** Retarget the save to another map, e.g. moving a template to Aberration. */
   mapPackage?: string;
-  /** Blank the recorded IP — it is stale for a generated profile, and personal. */
+  /** Blank the recorded IP - it is stale for a generated profile, and personal. */
   clearNetworkAddress?: boolean;
 }
 
@@ -437,7 +437,7 @@ export interface ProfileEditResult {
  *
  * Only properties that already exist are written. A missing property means the
  * template does not carry that field, and inventing one would mean guessing at
- * a byte layout the game has to accept — so it is reported as skipped instead,
+ * a byte layout the game has to accept - so it is reported as skipped instead,
  * and the admin can pick a template that has it.
  */
 export function applyProfileEdits(
@@ -677,7 +677,7 @@ export function applyProfileEdits(
       } else if (points > 0 && stats?.children) {
         // The game omits stats sitting at zero, so allocating into one that the
         // template never touched means adding the property. Its shape is cloned
-        // wholesale from a sibling — the two save versions tag a property quite
+        // wholesale from a sibling - the two save versions tag a property quite
         // differently, and copying the real thing sidesteps knowing which.
         const sibling = findAll(stats.children, LEVEL_POINTS_PROP)[0];
         if (!sibling) {

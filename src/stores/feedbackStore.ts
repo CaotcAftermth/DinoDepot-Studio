@@ -66,15 +66,15 @@ import { chooseDialog } from "../components/confirm";
 /**
  * The Feedback Center, as a state machine.
  *
- * Every entry point — the Help menu, the right-click menu, the keyboard
- * shortcut, an error boundary — calls into this one store. That is not tidiness
+ * Every entry point - the Help menu, the right-click menu, the keyboard
+ * shortcut, an error boundary - calls into this one store. That is not tidiness
  * for its own sake: the same report can be started four ways and must behave
  * identically each time, and four components each holding their own draft is
  * how "the inspector lost what I had typed" happens.
  *
  * The components above are deliberately thin. Everything with a decision in it
  * is here, in plain functions over plain data, so it can be exercised without
- * rendering anything — which matters because this project's test runner has no
+ * rendering anything - which matters because this project's test runner has no
  * DOM at all.
  *
  * ## Nothing here may break the app
@@ -344,7 +344,7 @@ export const useFeedbackStore = create<FeedbackStoreState>((set, get) => ({
    * A bug report that already knows what went wrong.
    *
    * The message and the first few stack frames go in, sanitized the same way a
-   * log line is — so the paths of the machine that crashed are not part of the
+   * log line is - so the paths of the machine that crashed are not part of the
    * report. Severity starts at major because an error boundary firing means
    * part of the interface stopped rendering.
    */
@@ -408,7 +408,7 @@ export const useFeedbackStore = create<FeedbackStoreState>((set, get) => ({
     const choices: DiagnosticChoices = { ...draft.diagnosticChoices, [key]: value };
     set({ draft: { ...draft, diagnosticChoices: choices } });
     // The panel shows what will actually be sent, so it is rebuilt rather than
-    // filtered — a toggle that only hides a row would be a lie about the payload.
+    // filtered - a toggle that only hides a row would be a lie about the payload.
     void get().openDiagnostics();
   },
 
@@ -533,7 +533,7 @@ export const useFeedbackStore = create<FeedbackStoreState>((set, get) => ({
 
     // Claimed before the first `await`, not after it. Collecting diagnostics
     // yields, and a guard that only ran before that yield let a double click
-    // through — two issues for one report, which is exactly what the report id
+    // through - two issues for one report, which is exactly what the report id
     // exists to prevent.
     set({ submitting: true, failure: null });
 
@@ -591,7 +591,7 @@ export const useFeedbackStore = create<FeedbackStoreState>((set, get) => ({
         set,
         get,
         pending,
-        "No feedback service is set up for this build. Your report is saved on this computer — you can still open it on GitHub.",
+        "No feedback service is set up for this build. Your report is saved on this computer - you can still open it on GitHub.",
         "unknown",
         false,
       );
@@ -653,7 +653,7 @@ export const useFeedbackStore = create<FeedbackStoreState>((set, get) => ({
    * The reporter recognised their problem in an existing issue.
    *
    * Nothing is filed. The local record points at the issue that already exists,
-   * so My Reports still tracks it and still shows when it is fixed — which is
+   * so My Reports still tracks it and still shows when it is fixed - which is
    * the thing they wanted from reporting it.
    */
   async linkExisting(candidate) {
@@ -818,7 +818,7 @@ export const useFeedbackStore = create<FeedbackStoreState>((set, get) => ({
   async discardAndClose() {
     const state = get();
     // A record that only ever existed as this draft goes with it. One that has
-    // been submitted before — a retry being abandoned — stays.
+    // been submitted before - a retry being abandoned - stays.
     const record = existingRecord(state);
     if (record && record.status === "draft") {
       set({ records: removeRecord(state.records, record.localId) });
@@ -837,7 +837,7 @@ export const useFeedbackStore = create<FeedbackStoreState>((set, get) => ({
   /**
    * Brings My Reports up to date.
    *
-   * Only on request, and only when the last refresh is old enough — GitHub is
+   * Only on request, and only when the last refresh is old enough - GitHub is
    * not something to poll, and a list that refetches on every render would
    * exhaust a rate limit shared by everybody using this build.
    */

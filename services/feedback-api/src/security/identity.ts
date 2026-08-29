@@ -4,7 +4,7 @@
  * Two values reach this service that could identify somebody: the
  * installation id the app generates, and the address the request came from.
  * Neither is ever stored or logged as it arrived. They are salted and hashed
- * on the way in, and only the digest is used — as a rate-limiting key, and for
+ * on the way in, and only the digest is used - as a rate-limiting key, and for
  * nothing else.
  *
  * The salt is per deployment. It makes the digests useless outside this
@@ -24,7 +24,7 @@ async function sha256Hex(value: string): Promise<string> {
 /**
  * A short digest, which is all a rate-limit key needs.
  *
- * Sixteen hex characters is 64 bits — far past the point where a collision
+ * Sixteen hex characters is 64 bits - far past the point where a collision
  * matters here, and short enough to keep the stored keys small.
  */
 export async function hashIdentifier(value: string, salt: string): Promise<string> {
@@ -35,8 +35,8 @@ export async function hashIdentifier(value: string, salt: string): Promise<strin
 /**
  * Whether the client presented the shared key, when one is required.
  *
- * Compared in constant time. The comparison is not the weak point here — a key
- * shipped inside a downloadable application is not a secret at all — but
+ * Compared in constant time. The comparison is not the weak point here - a key
+ * shipped inside a downloadable application is not a secret at all - but
  * writing the check the other way would set a bad example for the next thing
  * that needs one.
  */

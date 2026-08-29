@@ -9,7 +9,7 @@ import type { BugSeverity, FeedbackType } from "./types";
  * and whether a human has looked at it yet.
  *
  * Nothing here fails when a label is missing from the repository. A label that
- * does not exist is dropped by the service and the issue is still filed —
+ * does not exist is dropped by the service and the issue is still filed -
  * losing a report because somebody renamed a label would be a poor trade.
  */
 
@@ -44,7 +44,7 @@ export function severityLabelFor(severity: BugSeverity | null): string {
  * The labels for a report, in a stable order.
  *
  * Deduplicated and ordered so two identical reports always produce the same
- * list — which is what lets a test assert on it, and what stops a diff between
+ * list - which is what lets a test assert on it, and what stops a diff between
  * two issues showing a difference that is only ordering.
  */
 export function labelsForReport(report: {
@@ -68,7 +68,7 @@ export function labelsForReport(report: {
 
 export interface LabelDefinition {
   name: string;
-  /** Six hex digits, no leading hash — the form the GitHub API takes. */
+  /** Six hex digits, no leading hash - the form the GitHub API takes. */
   color: string;
   description: string;
 }
@@ -78,7 +78,7 @@ export interface LabelDefinition {
  * creates them in.
  *
  * Kept here rather than in the documentation so the list can be asserted
- * against what `labelsForReport` and `status.ts` actually produce — a
+ * against what `labelsForReport` and `status.ts` actually produce - a
  * documented label that nothing emits, or an emitted label nobody documented,
  * are both bugs this table makes visible.
  */

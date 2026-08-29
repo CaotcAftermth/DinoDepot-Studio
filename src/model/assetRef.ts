@@ -126,7 +126,7 @@ export function legacyAssetValue(ref: AssetRef): string {
     case "remote":
       return ref.url;
     case "official":
-      // Version-free on purpose — see `officialVersion` above.
+      // Version-free on purpose - see `officialVersion` above.
       return `official:${normalizeAssetPath(ref.path) ?? ref.path}`;
     case "project":
     case "package":

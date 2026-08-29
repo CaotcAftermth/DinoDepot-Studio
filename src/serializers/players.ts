@@ -6,7 +6,7 @@ import type { PlayersFile } from "../model/players";
  * Deliberately not the raw draft file: the stored `.arkprofile` reference is
  * local to the admin's project folder and means nothing to anyone else, so it
  * is reduced to "there is one, from this map, as of this date". Everything
- * published here is personal data — see the warning on the Publish page.
+ * published here is personal data - see the warning on the Publish page.
  */
 export interface PublishedPlayer {
   discordName: string;

@@ -26,7 +26,7 @@ import type { FeedbackReport } from "../../model/feedback/types";
  * The client for the DinoDepot Feedback service.
  *
  * Every request goes out through Rust. That is not indirection for its own
- * sake — the desktop build's content security policy has no external
+ * sake - the desktop build's content security policy has no external
  * `connect-src`, so the webview cannot open a connection at all. The practical
  * effect is the one worth having: the code that renders untrusted project
  * content is not the code that talks to the network.

@@ -197,7 +197,7 @@ describe("parent-first mode", () => {
 
   it("shows a variant whose parent is not itself in the catalog", () => {
     // The class resolves to an official creature, but that creature is not in
-    // the sources being searched — hiding the child would make it unreachable.
+    // the sources being searched - hiding the child would make it unreachable.
     const onlyVariants = source({
       id: "mod-3",
       name: "Variants only",

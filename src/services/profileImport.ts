@@ -15,7 +15,7 @@ import { parseArkProfile } from "../serializers/arkprofile";
  * A dropped profile has to find its own way to a roster entry: the admin is
  * dropping a folder of files named after EOS ids, and matching them up by hand
  * is the tedium this replaces. Everything here is pure so the matching rules
- * can be tested without a filesystem — the page does the file IO.
+ * can be tested without a filesystem - the page does the file IO.
  */
 
 /** A file handed to the importer, however it arrived. */
@@ -49,7 +49,7 @@ export interface ProfileImportResult {
   filled: PlayerFieldKey[];
   conflicts: FieldConflict[];
   /**
-   * Set when the roster was updated but the file itself could not be saved —
+   * Set when the roster was updated but the file itself could not be saved -
    * the identifiers landed, the profile did not, and those are worth telling
    * apart.
    */
@@ -189,7 +189,7 @@ export function chooseProfileFiles(
  *
  * The EOS id is the only identifier the game guarantees is stable and unique,
  * so it wins outright. The others are fallbacks for rosters filled in by hand
- * before any profile was imported — a survivor name in particular is only a
+ * before any profile was imported - a survivor name in particular is only a
  * hint, since two players can pick the same one.
  */
 export function matchPlayer(
@@ -204,7 +204,7 @@ export function matchPlayer(
 
   /**
    * A roster entry whose EOS ID is known and different is a different account,
-   * full stop — no weaker signal can override that.
+   * full stop - no weaker signal can override that.
    *
    * Without this the fallbacks below quietly merge unrelated players: two
    * accounts can share a Player ID (a generated profile inherits its
@@ -224,7 +224,7 @@ export function matchPlayer(
   if (byPlayerId) return { player: byPlayerId, matchedBy: "playerId" };
 
   const byName = possible.filter((p) => eq(p.gameName, summary.characterName));
-  // An ambiguous name is no match at all — guessing between two survivors is
+  // An ambiguous name is no match at all - guessing between two survivors is
   // worse than making the admin say which one.
   if (byName.length === 1) return { player: byName[0], matchedBy: "characterName" };
 
@@ -235,7 +235,7 @@ export function matchPlayer(
  * Copies what the profile knows into blank roster fields.
  *
  * Only blanks are filled. A value the admin typed is theirs, so a disagreement
- * is reported as a conflict for them to settle rather than being overwritten —
+ * is reported as a conflict for them to settle rather than being overwritten -
  * an imported file is evidence, not authority.
  */
 export function applySummaryToPlayer(
@@ -334,7 +334,7 @@ export function planImport(existing: Player[], files: ProfileFile[]): ImportPlan
  * The name a profile is stored under inside the project's profiles/ folder.
  *
  * The EOS id leads because it is unique per account and is what the game names
- * profiles by — copying one back to a server is then a straight copy. Player
+ * profiles by - copying one back to a server is then a straight copy. Player
  * ID is a poor key on its own: a generated profile inherits its template's,
  * so two roster entries can carry the same one and the second would overwrite
  * the first. The roster id is the last resort for an entry with neither.

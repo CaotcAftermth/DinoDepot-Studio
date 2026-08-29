@@ -10,7 +10,7 @@ import officialIndex from "../../Public_Content/Official_Icons/index.json";
  * Core Content from, and the installer verifies it against the integrity in
  * `index.json`. Rebuilding the package without re-staging leaves the two
  * disagreeing, and the only symptom is the current version reporting itself
- * missing — no error names the stale copy.
+ * missing - no error names the stale copy.
  *
  * Staging is build output, so a fresh clone has nothing here yet; the check
  * only runs once something has been staged.

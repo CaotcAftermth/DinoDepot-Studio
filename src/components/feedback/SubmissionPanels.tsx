@@ -13,9 +13,9 @@ import { Button, Modal } from "../ui";
  */
 
 const THANKS: Record<string, string> = {
-  bug: "Thanks — that is exactly the kind of report that gets things fixed.",
+  bug: "Thanks - that is exactly the kind of report that gets things fixed.",
   suggestion: "Thanks for helping improve DinoDepot Studio.",
-  feature_request: "Thanks — feature requests are read, even the ambitious ones.",
+  feature_request: "Thanks - feature requests are read, even the ambitious ones.",
 };
 
 export function SubmittedPanel() {
@@ -80,7 +80,7 @@ export function SubmittedPanel() {
  * The failure screen.
  *
  * Its first sentence says whether the report is actually safe on disk. Retry
- * is offered only when retrying could plausibly work — after a refusal it
+ * is offered only when retrying could plausibly work - after a refusal it
  * would just fail again, and the useful route is GitHub.
  */
 export function FailedPanel() {
@@ -127,7 +127,7 @@ export function FailedPanel() {
         {failure.saved
           ? "It is in My reports as “Not sent”, so you can come back to it. "
           : "Keep DinoDepot open while you edit or try again. "}
-        Opening it on GitHub fills in everything except the diagnostics — those
+        Opening it on GitHub fills in everything except the diagnostics - those
         are left out because a link is not a safe place to carry them.
       </p>
     </Modal>

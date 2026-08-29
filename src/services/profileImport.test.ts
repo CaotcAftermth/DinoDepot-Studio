@@ -92,8 +92,8 @@ describe("matchPlayer", () => {
   });
 
   it("never falls back past a known, different EOS ID", () => {
-    // Two accounts sharing a Player ID is normal — a generated profile inherits
-    // its template's — and survivors are routinely called the same thing.
+    // Two accounts sharing a Player ID is normal - a generated profile inherits
+    // its template's - and survivors are routinely called the same thing.
     // Neither may override the EOS ID saying they are different people.
     const roster = [
       player({
@@ -249,7 +249,7 @@ describe("groupProfileFiles", () => {
     ]);
     expect(groups).toHaveLength(1);
     expect(groups[0].candidates).toHaveLength(2);
-    // Same Player ID, so the newest simply wins — no question to ask.
+    // Same Player ID, so the newest simply wins - no question to ask.
     expect(groups[0].needsChoice).toBe(false);
     expect(groups[0].candidates[0].fileName).toBe("b.arkprofile");
   });

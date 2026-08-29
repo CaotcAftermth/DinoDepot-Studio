@@ -28,7 +28,7 @@ import {
  *
  * Two operations, and the difference between them matters. *Connecting* is the
  * administrator choosing a repository by name, once. *Verifying* is everything
- * afterwards, and goes by id — so a rename is followed rather than mistaken for
+ * afterwards, and goes by id - so a rename is followed rather than mistaken for
  * the repository having vanished.
  */
 
@@ -92,8 +92,8 @@ export interface VerifyResult {
 /**
  * Re-checks a bound repository, by id.
  *
- * Everything this can discover — a rename, a transfer, a permission that was
- * taken away, a repository that was deleted — is handled by *reporting* it. The
+ * Everything this can discover - a rename, a transfer, a permission that was
+ * taken away, a repository that was deleted - is handled by *reporting* it. The
  * binding is updated where the id still matches and left alone where it does
  * not; nothing here clears a binding, creates a replacement, or touches the
  * project on disk.
@@ -115,8 +115,8 @@ export async function verifyBinding(
 
   const slug = bindingSlug(binding);
   try {
-    // By id where we have one. A binding that has never been reached — a
-    // migrated schema-1 project — has only a name to go on, and this is the
+    // By id where we have one. A binding that has never been reached - a
+    // migrated schema-1 project - has only a name to go on, and this is the
     // one moment it is allowed to be used.
     const identity = binding.githubId
       ? await github.repoById(state.githubAccountId, binding.githubId)
@@ -168,7 +168,7 @@ export async function assertBoundIdentity(
 /**
  * Points the local repository at its remote.
  *
- * Called after a binding is established or followed through a rename — the
+ * Called after a binding is established or followed through a rename - the
  * stored remote URL is rebuilt from the current owner and name, and the old one
  * only worked while GitHub's redirect lasted.
  */
@@ -206,7 +206,7 @@ export interface ConnectionReport {
   pairing: PairingProblem | null;
   /** Operations that must be switched off right now. */
   disabled: ("sync" | "publish")[];
-  /** Changes worth mentioning — renames, transfers. */
+  /** Changes worth mentioning - renames, transfers. */
   notes: string[];
 }
 
@@ -224,7 +224,7 @@ export async function checkConnection(
   for (const result of [source, delivery]) {
     for (const op of result?.availability?.disabled ?? []) disabled.add(op);
   }
-  // A blocking suitability problem is as disqualifying as being unreachable —
+  // A blocking suitability problem is as disqualifying as being unreachable -
   // a repository the token cannot write to cannot be synced to either.
   if (source && blockingIssues(source.issues).length > 0) {
     disabled.add("sync");

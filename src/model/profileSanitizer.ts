@@ -15,7 +15,7 @@ import {
  * The gate every `.arkprofile` passes through before it leaves this computer.
  *
  * A profile is a player's save. It carries the IP address they last connected
- * from, which is personal data that has no business in a repository — not even
+ * from, which is personal data that has no business in a repository - not even
  * a private one, because "private" is a setting somebody can change, and a
  * repository's history keeps what was committed to it forever.
  *
@@ -24,7 +24,7 @@ import {
  *
  * The verification after serializing is the point. Clearing the field and
  * trusting that it worked would be one bug away from uploading an IP anyway,
- * so the sanitized bytes are parsed *back* and checked — the same way anybody
+ * so the sanitized bytes are parsed *back* and checked - the same way anybody
  * receiving the file would read it.
  */
 
@@ -56,7 +56,7 @@ export interface SanitizedProfile {
  * it meant to.
  *
  * Deliberately the identity and progression an administrator would notice
- * missing — a save that comes back with the right IP removed and the wrong
+ * missing - a save that comes back with the right IP removed and the wrong
  * level is not a success.
  */
 const PRESERVED_FIELDS = [
@@ -189,7 +189,7 @@ export { ArkProfileError };
 /**
  * FNV-1a over bytes, as 8 hex characters.
  *
- * Not a security hash and not used as one — it answers "are these the same
+ * Not a security hash and not used as one - it answers "are these the same
  * bytes I already uploaded", where a collision costs a redundant upload.
  */
 export function hashBytes(bytes: Uint8Array): string {
@@ -208,7 +208,7 @@ export function hashBytes(bytes: Uint8Array): string {
 /**
  * Anything that looks like an IP address.
  *
- * Used as a last check over text about to be committed — belt and braces
+ * Used as a last check over text about to be committed - belt and braces
  * against a field nobody thought to look at. IPv4 with a plausible-octet
  * requirement, plus the IPv6 shapes an address actually takes.
  */
@@ -220,7 +220,7 @@ const IP_PATTERNS: RegExp[] = [
    * Those two shapes are what an address actually looks like, and requiring one
    * of them is what stops `ratio 1:2` and a timestamp being flagged. The
    * lookarounds are on `[\w:]` rather than `\b`, because a word boundary does
-   * not exist before a leading colon — which is exactly the `::1` case.
+   * not exist before a leading colon - which is exactly the `::1` case.
    */
   /(?<![\w:])(?:[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4}){7}|(?:[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4})*)?::(?:[0-9a-fA-F]{1,4}(?::[0-9a-fA-F]{1,4})*)?)(?![\w:])/g,
 ];

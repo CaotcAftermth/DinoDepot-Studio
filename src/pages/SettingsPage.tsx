@@ -127,7 +127,7 @@ function useUnsavedChangesPrompt(dirty: boolean, save: () => Promise<boolean>) {
     ({ nextLocation }) =>
       dirty && !nextLocation.pathname.startsWith("/settings"),
   );
-  // `save` closes over the draft, so it changes every render — a ref keeps the
+  // `save` closes over the draft, so it changes every render - a ref keeps the
   // effect from re-running (and re-prompting) underneath an open dialog.
   const saveRef = useRef(save);
   saveRef.current = save;
@@ -162,7 +162,7 @@ function useUnsavedChangesPrompt(dirty: boolean, save: () => Promise<boolean>) {
 /**
  * Input for a value kept in Windows Credential Manager. A stored secret is
  * never read back into the app, so the field stands in a row of asterisks to
- * show at a glance that something *is* saved — "Replace" clears it for typing.
+ * show at a glance that something *is* saved - "Replace" clears it for typing.
  */
 
 function DiscordWebhookCard({ projectId }: { projectId: string }) {
@@ -237,7 +237,7 @@ function DiscordWebhookCard({ projectId }: { projectId: string }) {
         "The webhook stored by an earlier version is deleted from Windows " +
         "Credential Manager. No project gets it.",
       details: [
-        "Nothing in Discord changes — the webhook itself still exists there.",
+        "Nothing in Discord changes - the webhook itself still exists there.",
       ],
       confirmLabel: "Discard",
       danger: true,
@@ -268,14 +268,14 @@ function DiscordWebhookCard({ projectId }: { projectId: string }) {
         Used by "Post to Discord" in the Cosmetics Collector (e.g. announcing
         new custom cosmetic mods). Create one in your Discord server: Channel
         settings → Integrations → Webhooks. Stored in Windows Credential
-        Manager against <em>this</em> project — another project on this
+        Manager against <em>this</em> project - another project on this
         computer has its own, and starts without one.
       </p>
       {legacy && (
         <div className="text-xs rounded-md border border-amber-flag/30 bg-amber-flag/5 text-amber-300 px-2 py-2 mb-3 flex items-center gap-2 flex-wrap">
           <span className="flex-1 min-w-0">
             An earlier version stored one webhook for the whole computer. Give
-            it to this project, or discard it — it is offered once.
+            it to this project, or discard it - it is offered once.
           </span>
           <Button onClick={adopt}>Use it here</Button>
           <Button variant="ghost" onClick={discardLegacy}>
@@ -381,7 +381,7 @@ interface CategoryProps {
 /**
  * A line explaining that a card writes immediately and ignores Save.
  *
- * Two save contracts share this page — the draft written by Save, and the
+ * Two save contracts share this page - the draft written by Save, and the
  * machine-local cards that store a credential the moment they are used. Saying
  * so beside them is cheaper than making them behave alike, since a credential
  * has no business sitting in an unsaved draft.
@@ -449,7 +449,7 @@ function PublishingCategory({ draft, update }: CategoryProps) {
       >
         {/* Repository-relative, and genuinely shared: every administrator
             publishes to the same layout. Which repository that layout lives
-            in is machine-local — see the GitHub section. */}
+            in is machine-local - see the GitHub section. */}
         <div className="grid grid-cols-2 gap-3">
           {(
             [
@@ -496,8 +496,8 @@ function DiscordCategory({ draft, update }: CategoryProps) {
   return (
     <>
       <MachineLocalNote>
-        the webhook below is kept in Windows Credential Manager — on this
-        computer, for this project — and stored the moment you press Store.
+        the webhook below is kept in Windows Credential Manager - on this
+        computer, for this project - and stored the moment you press Store.
         The post format waits for Save.
       </MachineLocalNote>
 
@@ -645,7 +645,7 @@ function SimulatorDefaultsCard({
 
 /**
  * Wording for the Custom Cosmetic Mod announcement. Kept as a template so the
- * post can be reworded without a rebuild — the Collector renders it for both
+ * post can be reworded without a rebuild - the Collector renders it for both
  * "Copy Discord post" and "Post to Discord".
  */
 /**
@@ -676,7 +676,7 @@ function MentionField({
         mention.kind === "none"
           ? "Nobody is pinged. Added below the footer when set."
           : needsId && !id
-            ? "Enter the id — until then, nothing is added to the post."
+            ? "Enter the id - until then, nothing is added to the post."
             : `Added below the footer as ${rendered}`
       }
     >
@@ -699,7 +699,7 @@ function MentionField({
           {DISCORD_MENTION_KINDS.map((k) => (
             <option key={k.kind} value={k.kind}>
               {k.label}
-              {k.syntax ? ` — ${k.syntax}` : ""}
+              {k.syntax ? ` - ${k.syntax}` : ""}
             </option>
           ))}
         </Select>
@@ -745,7 +745,7 @@ function CcmPostFormatCard({
   return (
     <Card
       feedback={feedbackTarget("settings-discord")}
-      // Full width with its own two columns — stacked, this was by far the
+      // Full width with its own two columns - stacked, this was by far the
       // tallest card and left a hole beside its neighbour.
       //
       // `col-span-full`, not `col-span-2`: a two-column span inside a
@@ -758,11 +758,11 @@ function CcmPostFormatCard({
           <Toggle
             checked={format.nitro}
             onChange={(nitro) => set({ nitro })}
-            label={`Nitro — ${limit.toLocaleString()} char limit`}
+            label={`Nitro - ${limit.toLocaleString()} char limit`}
             title={
               "On: a copied post is split at 4,000 characters, the limit for a " +
               "Nitro account. Off: 2,000, what everyone else gets. " +
-              "Posting through the webhook always splits at 2,000 — Discord " +
+              "Posting through the webhook always splits at 2,000 - Discord " +
               "applies no Nitro limit to a webhook."
             }
           />
@@ -822,7 +822,7 @@ function CcmPostFormatCard({
             </pre>
             <p className="text-xs text-ink-500 mt-1">
               {preview.length.toLocaleString()} of {limit.toLocaleString()}{" "}
-              characters with {SAMPLE_POST_MODS.length} sample mods —{" "}
+              characters with {SAMPLE_POST_MODS.length} sample mods - {" "}
               {messages === 1 ? "one message" : `${messages} messages`}.{" "}
               {format.nitro &&
                 `Posting through the webhook still splits at ${DISCORD_WEBHOOK_LIMIT.toLocaleString()}.`}
@@ -836,7 +836,7 @@ function CcmPostFormatCard({
             <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
               {DISCORD_TOKENS.map((t) => (
                 <div key={t.token} className="text-xs text-ink-400">
-                  <span className="mono text-accent-400">{t.token}</span> —{" "}
+                  <span className="mono text-accent-400">{t.token}</span> - {" "}
                   {t.means}
                   {t.scope === "line" && (
                     <span className="text-ink-500"> (line only)</span>
@@ -875,7 +875,7 @@ function AdditionalPagesCard({
       </p>
       {APP_MODULES.length === 0 ? (
         <p className="text-sm text-ink-400">
-          None available yet — this is where they'll be listed.
+          None available yet - this is where they'll be listed.
         </p>
       ) : (
         <div className="flex flex-col gap-3">
@@ -958,7 +958,7 @@ function MapsCard({
     const ok = await confirmDialog({
       title: `Remove "${maps[i].name}" from the map list?`,
       message:
-        "Entries already assigned to it keep the assignment — they just lose the icon and color until the map is added back.",
+        "Entries already assigned to it keep the assignment - they just lose the icon and color until the map is added back.",
       confirmLabel: "Remove map",
       danger: true,
     });
@@ -989,13 +989,13 @@ function MapsCard({
       </p>
       <p className="text-xs text-ink-400 mb-3">
         Turning a map <b>off</b> says the cluster does not run it. Nothing is
-        hidden — content first seen there stays fully available, because much of
+        hidden - content first seen there stays fully available, because much of
         it turns up on later maps anyway (Scorched Earth wyverns on Ragnarok).
         It is marked <span className="text-amber-400">Caution</span> instead, as
         a reminder that some of it may genuinely be unobtainable here.
       </p>
 
-      {/* Scrolls rather than growing the page — a long cluster map list would
+      {/* Scrolls rather than growing the page - a long cluster map list would
           otherwise dwarf every other card. */}
       <div className="grid grid-cols-[auto_auto_minmax(0,1fr)_auto_auto] gap-x-3 gap-y-2 items-center max-h-[26rem] overflow-y-auto pr-1">
         <span className="text-xs font-semibold text-ink-300 uppercase tracking-wide">
@@ -1037,7 +1037,7 @@ function MapsCard({
               title={
                 map.enabled
                   ? undefined
-                  : `The cluster does not run ${map.name} — its content is marked Caution`
+                  : `The cluster does not run ${map.name} - its content is marked Caution`
               }
               style={{
                 color: map.color || DEFAULT_MAP_COLOR,
@@ -1051,7 +1051,7 @@ function MapsCard({
               type="color"
               value={map.color || DEFAULT_MAP_COLOR}
               onChange={(e) => setMap(i, { color: e.target.value })}
-              title={`Label color — ${map.color || `default (${DEFAULT_MAP_COLOR})`}`}
+              title={`Label color - ${map.color || `default (${DEFAULT_MAP_COLOR})`}`}
               className="w-9 h-9 rounded-md bg-ink-900 border border-ink-600 cursor-pointer p-1"
             />
 

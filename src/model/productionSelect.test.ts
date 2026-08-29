@@ -63,7 +63,7 @@ describe("findDuplicateRule", () => {
     expect(findDuplicateRule([existing], "r2", `${REX}_C`)?.id).toBe("r1");
   });
 
-  it("catches the reverse — stored with _C, typed without", () => {
+  it("catches the reverse - stored with _C, typed without", () => {
     const withC = rule({ id: "r1", dinoType: `${REX}_C` });
     expect(findDuplicateRule([withC], "r2", REX)?.id).toBe("r1");
   });
@@ -157,7 +157,7 @@ describe("resolveSelectionParent", () => {
   });
 
   it("recognises a typed path that is in no content source", () => {
-    // The class stem is enough — this is the manual-entry case.
+    // The class stem is enough - this is the manual-entry case.
     const parent = resolveSelectionParent(
       "/Game/Whatever/Rex_Character_BP_Homebrew.Rex_Character_BP_Homebrew",
       index,

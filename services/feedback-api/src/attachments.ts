@@ -4,8 +4,8 @@ import type { FeedbackReport } from "./shared";
 /**
  * Where an attached screenshot goes.
  *
- * GitHub has no supported API for uploading an attachment to an issue — the
- * drag-and-drop upload in the web interface is not a public endpoint — so an
+ * GitHub has no supported API for uploading an attachment to an issue - the
+ * drag-and-drop upload in the web interface is not a public endpoint - so an
  * image has to be stored somewhere the issue can link to. The two bad answers
  * are embedding it in the Markdown, which produces an unreadable issue and a
  * repository full of base64, and committing it into the repository, which
@@ -110,7 +110,7 @@ const EXTENSIONS: Record<string, string> = {
  *
  * Keys are `<reportId>/<attachmentId>.<ext>`. Both halves are values this
  * service generated or validated, and neither is derived from a file name the
- * reporter chose — a file name is the one part of an attachment an attacker
+ * reporter chose - a file name is the one part of an attachment an attacker
  * controls completely.
  */
 export class BlobAttachmentService implements AttachmentService {
@@ -202,7 +202,7 @@ export interface AttachmentOutcome {
  *
  * A failed attachment never fails the report. Somebody who wrote three
  * paragraphs about a bug and attached a screenshot should not lose the
- * paragraphs because the screenshot could not be saved — they are told, and
+ * paragraphs because the screenshot could not be saved - they are told, and
  * the issue is filed.
  */
 export async function storeAttachments(

@@ -11,8 +11,8 @@ import officialData from "../assets/catalog/official-asa.json";
  *
  * It is built from a spreadsheet by a script rather than written by hand, so
  * nothing checks its shape at authoring time. The package is immutable once
- * published — a record that fails to parse cannot be corrected in place, only
- * superseded by a whole new version — which makes parsing every record here
+ * published - a record that fails to parse cannot be corrected in place, only
+ * superseded by a whole new version - which makes parsing every record here
  * the cheapest place to catch it.
  */
 
@@ -42,8 +42,8 @@ describe("bundled creature info", () => {
   });
 
   /**
-   * A variant that turned out identical to its base creature ships nothing —
-   * the parent's record answers for it — so the list is shorter than the
+   * A variant that turned out identical to its base creature ships nothing -
+   * the parent's record answers for it - so the list is shorter than the
    * catalog rather than matching it one for one.
    */
   it("drops a variant whose record is entirely inherited", () => {
@@ -126,8 +126,8 @@ describe("bundled creature info", () => {
   });
 
   /**
-   * The taming steps are AI capture, not wiki data. Asserting a taming route
-   * for a creature the wiki says cannot be obtained is the failure that would
+   * Taming steps are legacy imported text. Asserting a route for a creature
+   * marked unobtainable by source data is the failure that would
    * mislead an administrator most.
    */
   it("gives no acquisition method to an unavailable creature", () => {
@@ -169,14 +169,14 @@ describe("bundled creature info", () => {
 
   it("records where each part came from", () => {
     expect(Object.keys(payload.provenance).length).toBeGreaterThan(0);
-    expect(JSON.stringify(payload.provenance)).toMatch(/wiki/i);
+    expect(JSON.stringify(payload.provenance)).toMatch(/source|legacy/i);
   });
 
   /**
    * The built package, read the way the app reads it.
    *
    * The data file above is the input to the build; these are the bytes that
-   * actually ship, and they are immutable once published — so this reads the
+   * actually ship, and they are immutable once published - so this reads the
    * published version through `PackageContentSchema` rather than trusting that
    * the build carried the records across intact.
    */

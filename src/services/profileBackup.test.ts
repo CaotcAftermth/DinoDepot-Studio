@@ -17,8 +17,8 @@ import { defaultOutputPaths } from "../model/project";
  * The privacy boundary, end to end.
  *
  * The question these answer is the only one that matters: can a player's IP
- * address reach a repository? Every route it could take — the profile bytes,
- * the roster JSON, the stored summary — is checked for the same address.
+ * address reach a repository? Every route it could take - the profile bytes,
+ * the roster JSON, the stored summary - is checked for the same address.
  */
 
 /** RFC 5737 documentation address. Belongs to nobody. */
@@ -131,7 +131,7 @@ describe("backing a profile up", () => {
   });
 
   /**
-   * Skipping the player is the administrator's decision, not a fallback — so a
+   * Skipping the player is the administrator's decision, not a fallback - so a
    * profile that cannot be cleaned stops the backup rather than going up raw.
    */
   it("uploads nothing when the profile cannot be read", async () => {

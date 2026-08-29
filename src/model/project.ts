@@ -14,7 +14,7 @@ import type { LocalProjectState } from "./localState";
  * Repository-relative locations of the files a project produces.
  *
  * Portable: this is the shape of the repository, which every administrator
- * shares. The repository it is a shape *of* is machine-local — see
+ * shares. The repository it is a shape *of* is machine-local - see
  * {@link LocalProjectState}.
  */
 export const OutputPathsSchema = z.object({
@@ -23,13 +23,13 @@ export const OutputPathsSchema = z.object({
   cosmetics: z.string().default("dinodepot/custom-cosmetics.txt"),
   /** Data file consumed by the public cluster viewer page. */
   viewerData: z.string().default("dinodepot/viewer-data.json"),
-  /** The viewer page itself — serve via GitHub Pages (e.g. /docs folder). */
+  /** The viewer page itself - serve via GitHub Pages (e.g. /docs folder). */
   viewerPage: z.string().default("docs/index.html"),
   /** Player roster JSON. */
   players: z.string().default("dinodepot/players.json"),
   /**
    * Folder the stored .arkprofile files are backed up to, one per player.
-   * Not an OutputFamily — these are binaries published individually.
+   * Not an OutputFamily - these are binaries published individually.
    */
   profiles: z.string().default("dinodepot/profiles"),
 });
@@ -37,7 +37,7 @@ export const OutputPathsSchema = z.object({
 export type OutputPaths = z.infer<typeof OutputPathsSchema>;
 
 /**
- * A repository plus the layout inside it — what the publishing code actually
+ * A repository plus the layout inside it - what the publishing code actually
  * needs to build a URL or a path.
  *
  * Assembled at runtime by {@link effectiveGithubConfig} from the portable
@@ -58,7 +58,7 @@ export interface GithubConfig {
  * The repository configuration for the open project on this machine.
  *
  * Falls back to blank owner/repo when nothing is bound yet, which every caller
- * already handles — `githubConfigComplete` has always been the gate.
+ * already handles - `githubConfigComplete` has always been the gate.
  */
 export function effectiveGithubConfig(
   settings: Pick<ProjectSettings, "outputPaths"> | null,
@@ -108,8 +108,8 @@ export const MapEntrySchema = z.object({
    * Whether the cluster actually runs this map.
    *
    * Disabling never hides content: a creature or item first seen on a disabled
-   * map is often obtainable elsewhere anyway — Scorched Earth wyverns also
-   * spawn on Ragnarok — so it stays fully available and picks up a Caution
+   * map is often obtainable elsewhere anyway - Scorched Earth wyverns also
+   * spawn on Ragnarok - so it stays fully available and picks up a Caution
    * marker instead, because it *might* genuinely be unobtainable here.
    *
    * Defaults to true so existing projects keep every map they already had.
@@ -121,7 +121,7 @@ export type MapEntry = z.infer<typeof MapEntrySchema>;
 /**
  * Who the announcement pings, and how that turns into Discord's own syntax.
  *
- * A raw mention is easy to get wrong by hand — `<@&id>` for a role and `<@id>`
+ * A raw mention is easy to get wrong by hand - `<@&id>` for a role and `<@id>`
  * for a person differ by one character, and the wrong one either silently
  * fails to ping or pings the wrong thing. So the shape is chosen from a list
  * and only the id is typed.
@@ -173,7 +173,7 @@ export const DiscordFormatSchema = z.object({
 export type DiscordFormat = z.infer<typeof DiscordFormatSchema>;
 
 /**
- * The root project manifest — `project.json`, and the only manifest there is.
+ * The root project manifest - `project.json`, and the only manifest there is.
  *
  * Everything in here is *portable*: it is the same on every administrator's
  * machine, and it is what synchronizes. Local paths and repository bindings
@@ -236,7 +236,7 @@ export type ProjectSettings = z.infer<typeof ProjectSettingsSchema>;
 
 /**
  * The stock map list: ASA's official maps plus the two catch-alls a cluster
- * usually needs. Editable in Settings — this is only the starting point.
+ * usually needs. Editable in Settings - this is only the starting point.
  */
 export function defaultMaps(): MapEntry[] {
   return [

@@ -13,7 +13,7 @@ import {
  * Who made this, who it stands on, and where it came from.
  *
  * Shown only in the Production Rules empty state, where the editor column is
- * otherwise blank — the page's job is editing rules, and this has to give way
+ * otherwise blank - the page's job is editing rules, and this has to give way
  * the moment there is a rule to edit. It is not a banner and never appears
  * beside working content.
  *
@@ -33,8 +33,8 @@ type Accent = "cyan" | "violet" | "sky";
  * Tailwind needs whole class names, so each accent lists its own rather than
  * being built from a colour name at runtime.
  *
- * Violet and sky are already in use elsewhere — the alternate-outputs section
- * and the informational badge — so only cyan is new here. The app's own
+ * Violet and sky are already in use elsewhere - the alternate-outputs section
+ * and the informational badge - so only cyan is new here. The app's own
  * `accent` token is green and deliberately left alone: it means "this is the
  * primary action", which none of these are.
  */
@@ -81,8 +81,8 @@ const ACCENTS: Record<
 /**
  * Drawn inline rather than pulled from a package.
  *
- * The app has no icon library — every glyph it uses is either an inline `svg`
- * or a character — and adding a dependency for five shapes would be the
+ * The app has no icon library - every glyph it uses is either an inline `svg`
+ * or a character - and adding a dependency for five shapes would be the
  * largest thing in this feature by far. All but the footprint inherit
  * `currentColor`, so each takes its card's accent without being told about it.
  */

@@ -6,7 +6,7 @@ import { FEEDBACK_IGNORE } from "../../model/feedback/targets";
 import type { FeedbackTargetSnapshot } from "../../model/feedback/types";
 
 /**
- * "Select affected area" — the element picker.
+ * "Select affected area" - the element picker.
  *
  * Modelled on the browser inspector, but pointed at parts of DinoDepot Studio
  * rather than at DOM nodes: what lights up is a *registered component*, so
@@ -75,7 +75,7 @@ export function Inspector() {
     /**
      * Every way a press can turn into an action, stopped.
      *
-     * `click` alone is not enough — plenty of this app's controls act on
+     * `click` alone is not enough - plenty of this app's controls act on
      * `mousedown`, and a menu that opens on `mousedown` would appear over the
      * thing being inspected.
      */
@@ -112,8 +112,8 @@ export function Inspector() {
     };
 
     /**
-     * Scrolling stays enabled — the affected area is often not on screen when
-     * the picker starts — so the highlight has to follow what it is drawn
+     * Scrolling stays enabled - the affected area is often not on screen when
+     * the picker starts - so the highlight has to follow what it is drawn
      * around. Nested scroll containers are why this listens in the capture
      * phase on the document rather than on the window.
      */
@@ -186,7 +186,7 @@ export function Inspector() {
  * The floating name.
  *
  * Sits above the highlight, or below it when the highlight is against the top
- * of the window — a label drawn off screen is the same as no label.
+ * of the window - a label drawn off screen is the same as no label.
  */
 function HoverLabel({ box, target }: { box: Box; target: FeedbackTargetSnapshot }) {
   const above = box.top > 34;

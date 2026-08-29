@@ -25,7 +25,7 @@ export interface BackupResult {
  * Reads a stored profile, sanitizes it, and uploads the sanitized copy.
  *
  * Throws `profile.unsanitizable` and uploads nothing when the file cannot be
- * read or cleaned — see `sanitizeProfile`. That is a blocking error by design:
+ * read or cleaned - see `sanitizeProfile`. That is a blocking error by design:
  * skipping the player is a decision for the administrator, not a fallback.
  */
 export async function backupProfile(
@@ -65,7 +65,7 @@ export async function backupProfile(
 /**
  * Pulls a backed-up profile into the project's profiles/ folder.
  *
- * What comes back is the sanitized copy — the address was never uploaded, so
+ * What comes back is the sanitized copy - the address was never uploaded, so
  * restoring cannot bring one back. Everything the game needs is there; a
  * restored character simply has no record of where it last connected from,
  * which is a field the game rewrites on the next login anyway.
@@ -88,7 +88,7 @@ export async function restoreProfile(
 
   // Checked on the way in as well as on the way out. A backup taken by an older
   // build, or edited by hand, does not get to put an address back on this disk
-  // unnoticed — and a file that will not parse is not written over a working
+  // unnoticed - and a file that will not parse is not written over a working
   // profile.
   const bytes = decodeBase64(contentB64);
   try {

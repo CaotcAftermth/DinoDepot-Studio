@@ -5,8 +5,8 @@ import type { Player, StoredProfile } from "./players";
  * Policy for ageing .arkprofile saves.
  *
  * Nothing here ever deletes a file. A stored profile is frequently the only
- * surviving copy of a player's character — an admin keeps it precisely so that
- * a wipe, a rollback or a corrupt save can be undone months later — so age is
+ * surviving copy of a player's character - an admin keeps it precisely so that
+ * a wipe, a rollback or a corrupt save can be undone months later - so age is
  * only ever a *label*, and the strongest automatic action on offer is moving a
  * save out of the default view. Deleting stays a deliberate, confirmed act.
  *
@@ -22,13 +22,13 @@ export const PlayerDataSettingsSchema = z.object({
   staleAfterDays: z.number().min(0).max(3650).default(90),
   /**
    * Move stale profiles out of the default roster view. They stay on disk,
-   * stay backed up and stay one filter change away — this is a tidy-up, not a
+   * stay backed up and stay one filter change away - this is a tidy-up, not a
    * retention policy.
    */
   autoArchiveStale: z.boolean().default(false),
   /**
    * Flag saves written in an older save format than the cluster's current maps
-   * use — most importantly the pre-Lost Colony format, which has no skill tree
+   * use - most importantly the pre-Lost Colony format, which has no skill tree
    * data at all.
    */
   warnOnSaveVersion: z.boolean().default(true),
@@ -97,7 +97,7 @@ export type SaveVersionWarning = {
  * The case that matters is a version 5 save: it was written before the Lost
  * Colony update, so it has no skill tree section whatsoever. Restoring one
  * onto a current map gives the player their character back with every tree at
- * zero — recoverable, but not silently.
+ * zero - recoverable, but not silently.
  */
 export function saveVersionWarning(
   profile: StoredProfile,
@@ -116,7 +116,7 @@ export function saveVersionWarning(
   return {
     label: `Pre-skill-tree save (v${version})`,
     detail:
-      `Written in save format v${version}, before the Lost Colony update introduced skill trees — ` +
+      `Written in save format v${version}, before the Lost Colony update introduced skill trees - ` +
       "this file has no skill tree data at all. Restoring it returns the character with every tree back at zero, " +
       "and the newer maps cannot read the older format directly.",
   };

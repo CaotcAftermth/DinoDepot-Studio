@@ -4,7 +4,7 @@
 #
 # Line-ending translation therefore breaks them. With core.autocrlf=true, git
 # rewrites LF to CRLF on checkout, which changes both the length and the hash
-# of every JSON file here — so a fresh clone (a release build's clone included)
+# of every JSON file here - so a fresh clone (a release build's clone included)
 # would produce a package that fails its own integrity check and silently falls
 # back to default icons.
 #

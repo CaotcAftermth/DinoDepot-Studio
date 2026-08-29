@@ -16,7 +16,7 @@ import { isTauri } from "./ipc";
  * 1. **Never a downgrade.** A release mistakenly published with an older
  *    version tag must not roll everybody back.
  * 2. **Never silent.** The administrator is told what version, and is the one
- *    who says go — this app holds a cluster's configuration, and restarting it
+ *    who says go - this app holds a cluster's configuration, and restarting it
  *    mid-edit is not something to decide on their behalf.
  */
 
@@ -51,7 +51,7 @@ export interface AvailableUpdate {
 /**
  * Whether an offered version should be installed.
  *
- * The updater already refuses same-version updates, but not older ones — a
+ * The updater already refuses same-version updates, but not older ones - a
  * release published with the wrong tag would otherwise roll every install
  * backwards. An unparseable version is refused rather than guessed at.
  */
@@ -74,7 +74,7 @@ export function describeRejection(offered: string, current = STUDIO_VERSION): st
 /**
  * The updater plugin, loaded on demand.
  *
- * Imported lazily so browser mock mode — which has no Tauri at all — does not
+ * Imported lazily so browser mock mode - which has no Tauri at all - does not
  * fail at module load.
  */
 async function plugin() {
@@ -165,7 +165,7 @@ export function updateFailureMessage(error: unknown): string {
     lower.includes("timed out") ||
     lower.includes("timeout")
   ) {
-    return "DinoDepot could not reach the update server. Your work is unaffected — try again later.";
+    return "DinoDepot could not reach the update server. Your work is unaffected - try again later.";
   }
   return "DinoDepot could not check for updates. Your work is unaffected.";
 }
@@ -179,7 +179,7 @@ export interface InstallProgress {
 /**
  * Downloads and installs, then relaunches.
  *
- * The caller is expected to have flushed and closed anything unsaved first —
+ * The caller is expected to have flushed and closed anything unsaved first -
  * this restarts the application, and an administrator mid-edit should have been
  * asked before reaching here.
  */

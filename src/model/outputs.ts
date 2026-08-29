@@ -29,7 +29,7 @@ import type { LocalProjectState } from "./localState";
  *
  * Overview and Publish both read from here. They used to work this out
  * separately, and drifted: Overview knew about three of the six outputs, and
- * called an output "unpublished" whenever its serialized text was non-empty —
+ * called an output "unpublished" whenever its serialized text was non-empty -
  * which an empty remap file is, because `{"dinoMappings": []}` is 21
  * characters. A brand-new project therefore opened claiming unpublished work.
  *
@@ -42,7 +42,7 @@ export type OutputStatus =
   | "disabled"
   /** Nothing worth publishing yet, and never published. */
   | "empty"
-  /** Validation errors — publishing is refused. */
+  /** Validation errors - publishing is refused. */
   | "blocked"
   /** Has content, has never been published. */
   | "unpublished"
@@ -73,7 +73,7 @@ export interface OutputState {
   /**
    * Hash used for change detection. Usually the hash of `content`, but an
    * output that stamps a generation time into itself is hashed with that
-   * stamp held fixed — otherwise it would report changes on every render.
+   * stamp held fixed - otherwise it would report changes on every render.
    */
   hash: string;
   issues: ValidationIssue[];
@@ -129,7 +129,7 @@ function statusOf(
 ): OutputStatus {
   if (!applicable) return "disabled";
   if (errors > 0) return "blocked";
-  // Never published and nothing to publish — the state of every output in a
+  // Never published and nothing to publish - the state of every output in a
   // new project, and not a problem.
   if (!publishedHash && !hasContent) return "empty";
   if (!publishedHash) return "unpublished";
@@ -173,7 +173,7 @@ function state(
 /**
  * Every publishable output, in the order they are presented.
  *
- * `hasContent` mirrors what each serializer actually emits — disabled rules,
+ * `hasContent` mirrors what each serializer actually emits - disabled rules,
  * inactive remaps and deprecated cosmetics are all filtered out on the way to
  * the published file, so none of them count as content here either.
  */
@@ -227,7 +227,7 @@ export function buildOutputStates(input: OutputBuildInput): OutputState[] {
       input,
       JSON.stringify(viewerData, null, 2),
       viewerHasData,
-      // Derived from production — reuse its errors so broken data never
+      // Derived from production - reuse its errors so broken data never
       // reaches the public page.
       productionIssues.filter((i) => i.level === "error"),
     ),
@@ -242,7 +242,7 @@ export function buildOutputStates(input: OutputBuildInput): OutputState[] {
           })
         : "",
       // The page is a shell that fetches the data file, so it is only worth
-      // publishing once there is data for it to show — otherwise a brand-new
+      // publishing once there is data for it to show - otherwise a brand-new
       // project opens with an atlas of nothing already queued to publish.
       Boolean(settings) && viewerHasData,
       [],

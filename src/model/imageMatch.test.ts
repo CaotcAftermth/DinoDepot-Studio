@@ -113,7 +113,7 @@ describe("naming an icon copied in from a mod's folder", () => {
   });
 
   it("never overwrites an image already in the folder", () => {
-    // A second mod's Rex.png is a different picture — the first one must stay
+    // A second mod's Rex.png is a different picture - the first one must stay
     // exactly where the entries pointing at it expect to find it.
     expect(freeIconName("icons/Rex.png", "ARKOLOGY", existing)).toBe(
       "ARKOLOGY_Rex.png",

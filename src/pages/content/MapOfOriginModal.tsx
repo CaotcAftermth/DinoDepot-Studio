@@ -46,11 +46,11 @@ export function MapOfOriginModal({
   }
 
   return (
-    <Modal title={`Map of origin — ${entry.name}`} onClose={onClose} wide>
+    <Modal title={`Map of origin - ${entry.name}`} onClose={onClose} wide>
       <p className="text-xs text-ink-400 mb-3">
         {derived
           ? `Auto-detected from the blueprint path: ${derived}. An assignment here overrides it.`
-          : "No map could be derived from the blueprint path — assign one here."}
+          : "No map could be derived from the blueprint path - assign one here."}
       </p>
       <div className="flex flex-col gap-3">
         <Field label="Map" hint="The list is editable in Settings → Maps">
@@ -77,14 +77,14 @@ export function MapOfOriginModal({
                 title={
                   m.enabled
                     ? undefined
-                    : `${m.name} is switched off for this cluster — assigning it marks the entry Caution`
+                    : `${m.name} is switched off for this cluster - assigning it marks the entry Caution`
                 }
                 className={cx(
                   "flex items-center gap-1.5 px-2 py-1.5 rounded-md border text-sm cursor-pointer text-left",
                   value === m.name
                     ? "border-accent-500 bg-ink-800"
                     : "border-ink-700 hover:border-ink-600",
-                  // Still selectable — an entry's origin is a fact about the
+                  // Still selectable - an entry's origin is a fact about the
                   // entry, not about which maps the cluster happens to run.
                   !m.enabled && "opacity-55",
                 )}

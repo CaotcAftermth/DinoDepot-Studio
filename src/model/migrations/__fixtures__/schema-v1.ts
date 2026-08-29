@@ -3,7 +3,7 @@
  * build.
  *
  * Permanent. This is the only evidence left of what shipped, and the 1→2 test
- * is worth nothing if the fixture drifts to match whatever the code does now —
+ * is worth nothing if the fixture drifts to match whatever the code does now -
  * so nothing here may be "tidied up", including the local paths, the
  * repository name and the recorded IP addresses, which are the whole point of
  * what the migration has to deal with.
@@ -55,7 +55,7 @@ export const SCHEMA_V1_PROJECT: Record<string, string> = {
       ],
       discord: {
         header: "**🆕 New Custom Cosmetic Mods ({count})**",
-        line: "- [{name}](<{url}>) — `{id}`{updatedSuffix}",
+        line: "- [{name}](<{url}>) - `{id}`{updatedSuffix}",
         footer: "",
       },
       modules: { "player-data": true },

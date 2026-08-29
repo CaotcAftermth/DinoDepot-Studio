@@ -8,7 +8,7 @@ import type { InstalledPackage } from "./packageManager";
  *
  * Everything local must be tried before the network: the library, then the
  * package this build ships with, then a folder on this machine. GitHub is how
- * a new version is distributed, not how an already-pinned one is found — so
+ * a new version is distributed, not how an already-pinned one is found - so
  * local development and a first offline launch must never depend on it.
  */
 

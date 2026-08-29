@@ -112,7 +112,7 @@ export function CreatureDetailsModal({
 
   // Where the creature comes from is a fact about the creature, so it belongs
   // with the rest of its record. It is stored on the catalog rather than in
-  // this draft, and saves on its own — hence a chip, not a form field.
+  // this draft, and saves on its own - hence a chip, not a form field.
   const originMap = mapOf(catalog, entry.bpPath);
   const originStyle = originMap ? mapStyle(settings, originMap) : null;
 
@@ -204,7 +204,7 @@ export function CreatureDetailsModal({
 
   return (
     <Modal
-      title={`Creature details — ${entry.name}`}
+      title={`Creature details - ${entry.name}`}
       onClose={onClose}
       xl
       // Pinned: a method with several phases makes this modal tall enough that
@@ -369,7 +369,7 @@ export function CreatureDetailsModal({
                 </div>
                 {methods.length === 0 ? (
                   <p className="text-xs text-ink-500 border border-dashed border-ink-700 rounded-md px-3 py-2">
-                    No methods yet. A creature can have several — add one per
+                    No methods yet. A creature can have several - add one per
                     valid route.
                   </p>
                 ) : (
@@ -506,7 +506,7 @@ export function CreatureDetailsModal({
         {tab === "notes" && (
           <div>
             <p className="text-xs text-ink-400 mb-2">
-              General notes about the creature — anything that isn't part of a
+              General notes about the creature - anything that isn't part of a
               specific acquisition method. Published to the cluster viewer.
               Simple markdown: <span className="mono"># headers</span>,{" "}
               <span className="mono">**bold**</span>,{" "}
@@ -572,7 +572,7 @@ function InheritanceBanner({
  * Deliberately separate from the catalog's map *of origin*: origin is derived
  * from the blueprint path and answers "where did this content come from",
  * which is a fact about the mod. This answers "where do I go to find one",
- * which is what a player is asking, and the two disagree constantly — a
+ * which is what a player is asking, and the two disagree constantly - a
  * Scorched Earth wyvern also spawns on Ragnarok.
  */
 function SpawnsTab({
@@ -610,7 +610,7 @@ function SpawnsTab({
     setCustom("");
   }
 
-  /** Listed maps that aren't in the Settings list — typed by hand, or renamed since. */
+  /** Listed maps that aren't in the Settings list - typed by hand, or renamed since. */
   const unknown = spawnMaps.filter(
     (m) => !maps.some((x) => x.name.toLowerCase() === m.trim().toLowerCase()),
   );
@@ -619,7 +619,7 @@ function SpawnsTab({
     <div>
       <p className="text-xs text-ink-400 mb-3">
         The maps this creature can actually be found on. This is separate from
-        its map of origin — content first released on one map often spawns on
+        its map of origin - content first released on one map often spawns on
         later ones too. Published to the cluster viewer.
       </p>
 
@@ -666,7 +666,7 @@ function SpawnsTab({
       {unknown.length > 0 && (
         <p className="text-xs text-amber-400 mt-3">
           Not in the Settings map list: {unknown.join(", ")}. They still
-          publish — add them under Settings → Maps to give them an icon.
+          publish - add them under Settings → Maps to give them an icon.
         </p>
       )}
 
@@ -781,7 +781,7 @@ function DropsTab({
                             title={
                               known
                                 ? entry.bpPath
-                                : "Not in the item catalog — re-pick it"
+                                : "Not in the item catalog - re-pick it"
                             }
                           >
                             {entry.label.trim() || name}
@@ -813,7 +813,7 @@ function DropsTab({
                         {entry.bpPath ? "Replace…" : "Pick…"}
                       </Button>
                       {list.hasRate ? (
-                        // A rate, not a quantity — production recurs.
+                        // A rate, not a quantity - production recurs.
                         <>
                           <Input
                             className="w-16 shrink-0 text-xs"
@@ -850,7 +850,7 @@ function DropsTab({
                           className="w-24 shrink-0 text-xs"
                           value={entry.chance}
                           placeholder="chance"
-                          title="However you want to phrase the odds — 12%, 1 in 8"
+                          title="However you want to phrase the odds - 12%, 1 in 8"
                           onChange={(e) =>
                             patch(list.key, entry.id, { chance: e.target.value })
                           }
@@ -889,7 +889,7 @@ function DropsTab({
       {picking && (
         <BlueprintPicker
           kind="items"
-          title={`Pick an item — ${
+          title={`Pick an item - ${
             DROP_LISTS.find((l) => l.key === picking.list)?.label
           }`}
           onClose={() => setPicking(null)}
@@ -961,7 +961,7 @@ function AbilityEffectRows({
                 "text-xs truncate w-32 shrink-0",
                 known ? "text-ink-100" : "text-amber-400",
               )}
-              title={known ? bpPath : "Not in the item catalog — re-pick it"}
+              title={known ? bpPath : "Not in the item catalog - re-pick it"}
             >
               {label.trim() || name}
               {!known && " ⚠"}
@@ -1075,7 +1075,7 @@ function AbilitiesTab({
   const [customKind, setCustomKind] = useState<AbilityKind>("passive");
 
   /**
-   * Labels are compared case-insensitively throughout — the preset chips and
+   * Labels are compared case-insensitively throughout - the preset chips and
    * the custom field have to agree on what counts as the same ability, or
    * "Grappling" and "grappling" both end up in the list.
    */
@@ -1283,7 +1283,7 @@ function AbilitiesTab({
                       <Input
                         className="flex-1 text-xs"
                         value={ability.detail}
-                        placeholder="Specifics — amount, target, caveat"
+                        placeholder="Specifics - amount, target, caveat"
                         onChange={(e) => patch(ability.id, { detail: e.target.value })}
                       />
                       <Button

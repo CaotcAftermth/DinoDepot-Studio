@@ -22,8 +22,8 @@ import { connectionProblem, refreshConnection } from "../services/repoConnection
  *
  * The pipeline itself is a pure-ish function; this is the part that gathers its
  * inputs, prepares the delivery working copy, and holds the result. Keeping
- * them apart is what lets the whole sequence — including the privacy scan and
- * the refusals — be tested without a project or a repository.
+ * them apart is what lets the whole sequence - including the privacy scan and
+ * the refusals - be tested without a project or a repository.
  */
 
 interface PublishState {
@@ -38,7 +38,7 @@ interface PublishState {
   /** Runs validation without publishing, for the page to show. */
   check(): ValidationReport;
   publish(): Promise<PublishOutcome>;
-  /** Sync first, then publish — the combined action. */
+  /** Sync first, then publish - the combined action. */
   syncAndPublish(): Promise<PublishOutcome>;
   acknowledgeWarnings(): void;
 }
@@ -73,7 +73,7 @@ export const usePublishStore = create<PublishState>((set, get) => ({
    *
    * Two operations, presented as one: a source Sync commit, then a delivery
    * Publish commit. They are not atomic across the two repositories and are not
-   * pretended to be — the source lands first, and the site is only built from a
+   * pretended to be - the source lands first, and the site is only built from a
    * revision that is already shared.
    */
   async syncAndPublish() {
@@ -182,7 +182,7 @@ async function runPublish(
   return publishProject({
     deliveryDir,
     local,
-    // Only a synchronized revision may be published from — this is the value
+    // Only a synchronized revision may be published from - this is the value
     // that ends up in the manifest as `sourceRevision`.
     sourceRevision: local.lastSyncedCommit,
     projectId: settings.projectId,
@@ -202,8 +202,8 @@ async function runPublish(
  * Makes sure there is a working copy of the delivery repository to build into.
  *
  * Initialised and fetched rather than cloned: `git_fetch` plus a fast-forward
- * reaches the same state, works when the repository is empty — which a brand
- * new site repository always is — and reuses the code the Sync path already
+ * reaches the same state, works when the repository is empty - which a brand
+ * new site repository always is - and reuses the code the Sync path already
  * relies on.
  */
 async function prepareDelivery(
@@ -253,7 +253,7 @@ async function generateSite() {
     },
   );
   if (skipped.length > 0) {
-    // Nonfatal by design — those entries fall back to their glyph rather than
+    // Nonfatal by design - those entries fall back to their glyph rather than
     // holding up the whole cluster's publication.
     const { toast } = await import("../components/toast");
     toast.info(
@@ -265,7 +265,7 @@ async function generateSite() {
     indexHtml: buildViewerHtml({
       clusterName,
       // Relative, because the page and its data now ship together in the same
-      // published tree — the old absolute raw URL pointed at the *source*
+      // published tree - the old absolute raw URL pointed at the *source*
       // repository, which under the recommended topology is private.
       dataUrl: "./data/viewer.json",
       imagesUrl: "",

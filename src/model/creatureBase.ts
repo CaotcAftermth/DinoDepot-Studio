@@ -5,7 +5,7 @@ import { baseCreatureName } from "./variants";
 /**
  * Resolving a creature to its "base" creature.
  *
- * Mods tag variants inconsistently — Arkology prefixes the display name
+ * Mods tag variants inconsistently - Arkology prefixes the display name
  * (`ARKOLOGY Achatina`), Zytharian only marks the class (`Achatina_Character_BP_Tek`),
  * NoUntameables uses `_Tameable`, and importer-derived names can be junk
  * (`ARKOLOGY SpiderS`). Matching the blueprint class against the bundled
@@ -89,7 +89,7 @@ export function matchOfficialByClass(bpPath: string): CatalogEntry | null {
 }
 
 export interface CreatureBase {
-  /** Stable grouping key — shared by every variant of the same creature. */
+  /** Stable grouping key - shared by every variant of the same creature. */
   key: string;
   /** Group label shown in the UI. */
   label: string;
@@ -132,7 +132,7 @@ export function resolveCreatureBase(
     };
   }
 
-  // Either this *is* the official creature, or the class told us nothing —
+  // Either this *is* the official creature, or the class told us nothing -
   // fall back to name heuristics, then re-anchor onto an official creature
   // so vanilla variants share a key with modded ones.
   const base = baseCreatureName(entry.name, opts.variantTag);
@@ -180,7 +180,7 @@ function tokens(text: string): string[] {
 }
 
 /**
- * Finds a token shared by most of a source's creatures — the mod's variant
+ * Finds a token shared by most of a source's creatures - the mod's variant
  * tag (ARKOLOGY, Tek, Tameable…). Tokens belonging to the resolved base
  * creature are excluded so "Achatina" can never be mistaken for a tag.
  */

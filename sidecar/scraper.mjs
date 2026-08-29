@@ -7,7 +7,7 @@
  * Modes:
  *   node scraper.mjs cosmetics [known.json]
  *     Scrapes the full custom-cosmetics category. `known.json` is the
- *     cosmetics already recorded — [{modId, name, url, updated}] — and lets a
+ *     cosmetics already recorded - [{modId, name, url, updated}] - and lets a
  *     repeat run skip detail pages for mods it already knows.
  *     Events: status, pages, page, mod, metrics, done, error
  *
@@ -92,7 +92,7 @@ function emitMetrics() {
 /**
  * Canonical form of a CurseForge mod URL, so a stored URL matches a scraped
  * one regardless of scheme, `www.`, trailing slash, query string or casing.
- * Mirrors `canonicalCurseforgeUrl` in src/model/catalogDuplicates.ts — the two
+ * Mirrors `canonicalCurseforgeUrl` in src/model/catalogDuplicates.ts - the two
  * run in different processes, so the logic is duplicated deliberately and both
  * sides have tests.
  */
@@ -100,7 +100,7 @@ function emitMetrics() {
  * Trailing site furniture on a page title, stripped one segment at a time.
  *
  * Matches only a *final* segment that is the site's own name or a category
- * ending in "Mods" — never an interior separator. Mod names contain both
+ * ending in "Mods" - never an interior separator. Mod names contain both
  * hyphens and pipes ("Paleo ARK - Evolution | Apex Predators (Crossplay)"), so
  * splitting at the first separator and keeping the head throws most of the
  * name away.
@@ -143,7 +143,7 @@ function resolveChromePath() {
     if (fs.existsSync(path)) return path;
   }
   throw new Error(
-    "System Chrome not found — install Google Chrome to use the scraper",
+    "System Chrome not found - install Google Chrome to use the scraper",
   );
 }
 
@@ -192,7 +192,7 @@ async function preparePage(browser) {
   page.setDefaultNavigationTimeout(60000);
   await page.setRequestInterception(true);
   page.on("request", (request) => {
-    // Scripts and fetch/XHR are required — CurseForge hydrates its content.
+    // Scripts and fetch/XHR are required - CurseForge hydrates its content.
     const type = request.resourceType();
     const url = request.url();
     if (BLOCKED_TYPES.has(type) || BLOCKED_HOSTS.some((h) => url.includes(h))) {
@@ -382,7 +382,7 @@ function extractEmbeddedProject() {
       if (id || name) return { id, name };
     }
   } catch {
-    /* not the shape we know — fall through to the DOM */
+    /* not the shape we know - fall through to the DOM */
   }
   return null;
 }
@@ -498,7 +498,7 @@ function extractListing() {
 /**
  * Whether a listing row plus what we already knew is enough to skip the detail
  * page. Requires a known project ID for that exact URL and an absolute date
- * from the listing that still matches what was recorded — a changed date means
+ * from the listing that still matches what was recorded - a changed date means
  * the mod was updated and its page is worth reading again.
  */
 function canReuseKnown(mod, known) {
@@ -525,7 +525,7 @@ async function runCosmetics(knownPath) {
     } catch (err) {
       emit({
         type: "status",
-        message: `Could not read known cosmetics (${err.message}) — running a full scrape`,
+        message: `Could not read known cosmetics (${err.message}) - running a full scrape`,
       });
     }
   }
@@ -562,7 +562,7 @@ async function runCosmetics(knownPath) {
 
     emit({ type: "pages", total: totalPages });
 
-    // Page 1 is already loaded — reading it again cost a full navigation.
+    // Page 1 is already loaded - reading it again cost a full navigation.
     let pending = await listPage.evaluate(extractListing);
     metrics.listingPages++;
 
@@ -620,7 +620,7 @@ async function runCosmetics(knownPath) {
       if (pending.length === 0) {
         emit({
           type: "status",
-          message: `No mods on page ${pageNum} — ending early`,
+          message: `No mods on page ${pageNum} - ending early`,
         });
         break;
       }
@@ -628,7 +628,7 @@ async function runCosmetics(knownPath) {
       const mods = pending;
       pending = [];
 
-      // Fetch the next listing page while this page's details are scraped —
+      // Fetch the next listing page while this page's details are scraped -
       // the listing navigation and the detail tabs no longer wait on each
       // other. The pool bounds total concurrency either way.
       const nextPage =
@@ -656,7 +656,7 @@ async function runCosmetics(knownPath) {
       if (pageNum < totalPages && pending.length === 0) {
         emit({
           type: "status",
-          message: `No mods found on page ${pageNum + 1} — ending early`,
+          message: `No mods found on page ${pageNum + 1} - ending early`,
         });
         break;
       }
@@ -747,7 +747,7 @@ async function runLookup(listPath) {
         updatedFromList: "",
         // Somebody is watching a form for this answer. An unknown project ID
         // has no Project ID row to wait for, so the wait always runs to the
-        // end — shorter here than for a background watch sweep.
+        // end - shorter here than for a background watch sweep.
         detailTimeout: LOOKUP_DETAIL_TIMEOUT,
       });
       return {
@@ -759,7 +759,7 @@ async function runLookup(listPath) {
         url: details?.resolvedUrl ?? mod.url,
         // A Project ID row is the proof that a mod page was reached at all. An
         // unknown ID still renders a page, and its title is the bare site name
-        // — accepting that would catalogue a mod called "CurseForge".
+        // - accepting that would catalogue a mod called "CurseForge".
         ok: Boolean(
           details && details.name && details.projectId !== "Not Found",
         ),
@@ -785,7 +785,7 @@ async function runLookup(listPath) {
 
 // ---------------------------------------------------------------------------
 
-// Only when run as a script — the pure helpers below are imported by tests,
+// Only when run as a script - the pure helpers below are imported by tests,
 // which must not launch Chrome or call process.exit().
 const invokedDirectly =
   process.argv[1] &&
@@ -805,7 +805,7 @@ if (invokedDirectly) {
         await runLookup(arg);
       } else {
         throw new Error(
-          `Unknown mode '${mode}' — use 'cosmetics', 'watch' or 'lookup'`,
+          `Unknown mode '${mode}' - use 'cosmetics', 'watch' or 'lookup'`,
         );
       }
       process.exit(0);

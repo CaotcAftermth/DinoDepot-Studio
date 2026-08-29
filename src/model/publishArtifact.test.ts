@@ -113,7 +113,7 @@ describe("the public boundary scan", () => {
   });
 
   /**
-   * Renaming the file does not make it public data — the private fields are
+   * Renaming the file does not make it public data - the private fields are
    * what matter, so the scan reads the content too.
    */
   it("catches roster fields whatever the file is called", () => {

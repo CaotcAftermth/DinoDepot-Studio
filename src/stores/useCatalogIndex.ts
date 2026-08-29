@@ -11,8 +11,8 @@ import { effectiveOfficialSource } from "../model/officialCatalog";
  * Catalog derivations, cached on the catalog's identity rather than with
  * `useMemo`.
  *
- * These are read from deep inside the tree — every EntityIcon resolves names
- * and variants — so a per-component `useMemo` meant rebuilding a ~2,000-entry
+ * These are read from deep inside the tree - every EntityIcon resolves names
+ * and variants - so a per-component `useMemo` meant rebuilding a ~2,000-entry
  * index once per icon on the Content Sources list. Zustand hands back the same
  * catalog object until something actually changes, so a single-entry cache
  * keyed on that reference collapses all of it to one build per change.

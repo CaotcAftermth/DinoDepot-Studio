@@ -20,7 +20,7 @@ import type { DependencyDiagnostic } from "../services/dependencyManager";
  * The individual validators already existed and are good; what did not exist
  * was anything that ran all of them and gave a single answer. Publish used to
  * decide per output, which meant a project could publish its production rules
- * while its catalog was broken — and the viewer reads both.
+ * while its catalog was broken - and the viewer reads both.
  *
  * Errors block. Warnings can be acknowledged, because plenty of them are
  * "this looks unusual" rather than "this is wrong", and a cluster with an
@@ -250,7 +250,7 @@ function playerIssues(input: ValidationInput): ProjectIssue[] {
           "players",
           "warning",
           "Player roster",
-          "A stored profile has lost its file — it needs uploading again.",
+          "A stored profile has lost its file - it needs uploading again.",
           player.id,
         ),
       );
@@ -272,7 +272,7 @@ function assetIssues(input: ValidationInput): ProjectIssue[] {
   // Icon rows outlived their entries in builds before deletion pruned them, so
   // a mod removed from the project could go on reporting missing artwork for
   // classes nothing catalogues. An assignment no entry can ask for is not a
-  // problem to fix — it is a row to ignore.
+  // problem to fix - it is a row to ignore.
   const known = knownPaths(input.catalog);
 
   if (input.catalog.schemaVersion === 2) {

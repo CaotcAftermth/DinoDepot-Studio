@@ -12,8 +12,8 @@ import {
 /**
  * Everything arriving from the network, checked before it is used.
  *
- * The schemas are the application's own — the same declarations the desktop
- * app builds its payloads from — so "the client and the server disagree about
+ * The schemas are the application's own - the same declarations the desktop
+ * app builds its payloads from - so "the client and the server disagree about
  * the shape" is not a class of bug that can exist here.
  *
  * What this module adds on top is the things a schema cannot say: that a
@@ -28,7 +28,7 @@ export const ACCEPTED_SCHEMA_VERSIONS = [FEEDBACK_SCHEMA_VERSION];
  * Ceilings on the parts a schema allows to be long.
  *
  * Zod already caps each field. These are the totals, which is the number that
- * matters for an issue nobody can read and a repository nobody wants — a
+ * matters for an issue nobody can read and a repository nobody wants - a
  * report at every field's individual maximum would be twenty thousand words.
  */
 const MAX_TOTAL_TEXT = 20000;
@@ -42,7 +42,7 @@ function fail(detail: string): never {
  *
  * Zod's error text is not passed through. It names paths and expected types,
  * which is useful in a log and confusing in a dialog, and the client has
- * already validated the same shape — anything reaching here malformed is a
+ * already validated the same shape - anything reaching here malformed is a
  * mismatch or a script, and neither benefits from the detail.
  */
 export function parseSubmit(body: unknown): FeedbackReport {

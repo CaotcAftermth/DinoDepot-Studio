@@ -40,7 +40,7 @@ import { buildImageIndex, matchImage, nameKey } from "../model/imageMatch";
 
 /**
  * Cluster viewer data: a single self-contained JSON the public viewer page
- * fetches. Contains display names, icons (emoji only — local image files are
+ * fetches. Contains display names, icons (emoji only - local image files are
  * not hosted), admin info notes, and the full production relationships in
  * both directions.
  */
@@ -110,7 +110,7 @@ export interface ViewerCreature {
   iconKey: string;
   /** Relative image path under the published images/ folder, when available. */
   img: string | null;
-  /** Base creature this is a variant of — drives "Related variants". */
+  /** Base creature this is a variant of - drives "Related variants". */
   base: string;
   /** General notes (markdown). */
   info: string;
@@ -122,7 +122,7 @@ export interface ViewerCreature {
    * Where the creature can be found. `origin` is the single map the content
    * came from; `spawns` is every map it actually appears on, which is what a
    * player wants. `caution` is set when none of those maps is one this cluster
-   * runs — the creature might still be obtainable, but nobody should promise
+   * runs - the creature might still be obtainable, but nobody should promise
    * it without checking.
    */
   maps: { origin: string; spawns: string[]; caution: boolean };
@@ -133,7 +133,7 @@ export interface ViewerCreature {
    * Whether this creature is on the cluster's passive production roster.
    *
    * The page publishes documented creatures too, so "is it a producer" can no
-   * longer be assumed from being listed at all — and a rule with no outputs
+   * longer be assumed from being listed at all - and a rule with no outputs
    * yet is still a producer as far as the admin is concerned.
    */
   produces: boolean;
@@ -167,7 +167,7 @@ export interface ViewerEffectRow {
   item: ViewerEffectItem;
   /** Weight reduction and preserver only. */
   percent: string;
-  /** Conversion only — what it turns into, and the amounts either side. */
+  /** Conversion only - what it turns into, and the amounts either side. */
   to: ViewerEffectItem | null;
   rate: string;
   toRate: string;
@@ -193,7 +193,7 @@ export interface ViewerItem {
   iconKey: string;
   img: string | null;
   info: string;
-  /** Item type, as recorded or as the bundled wiki data has it. */
+  /** Item type, as recorded or supplied by bundled defaults. */
   type: string;
   /** The cluster's own rarity grading, when one was set. */
   rarity: string;
@@ -471,8 +471,8 @@ export function serializeViewerData(
 
     /*
      * Attribution comes from the resolution itself rather than being derived
-     * again here. The old test — no acquisition override, and a base creature
-     * exists — was true of any variant whose parent holds no record at all,
+     * again here. The old test - no acquisition override, and a base creature
+     * exists - was true of any variant whose parent holds no record at all,
      * so "Same process as Rex" got published over a workflow that was really
      * the variant's own.
      */
@@ -528,7 +528,7 @@ export function serializeViewerData(
   }
 
   interface ItemRefs {
-    /** First path seen for this item — what the page publishes as its id. */
+    /** First path seen for this item - what the page publishes as its id. */
     path: string;
     producedBy: Set<string>;
     alternateFrom: Set<string>;
@@ -559,7 +559,7 @@ export function serializeViewerData(
     return ref;
   }
 
-  /** One creature card — from a production rule, or from its record alone. */
+  /** One creature card - from a production rule, or from its record alone. */
   function creatureCard(bpPath: string, rule: CreatureRule | null): ViewerCreature {
     const cycles: ViewerCycle[] = (rule?.cycles ?? []).map((cycle) => ({
       name: cycle.name,
@@ -630,7 +630,7 @@ export function serializeViewerData(
    * The page is a creature lookup as much as a production atlas: a knockout
    * workflow, a drop table and a spawn map are worth publishing whether or not
    * the creature happens to be on the passive-production roster. Only records
-   * that resolve against the catalog are included — without one there is no
+   * that resolve against the catalog are included - without one there is no
    * name, icon or class to show.
    */
   const documented = [

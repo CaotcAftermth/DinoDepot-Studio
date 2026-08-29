@@ -92,7 +92,7 @@ describe("assessCompatibility", () => {
 
   /**
    * The rule that matters most. An older Studio writing to a newer schema
-   * cannot know what it is dropping, and the project is shared — the loss
+   * cannot know what it is dropping, and the project is shared - the loss
    * lands on somebody else's machine.
    */
   it("opens a newer schema read-only rather than refusing or writing to it", () => {

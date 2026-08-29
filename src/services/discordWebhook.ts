@@ -7,7 +7,7 @@
  * webhook it had never been given, and "Post to Discord" from that project
  * announced into somebody else's channel. So the key carries the project id.
  *
- * The value itself is never read back here — it lives in Windows Credential
+ * The value itself is never read back here - it lives in Windows Credential
  * Manager and only Rust touches it. Everything below asks about a credential or
  * asks for an operation on one; nothing returns a URL.
  */

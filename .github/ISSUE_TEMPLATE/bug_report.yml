@@ -68,10 +68,10 @@ body:
     attributes:
       label: How much did it get in the way?
       options:
-        - Minor — cosmetic, or easy to work around
-        - Moderate — gets in the way, but there is another route
-        - Major — a part of the app is unusable
-        - Blocking — cannot carry on working
+        - Minor - cosmetic, or easy to work around
+        - Moderate - gets in the way, but there is another route
+        - Major - a part of the app is unusable
+        - Blocking - cannot carry on working
 
   - type: textarea
     id: environment

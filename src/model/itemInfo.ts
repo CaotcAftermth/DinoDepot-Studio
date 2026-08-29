@@ -7,12 +7,11 @@ import {
 import { officialCategories, officialStackSizes } from "./officialCatalog";
 
 /**
- * Per-item facts: what the admin recorded, falling back to the bundled
- * ark.wiki.gg data for official items.
+ * Per-item facts: administrator values with bundled official defaults.
  */
 
 /**
- * Rarity tiers. ASA has no per-item rarity of its own — this is the cluster's
+ * Rarity tiers. ASA has no per-item rarity of its own - this is the cluster's
  * own grading, used for viewer presentation and for spotting when a passive
  * rule hands out something it shouldn't.
  */
@@ -33,7 +32,7 @@ export const RARITY_COLOR: Record<string, string> = {
   Legendary: "#fbbf24",
 };
 
-/** Item types offered in the picker — the bundled wiki categories. */
+/** Item types offered in the picker from bundled categories. */
 export const ITEM_TYPES = [
   "Ammunition",
   "Armor",
@@ -56,7 +55,7 @@ export const ITEM_TYPES = [
   "Weapons",
 ] as const;
 
-/** What the bundled wiki dataset knows about an item, if anything. */
+/** Bundled item defaults, when available. */
 export function bundledItemInfo(bpPath: string): Partial<ItemInfo> {
   const key = normalizeBpPath(bpPath);
   return {
@@ -66,7 +65,7 @@ export function bundledItemInfo(bpPath: string): Partial<ItemInfo> {
 }
 
 /**
- * Effective info for an item: admin values win, bundled wiki data fills the
+ * Effective info for an item: administrator values win, bundled data fills the
  * gaps. Never returns null so callers can read fields directly.
  */
 export function itemInfoOf(catalog: CatalogFile, bpPath: string): ItemInfo {

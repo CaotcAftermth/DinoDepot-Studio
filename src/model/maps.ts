@@ -3,7 +3,7 @@ import { defaultMaps, type MapEntry, type ProjectSettings } from "./project";
 
 /** Map-of-origin support: derived from blueprint paths, overridable per entry. */
 
-/** Names only — the list an admin starts with before editing it in Settings. */
+/** Names only - the list an admin starts with before editing it in Settings. */
 export const KNOWN_MAPS = defaultMaps().map((m) => m.name);
 
 const PATH_SEGMENT_MAP: [RegExp, string][] = [
@@ -23,7 +23,7 @@ const PATH_SEGMENT_MAP: [RegExp, string][] = [
 
 /**
  * Best-effort map derivation from the blueprint path. Imperfect (many DLC
- * creatures live under PrimalEarth) — manual overrides win.
+ * creatures live under PrimalEarth) - manual overrides win.
  */
 export function deriveMapFromPath(bpPath: string): string | null {
   const lower = bpPath.toLowerCase();
@@ -58,15 +58,15 @@ export function mapStyle(
     (m) => m.name.toLowerCase() === name.trim().toLowerCase(),
   );
   // A map typed by hand as a custom source isn't in the list, so it can't be
-  // "disabled" — treat it as running rather than cautioning about it.
+  // "disabled" - treat it as running rather than cautioning about it.
   return hit ?? { name, icon: "🗺️", color: "", enabled: true };
 }
 
 /**
  * True when the cluster has turned this map off in Settings.
  *
- * Content from a disabled map stays available everywhere — a Scorched Earth
- * wyvern also spawns on Ragnarok — but callers should mark it Caution, since
+ * Content from a disabled map stays available everywhere - a Scorched Earth
+ * wyvern also spawns on Ragnarok - but callers should mark it Caution, since
  * some of it really will be unobtainable on the maps the cluster runs.
  */
 export function mapIsDisabled(
@@ -77,7 +77,7 @@ export function mapIsDisabled(
   return !mapStyle(settings, name).enabled;
 }
 
-/** Maps the cluster actually runs — for pickers that should default to them. */
+/** Maps the cluster actually runs - for pickers that should default to them. */
 export function enabledMaps(settings: ProjectSettings | null): MapEntry[] {
   return mapList(settings).filter((m) => m.enabled);
 }

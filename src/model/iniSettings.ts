@@ -20,7 +20,7 @@ const PURE_PLACEHOLDER = /^<([^>]*)>$/;
 /**
  * The part of a value that carries its type. `<1>` is a placeholder whose
  * options live in the Extended Notes, but the inner `1` is what tells us the
- * setting is an int — so only the inner content is ever type-checked.
+ * setting is an int - so only the inner content is ever type-checked.
  */
 export function typedPart(value: string): string {
   const t = value.trim();
@@ -110,7 +110,7 @@ export function inferIniFile(section: string): string {
 
 /**
  * Index of the `;` that starts a trailing comment, ignoring semicolons inside
- * quotes or parentheses — ARK values like
+ * quotes or parentheses - ARK values like
  * `ConfigOverrideItemMaxQuantity=(ItemClassString="X",Quantity=(...))` are common.
  */
 function trailingCommentAt(value: string): number {
@@ -140,7 +140,7 @@ export interface IniParseResult {
 
 /**
  * Parses a pasted INI block. Section headers scope the settings that follow,
- * and comment lines (`;` or `#`) directly above a setting — or trailing it —
+ * and comment lines (`;` or `#`) directly above a setting - or trailing it -
  * become that setting's description.
  */
 export function parseIniText(text: string): IniParseResult {
@@ -183,7 +183,7 @@ export function parseIniText(text: string): IniParseResult {
 
     const description = [pending.join(" ").trim(), inline]
       .filter(Boolean)
-      .join(" — ");
+      .join(" - ");
 
     settings.push({
       section,
@@ -201,7 +201,7 @@ export function parseIniText(text: string): IniParseResult {
 
 /**
  * Renders settings as a pasteable INI block, grouped by file and section.
- * Descriptions are omitted by default so a copy contains only config — the
+ * Descriptions are omitted by default so a copy contains only config - the
  * file banner survives only when settings span more than one file, since
  * merging Game.ini and GameUserSettings.ini lines would be a real footgun.
  */
@@ -334,7 +334,7 @@ export function isAddedToBuild(setting: IniSetting): boolean {
 
 /**
  * Ensures every `<placeholder>` used by a setting has a section in its
- * Extended Notes. Only the `<Name>` header is written — the "how to fill this
+ * Extended Notes. Only the `<Name>` header is written - the "how to fill this
  * in" guidance is rendered as UI hint text, never as editable content that
  * would have to be deleted before typing the first option.
  */
@@ -439,7 +439,7 @@ export const MAX_BUILD_LINES = 200;
  */
 export interface ExpandOptions {
   /**
-   * Per-option value overrides, keyed by placeholder then option — lets each
+   * Per-option value overrides, keyed by placeholder then option - lets each
    * creature in `PreventRemapping<creature>` carry its own value.
    */
   optionValues?: Record<string, Record<string, string>>;
@@ -492,7 +492,7 @@ export function expandPlaceholders(
 
 export interface BuildEntry {
   setting: IniSetting;
-  /** Working value for this build — never written back to the default. */
+  /** Working value for this build - never written back to the default. */
   value: string;
   /** Placeholder name (lowercased) -> chosen options. */
   choices: Record<string, string[]>;

@@ -20,7 +20,7 @@ import { contentHash } from "../services/publish";
  * Project fixtures for the Overview and output-status tests.
  *
  * Shared because those tests are mostly "take a working project, break one
- * thing, check what Overview says" — building a whole project inline for each
+ * thing, check what Overview says" - building a whole project inline for each
  * would bury the one line that matters.
  */
 
@@ -37,7 +37,7 @@ export function settings(over: Partial<ProjectSettings> = {}): ProjectSettings {
 
 /**
  * The repository a fixture publishes to. Separate from `settings` because the
- * binding is machine-local now — the split these fixtures exist to exercise.
+ * binding is machine-local now - the split these fixtures exist to exercise.
  */
 export function githubConfig(over: Partial<GithubConfig> = {}): GithubConfig {
   return {

@@ -49,7 +49,7 @@ describe("the phase vocabulary", () => {
 
 describe("leaksGitTerms", () => {
   it("catches the terms that must not surface", () => {
-    expect(leaksGitTerms("The push was rejected — please rebase")).toContain("rebase");
+    expect(leaksGitTerms("The push was rejected - please rebase")).toContain("rebase");
     expect(leaksGitTerms("non-fast-forward update refused")).toContain("non-fast-forward");
     expect(leaksGitTerms("you are in DETACHED HEAD state")).toContain("detached head");
   });

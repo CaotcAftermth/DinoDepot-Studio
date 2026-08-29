@@ -6,8 +6,8 @@ import { ContentSourceSchema, normalizeBpPath } from "./catalog";
 /**
  * Mod Discovery: reading a mod's catalogue out of the files it already ships.
  *
- * An installed ASA mod carries a plain-text listing of everything it cooked —
- * `Manifest_UFSFiles_Win64.txt` — beside a `.uplugin` describing the mod. Between
+ * An installed ASA mod carries a plain-text listing of everything it cooked -
+ * `Manifest_UFSFiles_Win64.txt` - beside a `.uplugin` describing the mod. Between
  * them there is enough to populate a content source without opening a single
  * packed asset, which is the whole reason this path exists: cataloguing a mod by
  * hand is hours of clicking through FModel, and the answer was sitting in a text
@@ -28,7 +28,7 @@ import { ContentSourceSchema, normalizeBpPath } from "./catalog";
 /** Folder name ASA installs a mod under: `<curseforgeProjectId>_<fileId>`. */
 export interface ModFolderId {
   projectId: string;
-  /** CurseForge file id — the version marker, and what update checks compare. */
+  /** CurseForge file id - the version marker, and what update checks compare. */
   fileId: string;
 }
 
@@ -36,7 +36,7 @@ export interface ModFolderId {
  * Splits an installed mod's folder name.
  *
  * Both halves matter: the project id identifies the mod for the rest of the app,
- * and the file id is the only version marker available offline — no API call, no
+ * and the file id is the only version marker available offline - no API call, no
  * page scrape, just a directory listing.
  */
 export function parseModFolderName(name: string): ModFolderId | null {
@@ -53,7 +53,7 @@ export interface ManifestRow {
 /**
  * Parses `Manifest_UFSFiles_Win64.txt`: one `path<TAB>ISO8601` per line.
  *
- * Lines without a tab are kept rather than dropped — a path with no timestamp is
+ * Lines without a tab are kept rather than dropped - a path with no timestamp is
  * still a path, and silently losing content because a line was formatted
  * unusually is the kind of bug that shows up as "the mod is missing a creature"
  * months later.
@@ -86,7 +86,7 @@ export interface ResolvedAsset {
    * Blueprint path in the form the catalog stores: `/<Short>/<dirs>/<Leaf>.<Leaf>`.
    *
    * No trailing `_C`. The bundled official catalog carries none on either
-   * creatures or items, and `normalizeBpPath` strips it for comparison anyway —
+   * creatures or items, and `normalizeBpPath` strips it for comparison anyway -
    * matching the existing data keeps hand-inspection of the JSON sane.
    */
   bpPath: string;
@@ -102,7 +102,7 @@ export interface ResolvedAsset {
  * `/PortsOfAtlas/Creatures/...` while official content is `/Game/PrimalEarth/...`.
  *
  * Returns null for anything that is not a mountable package, which includes the
- * `.uexp`/`.ubulk` payload files that accompany every asset — counting those
+ * `.uexp`/`.ubulk` payload files that accompany every asset - counting those
  * would double every total.
  */
 export function toBlueprintPath(
@@ -296,7 +296,7 @@ export interface DiscoveredMod {
  * Turns one mod's two text files into catalogue entries.
  *
  * `newId` is injected rather than generated here so the caller controls id
- * allocation — the app's ids come from a single place, and tests want them
+ * allocation - the app's ids come from a single place, and tests want them
  * deterministic.
  */
 export function discoverMod(
@@ -313,7 +313,7 @@ export function discoverMod(
 
   const meta = parseUplugin(raw.uplugin);
   if (!raw.uplugin.trim()) {
-    warnings.push("No .uplugin found — the mod's name and links are unknown.");
+    warnings.push("No .uplugin found - the mod's name and links are unknown.");
   }
   if (meta.cfUgcId && folder && meta.cfUgcId !== folder.projectId) {
     warnings.push(
@@ -408,7 +408,7 @@ export function discoverMod(
 export interface DiscoveryDiff {
   added: CatalogEntry[];
   removed: CatalogEntry[];
-  /** Same leaf name, different path — the case that silently breaks config. */
+  /** Same leaf name, different path - the case that silently breaks config. */
   renamed: { from: CatalogEntry; to: CatalogEntry }[];
   unchanged: number;
 }
@@ -417,7 +417,7 @@ export interface DiscoveryDiff {
  * Compares a previous catalogue of a mod against a fresh one.
  *
  * Renames are separated from add/remove because they are the dangerous case. A
- * removed blueprint is loud — rules referencing it fail validation. A renamed
+ * removed blueprint is loud - rules referencing it fail validation. A renamed
  * one looks like an unrelated removal plus an unrelated addition, and the
  * production rule pointing at the old path keeps validating right up until it
  * silently produces nothing in game.
@@ -662,7 +662,7 @@ function findExistingSource(
  * Works out what applying a discovery would do, without doing any of it.
  *
  * Discovery guesses from naming conventions, so an admin has to be able to see
- * what is about to land before it lands — particularly the removals, which are
+ * what is about to land before it lands - particularly the removals, which are
  * as likely to mean "this heuristic missed something" as "the mod dropped it".
  */
 export function planDiscovery(
@@ -693,7 +693,7 @@ export function planDiscovery(
     unmatchedItems: existing?.discovery
       ? (existing.structuralOverrides?.items ?? [])
       : items.removed,
-    // A mod the project has never seen is always a change — everything about it
+    // A mod the project has never seen is always a change - everything about it
     // is new. Only an existing source that matches what was just read has
     // nothing to do.
     noChanges:
@@ -718,7 +718,7 @@ export interface ApplyDiscoveryOptions {
    * Normalized blueprint paths the admin unticked during review.
    *
    * Classification is a guess from naming conventions, so some of what comes
-   * back is not content anyone wants in a picker — an internal base class, a
+   * back is not content anyone wants in a picker - an internal base class, a
    * test asset. Dropping those at review time is cheaper than deleting them
    * from the source afterwards.
    */
@@ -740,7 +740,7 @@ export interface ApplyDiscoveryResult {
  * Discovery only ever replaces the creature and item lists, because those are
  * the only things it actually knows about.
  *
- * Per-path data — icons, notes, taming write-ups — lives at catalog level keyed
+ * Per-path data - icons, notes, taming write-ups - lives at catalog level keyed
  * by blueprint path, so it survives untouched as long as the path does. Renamed
  * paths are re-keyed so that work follows the blueprint rather than being
  * orphaned by a mod update.
@@ -844,7 +844,7 @@ export function applyDiscovery(
     },
     structuralOverrides,
     // Durable, because the entry lists are rebuilt from the package on every
-    // install and every dependency refresh — see `enrichSourceStructure`.
+    // install and every dependency refresh - see `enrichSourceStructure`.
     excludedPaths: excluded.size > 0 ? [...excluded].sort() : undefined,
     enabled: existing?.enabled ?? true,
     removed: existing?.removed ?? false,

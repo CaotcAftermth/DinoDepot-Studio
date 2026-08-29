@@ -4,9 +4,8 @@ import type { CatalogEntry, CatalogFile, ContentSource } from "./catalog";
 import { assignCanonicalIconKeys } from "./iconKey";
 
 /**
- * The bundled official ASA content source, compiled from ark.wiki.gg by
- * scripts/build-official-catalog.mjs. Read-only; always present in the
- * catalog alongside the project's own sources.
+ * Bundled official ASA content source. Read-only; always present in the
+ * catalog alongside project-owned sources.
  */
 
 export const OFFICIAL_SOURCE_ID = "official-asa";
@@ -43,7 +42,7 @@ interface RawEntry {
   name: string;
   category: string;
   bpPath: string;
-  /** Items only: max stack size from the wiki's Id item template. */
+  /** Items only: max stack size from the bundled dataset. */
   stack?: number;
 }
 
@@ -64,9 +63,9 @@ function toEntries(
  * Variant links the bundled dataset knows about, by normalized path.
  *
  * Currently the fertilized eggs, which are generated from their plain egg
- * rather than listed by the wiki. Kept beside the dataset instead of in a
+ * rather than listed directly. Kept beside the dataset instead of in a
  * project's own `variantParents`, because it is a fact about ARK rather than
- * a decision an administrator made — a project's assignments still win.
+ * a decision an administrator made - a project's assignments still win.
  */
 export const officialVariantParents: Record<string, string> = Object.fromEntries(
   Object.entries(
@@ -80,7 +79,7 @@ export const officialSource: ContentSource = {
   name: "Official ASA",
   kind: "official",
   curseforgeId: "",
-  url: "https://ark.wiki.gg/",
+  url: "",
   docsUrl: "",
   discordUrl: "",
   iconsDir: "",
@@ -98,7 +97,7 @@ export const officialSource: ContentSource = {
 };
 
 export const CATEGORY_EMOJI: Record<string, string> = {
-  // creature categories (ark.wiki.gg)
+  // creature categories
   Dinosaurs: "🦖",
   Mammals: "🐻",
   Birds: "🦅",
@@ -211,7 +210,7 @@ export function effectiveOfficialSource(catalog: CatalogFile): ContentSource {
   };
 }
 
-/** Official ASA including entries reviewed as absent — for the review screen. */
+/** Official ASA including entries reviewed as absent - for the review screen. */
 export function officialWithAbsent(catalog: CatalogFile): ContentSource {
   const overlay = catalog.official;
   return {
@@ -233,7 +232,7 @@ export const officialCategories: Map<string, string> = new Map([
   ),
 ]);
 
-/** Max stack size per official item, from the bundled wiki data. */
+/** Max stack size per official item from bundled data. */
 export const officialStackSizes: Map<string, number> = new Map(
   (officialData.items as RawEntry[])
     .filter((i) => typeof i.stack === "number")

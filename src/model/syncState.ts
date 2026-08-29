@@ -34,7 +34,7 @@ export type SyncPhase = (typeof SYNC_PHASES)[number];
 export const SYNC_PHASE_LABELS: Record<SyncPhase, string> = {
   synchronized: "Synchronized",
   "local-changes": "Local changes",
-  "saved-locally": "Saved locally — waiting to sync",
+  "saved-locally": "Saved locally - waiting to sync",
   checking: "Checking for team changes",
   integrating: "Integrating changes",
   "needs-decision": "Needs your decision",
@@ -145,7 +145,7 @@ export function phaseForError(error: StudioError): SyncPhase {
  * The phase to show when no Sync is running.
  *
  * `saved-locally` rather than `local-changes` whenever something is stopping a
- * Sync from being possible — the distinction the admin cares about is "this
+ * Sync from being possible - the distinction the admin cares about is "this
  * will go out next time" versus "this is going nowhere until I do something".
  */
 export function restingPhase(input: {

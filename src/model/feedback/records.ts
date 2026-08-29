@@ -44,7 +44,7 @@ import {
  * A random value, generated once, stored beside the reports. It exists so the
  * service can rate-limit and so two reports from one machine can be recognised
  * as such. It is not derived from the hardware, the network, the account, or
- * anything else that would survive somebody deleting it — which they can, by
+ * anything else that would survive somebody deleting it - which they can, by
  * deleting the feedback file.
  */
 export function newReporterId(): string {
@@ -71,8 +71,8 @@ export function ensureReporterId(state: FeedbackState): FeedbackState {
  * Parses the stored feedback file, and never throws.
  *
  * A feedback file that cannot be read must not be able to stop anything. Every
- * failure here returns an empty state, because the alternative — propagating
- * the error — would put a non-essential subsystem in a position to break the
+ * failure here returns an empty state, because the alternative - propagating
+ * the error - would put a non-essential subsystem in a position to break the
  * app's startup, which is exactly what this design is meant to prevent.
  *
  * Records are parsed one at a time so a single corrupt entry costs that entry
@@ -95,7 +95,7 @@ export function migrateFeedbackState(raw: string | null): FeedbackState {
   const version = typeof source.schemaVersion === "number" ? source.schemaVersion : 1;
 
   // A file written by a newer build. Its records are read on a best-effort
-  // basis and written back at this build's version, which is lossy — but the
+  // basis and written back at this build's version, which is lossy - but the
   // alternative is an administrator who downgraded losing their history
   // silently, and every field here is additive so far.
   const records: LocalFeedbackRecord[] = [];
@@ -188,7 +188,7 @@ export function recordsForProject(
  * The title My Reports shows.
  *
  * The same text the issue would get, so a report reads the same before and
- * after it is filed — a list where everything renames itself on submission is
+ * after it is filed - a list where everything renames itself on submission is
  * a list nobody trusts.
  */
 export function recordTitle(draft: FeedbackDraft): string {
@@ -280,7 +280,7 @@ export function markLinked(
  * Submission failed. The record survives, with everything needed to retry.
  *
  * The message stored is the one the reporter was shown, not the technical
- * detail — when they come back to this tomorrow they should read the same
+ * detail - when they come back to this tomorrow they should read the same
  * sentence they read when it happened.
  */
 export function markFailed(
@@ -460,7 +460,7 @@ export function isSubmittable(draft: FeedbackDraft): boolean {
  * The report as it will be sent.
  *
  * The id comes from the local record so a retry carries the id the first
- * attempt used — that identity is the whole idempotency story, and generating
+ * attempt used - that identity is the whole idempotency story, and generating
  * a fresh one here would turn every timeout into a duplicate issue.
  */
 export function reportFrom(

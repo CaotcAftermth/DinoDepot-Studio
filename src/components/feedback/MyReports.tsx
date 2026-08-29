@@ -21,7 +21,7 @@ import { Badge, Button, EmptyState, Modal, cx } from "../ui";
  * Everything this installation has reported.
  *
  * The list is local. There is no "my reports" endpoint on the service and
- * deliberately so — answering that question would mean the service keeping a
+ * deliberately so - answering that question would mean the service keeping a
  * record of which installation filed what, which is a database of exactly the
  * kind this design is trying not to have. The app knows its own issue numbers
  * and asks about those.
@@ -30,7 +30,7 @@ import { Badge, Button, EmptyState, Modal, cx } from "../ui";
 export function MyReports() {
   const store = useFeedbackStore();
   const config = effectiveConfig(store.settings);
-  // Reports written in the open project only — or, with none open, the ones
+  // Reports written in the open project only - or, with none open, the ones
   // written with none open. The file holds every report this machine has made;
   // showing all of them here made one cluster's list read as another's.
   const projectId = useProjectStore((s) => s.settings?.projectId ?? "");

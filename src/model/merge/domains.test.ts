@@ -160,7 +160,7 @@ describe("creature remaps", () => {
 
   /**
    * Named as this computer names it, which is how it reads everywhere else in
-   * this administrator's UI — never by the record id, which means nothing.
+   * this administrator's UI - never by the record id, which means nothing.
    */
   it("names a disputed remap by what it maps", () => {
     const result = run(
@@ -222,7 +222,7 @@ describe("custom cosmetics", () => {
       cosmetics([cosmetic("1431447", { included: false })]),
       cosmetics([cosmetic("1431447", { notes: "keep this one" })]),
     );
-    // Different fields — not a disagreement.
+    // Different fields - not a disagreement.
     expect(result.conflicts).toEqual([]);
     const parsed = CosmeticsDraftSchema.parse(result.value);
     expect(parsed.entries[0].included).toBe(false);
@@ -504,7 +504,7 @@ describe("the project manifest", () => {
 
 describe("coverage", () => {
   /**
-   * A project file with no merger is not merged — `reconcile` stops and asks
+   * A project file with no merger is not merged - `reconcile` stops and asks
    * rather than silently keeping one side. Adding a project file therefore
    * means adding a merger, and this is what says so.
    */

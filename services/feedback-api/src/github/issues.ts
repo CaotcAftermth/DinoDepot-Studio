@@ -13,7 +13,7 @@ import type { DuplicateCandidate, IssueSummary } from "../shared";
  *
  * Nothing here throws a raw GitHub error upward. Statuses become the failures
  * the client already knows how to read, and no response body is ever included
- * in a message — an error body can carry request headers back with it.
+ * in a message - an error body can carry request headers back with it.
  */
 
 const API = "https://api.github.com";
@@ -141,8 +141,8 @@ export class GitHubFeedbackService {
   /**
    * Runs a search, returning nothing rather than failing.
    *
-   * Duplicate detection is a convenience. A search that errors — a rate limit,
-   * an index hiccup — must not stop somebody filing a report, so the failure
+   * Duplicate detection is a convenience. A search that errors - a rate limit,
+   * an index hiccup - must not stop somebody filing a report, so the failure
    * is absorbed and the caller sees an empty list.
    */
   async search(query: string, limit = 10): Promise<DuplicateCandidate[]> {
@@ -244,7 +244,7 @@ export class GitHubFeedbackService {
    * Labels that do not exist are dropped rather than created or sent anyway.
    * GitHub creates unknown labels silently when they are supplied at creation
    * time, which would let a typo in this code quietly populate the repository
-   * with labels nobody chose — and losing a label is a much smaller problem
+   * with labels nobody chose - and losing a label is a much smaller problem
    * than losing the report, which is what sending an invalid set would risk.
    */
   async createIssue(input: CreateIssueInput): Promise<CreateIssueResult> {

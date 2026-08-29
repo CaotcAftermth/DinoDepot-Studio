@@ -80,7 +80,7 @@ export function BlueprintPicker({
       </div>
       {collapsing && (
         <p className="text-xs text-ink-400 mb-2">
-          Showing one entry per creature — a rule on the parent already covers
+          Showing one entry per creature - a rule on the parent already covers
           its variants. Turn on "Show variants" to give one its own production.
         </p>
       )}
@@ -92,7 +92,7 @@ export function BlueprintPicker({
             className="text-left py-1.5 px-2 hover:bg-ink-800 rounded cursor-pointer group"
           >
             {/* The icon sits beside both lines rather than on the first one,
-                which gives it room to be an actual picture of the thing —
+                which gives it room to be an actual picture of the thing -
                 at 18px a Rex and an Argentavis were the same brown smudge. */}
             <div className="flex items-center gap-2.5">
               <EntityIcon bpPath={entry.bpPath} kind={kind} size={36} />
@@ -147,7 +147,7 @@ export function BlueprintPicker({
         ))}
         {results.length === 0 && (
           <p className="text-sm text-ink-400 py-6 text-center">
-            No catalog matches — use a raw path below or add the content to a
+            No catalog matches - use a raw path below or add the content to a
             source first.
           </p>
         )}

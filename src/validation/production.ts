@@ -19,7 +19,7 @@ export function validateProduction(
   const seenDinoTypes = new Map<string, string>();
 
   /**
-   * Disabled rules don't publish, so they can't collide in the output — but
+   * Disabled rules don't publish, so they can't collide in the output - but
    * the editor refuses to create a second rule for a creature whether or not
    * the first is switched off, and enabling one later turns this into an
    * error. Imported files are the way these get in, so they are surfaced as a
@@ -58,7 +58,7 @@ export function validateProduction(
             warn(
               rule.id,
               label,
-              `A disabled rule (${disabled}) uses the same creature — enabling it would make both apply`,
+              `A disabled rule (${disabled}) uses the same creature - enabling it would make both apply`,
             ),
           );
         }
@@ -84,7 +84,7 @@ export function validateProduction(
           warn(
             rule.id,
             cycleWhere,
-            `Very short interval (${cycle.intervalSeconds}s) — this cycle runs extremely often`,
+            `Very short interval (${cycle.intervalSeconds}s) - this cycle runs extremely often`,
           ),
         );
       }
@@ -126,7 +126,7 @@ function checkItem(
     issues.push(err(entityId, where, "quantityPerDino cannot be negative"));
   }
   if (item.quantityPerDino === 0) {
-    issues.push(warn(entityId, where, "quantityPerDino is 0 — produces nothing"));
+    issues.push(warn(entityId, where, "quantityPerDino is 0 - produces nothing"));
   }
   checkCaps(issues, entityId, where, item.maxQuantityPerCycle, item.maxQuantityInTerminal);
 
@@ -239,7 +239,7 @@ function checkCreatureCatalog(
   const hit = index.creatures.get(normalizeBpPath(path));
   if (!hit) {
     issues.push(
-      warn(entityId, where, "Creature is not in the catalog — check the path or add it to a content source"),
+      warn(entityId, where, "Creature is not in the catalog - check the path or add it to a content source"),
     );
   } else if (hit.source.removed) {
     issues.push(
@@ -263,7 +263,7 @@ function checkItemCatalog(
   const hit = index.items.get(normalizeBpPath(path));
   if (!hit) {
     issues.push(
-      warn(entityId, where, "Item is not in the catalog — check the path or add it to a content source"),
+      warn(entityId, where, "Item is not in the catalog - check the path or add it to a content source"),
     );
   } else if (hit.source.removed) {
     issues.push(

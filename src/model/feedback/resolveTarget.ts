@@ -13,14 +13,14 @@ import type { FeedbackTargetSnapshot } from "./types";
  *
  * The element the mouse is actually over is almost never the answer: it is a
  * `<span>` holding a number, or the SVG inside a button. What the reporter
- * means is the nearest enclosing thing that has a name — so the search walks
+ * means is the nearest enclosing thing that has a name - so the search walks
  * *up*, and stops at the first registered target.
  *
  * ## Why this does not take an HTMLElement
  *
  * The walk is described against {@link TargetNode}, which is the two members
  * it actually uses. A real `HTMLElement` satisfies it, so nothing changes at
- * the call site — but the algorithm can then be exercised with plain objects,
+ * the call site - but the algorithm can then be exercised with plain objects,
  * which matters because this project's test runner has no DOM. Resolution
  * order is the part of the Feedback Center most likely to be wrong and least
  * likely to be noticed, so it is the part that most needs tests.
@@ -185,8 +185,8 @@ function idOf(node: TargetNode): string | null {
  * The friendly name for a node's target.
  *
  * The registry wins over the attribute. The attribute is what the running
- * build wrote and is normally identical, but a stale attribute — a portal
- * rendered before a hot reload, say — must not be able to put a name into an
+ * build wrote and is normally identical, but a stale attribute - a portal
+ * rendered before a hot reload, say - must not be able to put a name into an
  * issue that no longer matches the id beside it.
  */
 function nameOf(node: TargetNode, id: string): string {
@@ -208,7 +208,7 @@ function areaOf(node: TargetNode, id: string): string {
  * it.
  *
  * Returns null when there is nothing registered above the node, which is the
- * honest answer for the gap between two cards — the inspector shows no
+ * honest answer for the gap between two cards - the inspector shows no
  * highlight rather than snapping to whatever large container happens to be
  * nearby.
  */

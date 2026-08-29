@@ -25,7 +25,7 @@ export const DISCORD_TOKENS: { token: string; scope: string; means: string }[] =
   {
     token: "{updatedSuffix}",
     scope: "line",
-    means: '" (updated …)" — collapses to nothing when unknown',
+    means: '" (updated …)" - collapses to nothing when unknown',
   },
   { token: "{index}", scope: "line", means: "1-based position in the list" },
 ];
@@ -147,7 +147,7 @@ export const SAMPLE_POST_MODS: PostMod[] = [
  * Discord's message length limits, counted the way Discord counts them: in
  * UTF-16 code units, which is what `String.length` gives us.
  *
- * A post that goes over the limit is not truncated — Discord's client turns
+ * A post that goes over the limit is not truncated - Discord's client turns
  * the whole thing into a `message.txt` attachment, which is not an
  * announcement anybody reads. So it gets split instead.
  */
@@ -155,7 +155,7 @@ export const DISCORD_LIMIT_STANDARD = 2000;
 export const DISCORD_LIMIT_NITRO = 4000;
 
 /**
- * A webhook is capped at 2000 whatever the administrator's own plan is —
+ * A webhook is capped at 2000 whatever the administrator's own plan is -
  * Nitro raises the limit for messages a *person* sends, and a webhook is not
  * a person. The Nitro setting therefore governs the copy-and-paste path, and
  * "Post to Discord" always splits at 2000.
@@ -172,7 +172,7 @@ const FENCE_CLOSE = "```";
 
 /**
  * Cuts a single over-long line into pieces of at most `budget` characters,
- * preferring a space so a word — or a URL — survives the cut where possible.
+ * preferring a space so a word - or a URL - survives the cut where possible.
  */
 function cutLine(line: string, budget: number): string[] {
   const pieces: string[] = [];
@@ -181,7 +181,7 @@ function cutLine(line: string, budget: number): string[] {
     let cut = rest.lastIndexOf(" ", budget);
     // No space, or one so early the piece would be mostly empty: cut square.
     if (cut < budget / 2) cut = budget;
-    // Never between the halves of a surrogate pair — that is not a character.
+    // Never between the halves of a surrogate pair - that is not a character.
     const before = rest.charCodeAt(cut - 1);
     const after = rest.charCodeAt(cut);
     if (before >= 0xd800 && before <= 0xdbff && after >= 0xdc00 && after <= 0xdfff) {
@@ -200,8 +200,8 @@ function cutLine(line: string, budget: number): string[] {
  *
  * Every split lands on a line boundary, so a mod's line is never cut in half
  * and a masked link never loses its closing bracket. A fenced code block that
- * spans a boundary is closed at the end of one message and reopened — with its
- * language tag — at the start of the next, because half a fence renders as
+ * spans a boundary is closed at the end of one message and reopened - with its
+ * language tag - at the start of the next, because half a fence renders as
  * literal backticks. A single line longer than a whole message is the one case
  * that gets cut mid-line, and it is cut at a space where there is one.
  *

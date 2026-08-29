@@ -188,8 +188,8 @@ const CATALOG_LABELS: Record<string, string> = {
 /**
  * Merges `catalog.mods.json`.
  *
- * Four shapes in one file: the source list (by id), and three plain maps —
- * icon assignments, per-path notes and maps of origin — all keyed by blueprint
+ * Four shapes in one file: the source list (by id), and three plain maps -
+ * icon assignments, per-path notes and maps of origin - all keyed by blueprint
  * path. The maps are where two administrators are most likely to touch the
  * same file without touching the same entry, which is exactly the case a
  * by-key merge handles invisibly.
@@ -260,7 +260,7 @@ const PLAYER_LABELS: Record<string, string> = {
  * Merges the roster.
  *
  * A player's stored profile is a reference to a binary file, and two different
- * profiles filed under one player is not something to merge field-wise — the
+ * profiles filed under one player is not something to merge field-wise - the
  * file names would agree while the saves behind them differ. It is raised as a
  * whole-value conflict so the administrator picks a save rather than a set of
  * fields describing one.
@@ -364,7 +364,7 @@ function mergePlayer(
 /**
  * Every file the merge knows how to handle.
  *
- * A project file absent from here is not merged — see `reconcile.ts`, which
+ * A project file absent from here is not merged - see `reconcile.ts`, which
  * treats an unknown file as something only a person can settle rather than
  * silently keeping one side. Adding a project file therefore means adding an
  * entry here, and a test enforces that.
@@ -425,7 +425,7 @@ export const FILE_MERGERS: FileMerger[] = [
       );
       return {
         // The last scrape is a cache of what CurseForge said, not a decision
-        // anybody made — the newer one simply wins.
+        // anybody made - the newer one simply wins.
         value: {
           ...theirsObj,
           ...mineObj,

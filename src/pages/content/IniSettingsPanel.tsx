@@ -163,7 +163,7 @@ export function IniSettingsPanel({
       {hasLegacyNotes && settings.length === 0 && (
         <div className="mb-3 px-3 py-2.5 bg-ink-800 border border-ink-600 rounded-md flex items-center justify-between gap-3">
           <span className="text-sm text-ink-200">
-            This mod has config notes from before — parse them into settings?
+            This mod has config notes from before - parse them into settings?
           </span>
           <Button
             variant="primary"
@@ -445,7 +445,7 @@ function SettingDetailModal({
   );
 
   return (
-    <Modal title={`Setting — ${setting.key}`} onClose={onClose} wide>
+    <Modal title={`Setting - ${setting.key}`} onClose={onClose} wide>
       <div className="grid grid-cols-2 gap-3 mb-3">
         <Field label="Key">
           <Input
@@ -465,7 +465,7 @@ function SettingDetailModal({
             value={draft.value}
             // Bools typed by hand get ARK's Proper case.
             onChange={(e) => set({ value: properCaseBool(e.target.value) })}
-            // Type is only inferred once the field is done being edited —
+            // Type is only inferred once the field is done being edited -
             // reading it mid-keystroke calls "0." a string and sticks with it.
             onBlur={(e) => {
               setDraft((d) => ({
@@ -483,7 +483,7 @@ function SettingDetailModal({
             onChange={(e) => set({ section: e.target.value })}
           />
         </Field>
-        <Field label="Value type" hint="Documentation only — INI is text on disk">
+        <Field label="Value type" hint="Documentation only - INI is text on disk">
           <Select
             value={draft.type}
             onChange={(e) => set({ type: e.target.value })}
@@ -756,7 +756,7 @@ function NotesModal({
   return (
     <Modal title="Config notes" onClose={onClose} wide>
       <p className="text-xs text-ink-400 mb-2">
-        Anything that doesn't fit the Key=Value shape — install order, launch
+        Anything that doesn't fit the Key=Value shape - install order, launch
         arguments, warnings, links to a config generator.
       </p>
       <textarea

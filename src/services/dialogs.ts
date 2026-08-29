@@ -4,7 +4,7 @@ import { isTauri } from "./ipc";
  * Opens a native folder picker. Falls back to a prompt in browser mock mode.
  *
  * `defaultPath` is where the dialog starts. Worth passing whenever the answer
- * is almost certainly inside a folder the app already knows about — otherwise
+ * is almost certainly inside a folder the app already knows about - otherwise
  * the dialog opens wherever it was last used, which after any unrelated file
  * operation is nowhere near the projects folder.
  */

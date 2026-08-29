@@ -36,7 +36,7 @@ import { AffectedArea } from "./AffectedArea";
 import { SelectedTargetSpotlight } from "./SelectedTargetSpotlight";
 
 /**
- * The form itself — one component for all three kinds of report.
+ * The form itself - one component for all three kinds of report.
  *
  * The three differ in which questions they ask, not in how they behave, so
  * they share a draft, a validator and a submit path. Splitting them into three
@@ -98,7 +98,7 @@ export function ReportForm({
       await store.submitOrCheck();
       return;
     }
-    // With no service configured this is not a degraded submit — it is the
+    // With no service configured this is not a degraded submit - it is the
     // only route, and it is a real one. The report is kept locally either way.
     await store.submit();
   }
@@ -256,9 +256,9 @@ function SeverityPicker({
             type="button"
             title={SEVERITY_HINTS[severity]}
             // Both halves, in that order. Without it the accessible name comes
-            // out as the hint alone — "Cosmetic, or easy to work around" — and
+            // out as the hint alone - "Cosmetic, or easy to work around" - and
             // a screen reader never says which level was chosen.
-            aria-label={`${SEVERITY_LABELS[severity]} — ${SEVERITY_HINTS[severity]}`}
+            aria-label={`${SEVERITY_LABELS[severity]} - ${SEVERITY_HINTS[severity]}`}
             aria-pressed={value === severity}
             onClick={() => onChange(value === severity ? null : severity)}
             className={cx(
@@ -319,7 +319,7 @@ function Attachments({ draft }: { draft: FeedbackDraft }) {
   return (
     <Field
       label="Attachments"
-      hint={`Images only, up to ${formatBytes(FEEDBACK_CONFIG.maxAttachmentBytes)} each and ${FEEDBACK_CONFIG.maxAttachments} per report. A screenshot may show your cluster's names — check before you attach it.`}
+      hint={`Images only, up to ${formatBytes(FEEDBACK_CONFIG.maxAttachmentBytes)} each and ${FEEDBACK_CONFIG.maxAttachments} per report. A screenshot may show your cluster's names - check before you attach it.`}
       interactiveLabel
     >
       {draft.attachments.length > 0 && (

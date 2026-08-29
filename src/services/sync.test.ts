@@ -17,7 +17,7 @@ import { leaksGitTerms, SYNC_PHASE_LABELS } from "../model/syncState";
  * The Sync orchestration, against a scripted repository.
  *
  * A fake at the `gitRepo` boundary rather than at `ipc`, because what is being
- * pinned down is the *sequence* — what is done before what, and what is only
+ * pinned down is the *sequence* - what is done before what, and what is only
  * recorded once the push has landed. The Rust side has its own tests against a
  * real bare repository for the parts that are actually Git.
  */
@@ -87,8 +87,8 @@ vi.mock("./gitRepo", () => ({
   fastForward: async () => {
     calls.push("fastForward");
     // The real one refuses over unsaved edits and over a divergence. A
-    // divergence never reaches here — the orchestration routes that to
-    // reconciliation — so the only refusal this fake needs is the dirty tree.
+    // divergence never reaches here - the orchestration routes that to
+    // reconciliation - so the only refusal this fake needs is the dirty tree.
     if (dirty) {
       return {
         advanced: false,
@@ -224,7 +224,7 @@ describe("the first sync of a new project", () => {
   });
 
   /**
-   * Sync never handles a credential at all — it names an account, and Rust
+   * Sync never handles a credential at all - it names an account, and Rust
    * looks the token up. So there is nothing here that *could* reach a commit.
    */
   it("carries an account id, never a credential", async () => {
@@ -300,7 +300,7 @@ describe("when the branch moves under us", () => {
    *
    * The loser does not retry the same push. It goes back to the fetch, and
    * because the remote has now moved while this computer holds a commit of its
-   * own, that second pass is a genuine reconciliation — which is exactly right,
+   * own, that second pass is a genuine reconciliation - which is exactly right,
    * and is why a rejection can never be resolved by forcing.
    */
   it("goes round again through reconciliation and succeeds", async () => {
@@ -368,7 +368,7 @@ describe("when only the other administrators changed things", () => {
     expect(reconcile).not.toHaveBeenCalled();
   });
 
-  /** Never checked out over — the one thing that must not happen. */
+  /** Never checked out over - the one thing that must not happen. */
   it("refuses to take their work over an unsaved edit", async () => {
     dirty = true;
     localHead = "base";

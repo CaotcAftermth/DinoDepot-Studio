@@ -18,7 +18,7 @@
  * - lowercase kebab-case, ASCII only
  * - prefixed with its area, so an id sorts next to its neighbours
  * - singular for a control, plural only for a whole collection
- * - no indices, no ordinals, no ids of project entities — a rule's own id is
+ * - no indices, no ordinals, no ids of project entities - a rule's own id is
  *   volatile context, not part of the component's identity
  *
  * ## Adding one
@@ -36,7 +36,7 @@
  * The DOM attributes a target carries.
  *
  * Data attributes rather than a React context, because the inspector resolves
- * whatever is under the pointer — including elements rendered by a portal into
+ * whatever is under the pointer - including elements rendered by a portal into
  * a completely different part of the tree, where a context provider above the
  * hovered node says nothing about what is visually under the cursor.
  */
@@ -59,7 +59,7 @@ export const FEEDBACK_ATTR = {
  * A section of the application, as an administrator would name it.
  *
  * The area is what becomes the `area:` label on the issue and what the
- * duplicate search narrows by, so the list is deliberately coarse — one entry
+ * duplicate search narrows by, so the list is deliberately coarse - one entry
  * per place somebody would say they were when it went wrong.
  */
 export interface FeedbackArea {
@@ -141,7 +141,7 @@ export interface FeedbackTargetDefinition {
 /**
  * Every component a report can name.
  *
- * Not every element in the app — an inspector that highlights `<span>`s is a
+ * Not every element in the app - an inspector that highlights `<span>`s is a
  * developer tool, not a reporting aid. What is registered is the set of places
  * a bug actually gets noticed: the editors, the pickers, the things with state.
  */
@@ -264,8 +264,8 @@ export function targetDefinition(id: string): FeedbackTargetDefinition | null {
  * What a component may attach beyond its identity.
  *
  * Values are scalars, and they go through {@link sanitizeTargetContext} before
- * they reach the DOM. The alternative — an arbitrary object, serialized on the
- * way out — is how a creature's whole record, or an administrator's cluster
+ * they reach the DOM. The alternative - an arbitrary object, serialized on the
+ * way out - is how a creature's whole record, or an administrator's cluster
  * name, ends up in a public issue because somebody passed the wrong variable.
  */
 export type TargetContextInput = Record<
@@ -284,7 +284,7 @@ export const MAX_CONTEXT_KEY = 24;
  * Context keys a target is allowed to use.
  *
  * An allowlist rather than a length check, because the risk is not a long
- * value — it is a well-meaning key like `path` or `webhook` whose value is
+ * value - it is a well-meaning key like `path` or `webhook` whose value is
  * never safe to publish. A key that is not here is dropped, and
  * `targets.test.ts` asserts the obvious dangerous ones stay out.
  */
@@ -348,7 +348,7 @@ export function feedbackTarget(
   return props;
 }
 
-/** Marks a subtree the inspector must skip — the Feedback Center's own UI. */
+/** Marks a subtree the inspector must skip - the Feedback Center's own UI. */
 export const FEEDBACK_IGNORE = { "data-feedback-ignore": "true" } as const;
 
 // ---------------------------------------------------------------------------

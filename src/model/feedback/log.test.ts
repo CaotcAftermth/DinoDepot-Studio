@@ -16,7 +16,7 @@ import {
  * Center: everything it misses goes into a public issue.
  *
  * So the tests are written as the leak they prevent, not as the transformation
- * they perform — each one names a thing that must never appear in a report,
+ * they perform - each one names a thing that must never appear in a report,
  * and asserts it does not.
  */
 
@@ -108,7 +108,7 @@ describe("sanitizeText", () => {
 
   it("survives being handed nothing", () => {
     expect(sanitizeText("")).toBe("");
-    // Nothing in, nothing out — not the word "undefined" in an issue body.
+    // Nothing in, nothing out - not the word "undefined" in an issue body.
     expect(sanitizeText(undefined as unknown as string)).toBe("");
     expect(sanitizeText(null as unknown as string)).toBe("");
   });

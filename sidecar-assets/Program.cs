@@ -81,7 +81,7 @@ internal static class Program
 
     /// <summary>
     /// ASA's containers are Oodle-compressed, and UE5 links Oodle statically
-    /// into the game executable — there is no copy in the install to borrow.
+    /// into the game executable - there is no copy in the install to borrow.
     /// The library is fetched once and cached beside this tool.
     /// </summary>
     private static async Task InitializeOodleAsync()
@@ -110,7 +110,7 @@ internal static class Program
     ///
     /// An IoStore package names its classes through `global.utoc`; without it
     /// every asset in the mod fails to parse with "global data is missing".
-    /// Only that one file is registered — the hundreds of gigabytes of chunk
+    /// Only that one file is registered - the hundreds of gigabytes of chunk
     /// containers beside it are not needed to read a mod, and mounting them
     /// would be ruinous.
     /// </summary>
@@ -146,7 +146,7 @@ internal static class Program
     /// <summary>
     /// Every texture the mod carries, without decoding any of them.
     ///
-    /// Decoding is what costs — a 4096x4096 surface is tens of megabytes — and
+    /// Decoding is what costs - a 4096x4096 surface is tens of megabytes - and
     /// a picker only needs pixels for what is on screen. The type comes from
     /// the package's exports, which is the only thing that reliably tells a
     /// texture from a blueprint: on disk every asset is just a `.uasset`.
@@ -201,7 +201,7 @@ internal static class Program
     ///
     /// Only the container indexes are read, never the data behind them, so
     /// this costs about two seconds over a 300 GB install. It exists because
-    /// naming rules about ARK's own classes cannot be trusted — the fertilized
+    /// naming rules about ARK's own classes cannot be trusted - the fertilized
     /// egg mapping in `scripts/data` was read with this rather than guessed.
     /// </summary>
     private static void ListGameAssets(string gamePaks, string filter)

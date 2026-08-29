@@ -17,7 +17,7 @@ import { collapseActions, describeAction } from "./commitActions";
  * Working out what an edit did.
  *
  * Diffed rather than declared, because a promise that every call site describes
- * its own change is one nobody keeps — and the failure is silent, producing a
+ * its own change is one nobody keeps - and the failure is silent, producing a
  * commit that says "files changed" about an afternoon of work.
  */
 

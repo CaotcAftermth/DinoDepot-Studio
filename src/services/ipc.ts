@@ -44,7 +44,7 @@ const MOCK_FEEDBACK_KEY = "ddstudio.feedback";
 
 /**
  * Where this machine keeps its projects. Machine-local too, and the desktop
- * build keeps it in a file in application data — see `projects_root_get`.
+ * build keeps it in a file in application data - see `projects_root_get`.
  */
 const MOCK_PROJECTS_ROOT_KEY = "ddstudio.projectsRoot";
 
@@ -75,7 +75,7 @@ function saveMockFs(fs: MockFs) {
 }
 
 /**
- * Lazily initialised — importing this module must not require a DOM, or every
+ * Lazily initialised - importing this module must not require a DOM, or every
  * test that reaches the service layer fails at import time.
  */
 let mockSecretsCache: Map<string, string> | null = null;
@@ -86,7 +86,7 @@ function secrets(): Map<string, string> {
     try {
       saved = JSON.parse(sessionStorage.getItem("ddstudio.mocksecrets") ?? "[]");
     } catch {
-      /* no sessionStorage (tests), or unparseable — start empty */
+      /* no sessionStorage (tests), or unparseable - start empty */
     }
     mockSecretsCache = new Map(saved);
   }
@@ -260,7 +260,7 @@ async function mockInvoke<T>(cmd: string, args: Args): Promise<T> {
       throw new Error("save_text_file is not available in browser mock mode");
     // Profile storage is backed by the mock filesystem so the import and
     // generate flows can be exercised in the browser. Anything that needs a
-    // real path — copying a file in or out — still cannot work here.
+    // real path - copying a file in or out - still cannot work here.
     case "store_player_profile_b64": {
       const fileName = mockProfileName(args.playerId as string);
       fs[dir] = fs[dir] ?? {};
@@ -320,12 +320,6 @@ async function mockInvoke<T>(cmd: string, args: Args): Promise<T> {
       persistMockSecrets();
       return undefined as T;
     }
-    case "wiki_fetch_page":
-      // The wiki blocks cross-origin reads, which is why the real fetch runs
-      // in Rust. The fixture import path works here.
-      throw new Error(
-        "Fetching from the wiki is only available in the desktop app — use the fixture import in browser mode",
-      );
     // Mod Discovery reads the game's installed files, which a browser cannot
     // see at all. There is no useful mock: the whole feature is the filesystem.
     case "resolve_mods_root":
@@ -335,7 +329,7 @@ async function mockInvoke<T>(cmd: string, args: Args): Promise<T> {
         "Reading installed mods is only available in the desktop app",
       );
     // Connecting an account reaches GitHub with a real credential, and the
-    // credential lives in Windows Credential Manager — neither exists here.
+    // credential lives in Windows Credential Manager - neither exists here.
     // Refused with the code the real one would use, so the UI shows the same
     // message rather than a mock-backend string.
     case "github_connect_account":

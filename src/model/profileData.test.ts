@@ -167,7 +167,7 @@ describe("applyProfileEdits", () => {
       playerDataId: "987654321",
       tribeId: "42",
     });
-    // The EOS id above is 33 characters — deliberately malformed.
+    // The EOS id above is 33 characters - deliberately malformed.
     expect(skipped).toContain("EOS ID");
 
     const summary = readProfileSummary(rewrite(profile));

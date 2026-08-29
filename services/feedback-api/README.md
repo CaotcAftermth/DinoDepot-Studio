@@ -34,7 +34,7 @@ Total setup is about fifteen minutes, most of it waiting for GitHub's forms.
 | Homepage URL | `https://github.com/CaotcAftermth/DinoDepot-Studio` |
 | Webhook | **Uncheck Active.** This service is never called by GitHub. |
 
-**Repository permissions** — exactly two, and no more:
+**Repository permissions** - exactly two, and no more:
 
 | Permission | Access |
 | --- | --- |
@@ -55,7 +55,7 @@ On the same page: **Private keys → Generate a private key**. A `.pem` file
 downloads. It is shown once.
 
 Both PKCS#1 (`BEGIN RSA PRIVATE KEY`, which is what GitHub gives you) and
-PKCS#8 (`BEGIN PRIVATE KEY`) are accepted — no conversion needed.
+PKCS#8 (`BEGIN PRIVATE KEY`) are accepted - no conversion needed.
 
 ### Install it
 
@@ -121,7 +121,7 @@ If a required secret is missing you get a 503 naming which one.
 ## 3. Create the labels
 
 The service drops labels the repository does not have and names them in its
-reply, so this is not required — but issues arrive unsorted without it.
+reply, so this is not required - but issues arrive unsorted without it.
 
 With the `gh` CLI authenticated:
 
@@ -157,7 +157,7 @@ answers *and* files into the repository this build belongs to.
 ## Optional: durable rate limiting
 
 Without a KV namespace, counters live in each isolate's memory. A platform may
-run several, so the limit is approximate — it raises the cost of abuse without
+run several, so the limit is approximate - it raises the cost of abuse without
 eliminating it.
 
 ```bash
@@ -181,7 +181,7 @@ private: the Worker serves only validated screenshot keys through
 `/api/attachments/`. `ATTACHMENTS_BASE_URL` remains an optional override when a
 production custom domain is preferred.
 
-Without the binding, attachments are refused — the report is still filed, and
+Without the binding, attachments are refused - the report is still filed, and
 the reporter is told the screenshot was not kept.
 
 ---
@@ -198,7 +198,7 @@ the reporter is told the screenshot was not kept.
 | `POST` | `/api/feedback/issues/lookup` | Up to fifty issues at once |
 
 There is no "list what this installation reported" endpoint, and that is
-deliberate — answering it would require storing who filed what.
+deliberate - answering it would require storing who filed what.
 
 ---
 
@@ -228,7 +228,7 @@ npx wrangler dev
 Reads `.dev.vars` in the same format as `.env.example`. That file is
 gitignored; never commit a filled-in one.
 
-The browser build of the app can talk to it directly — `ipc.ts` makes a real
+The browser build of the app can talk to it directly - `ipc.ts` makes a real
 `fetch` in mock mode, because a browser has no content-security-policy
 restriction to route around.
 
@@ -243,7 +243,7 @@ npx vitest run services/feedback-api
 ```
 
 GitHub is stubbed. The RSA key is generated when the suite starts rather than
-committed — a private key in a repository is one somebody eventually copies
+committed - a private key in a repository is one somebody eventually copies
 into a real deployment.
 
 Type check:
@@ -277,4 +277,4 @@ export const handler = (request: Request) => worker.fetch(request, process.env);
 ```
 
 Without the bindings, rate limiting falls back to memory and attachments are
-refused — both stated at runtime rather than failing quietly.
+refused - both stated at runtime rather than failing quietly.

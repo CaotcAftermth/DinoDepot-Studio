@@ -54,7 +54,7 @@ export function Button({
  * The default `w-full`, unless the caller sized the control themselves.
  *
  * Tailwind resolves conflicting utilities by CSS source order, not by the
- * order they appear in the class attribute — so a base `w-full` silently beat
+ * order they appear in the class attribute - so a base `w-full` silently beat
  * every caller's `w-20`/`w-44`, and sized fields rendered full width. Dropping
  * the default is the only way for the caller's width to take effect.
  *
@@ -154,7 +154,7 @@ export function Field({
    * Set when the label contains its own control.
    *
    * A `<label>` forwards a click from anywhere inside it to the first control
-   * it contains — so a button in the label fires when the admin clicks the
+   * it contains - so a button in the label fires when the admin clicks the
    * hint text or the padding beside the input. Rendering a plain `<div>` keeps
    * the label's own hit area to the label itself.
    */
@@ -239,7 +239,7 @@ export function Card({
    * Marks the card as reportable, from `feedbackTarget(...)`.
    *
    * A prop rather than a wrapper element, so instrumenting a card cannot
-   * change what it looks like — an extra `<div>` around a grid item or a flex
+   * change what it looks like - an extra `<div>` around a grid item or a flex
    * child is exactly the sort of thing that moves a layout by four pixels and
    * gets blamed on something else a week later.
    */
@@ -269,7 +269,7 @@ export function Card({
  *
  * The body is hidden with CSS rather than unmounted: a collapsed section is a
  * presentation choice, and unmounting would throw away everything the children
- * hold locally — which item rows are open, a half-typed blueprint path, the
+ * hold locally - which item rows are open, a half-typed blueprint path, the
  * scroll position of a long list. `display: none` also keeps the content out
  * of the modal focus trap, which filters on `offsetParent`.
  */
@@ -294,14 +294,14 @@ export function CollapsibleCard({
   /**
    * Fired when the admin folds or unfolds this card, never on a change the
    * owner made itself. For sections where opening one card should close its
-   * siblings — a list of cycles is only navigable one at a time.
+   * siblings - a list of cycles is only navigable one at a time.
    */
   onOpenChange?: (open: boolean) => void;
   /** Marks the card as reportable. See {@link Card}. */
   feedback?: FeedbackTargetProps;
   /**
    * Stable id (`rule:<ruleId>`, `cycle:<cycleId>`…) under which the fold state
-   * is remembered across navigation and restarts. Must not be a list index —
+   * is remembered across navigation and restarts. Must not be a list index -
    * the point is that a card keeps its state when its neighbours change.
    * Omit for a card whose state should not outlive the mount.
    */
@@ -373,7 +373,7 @@ export function CollapsibleCard({
 
 /**
  * Open/close plumbing for a panel that hangs off a trigger and is portalled to
- * `<body>` — dropdown menus, the spawn-argument editors.
+ * `<body>` - dropdown menus, the spawn-argument editors.
  *
  * The portal is the reason this is shared: the panel is *not* inside the
  * anchor's DOM subtree, so an outside-click check that only looks at the
@@ -656,8 +656,8 @@ const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
- * Open modals, outermost first. Modals nest — a blueprint picker opens over
- * the creature details modal — and only the top one may answer Escape or trap
+ * Open modals, outermost first. Modals nest - a blueprint picker opens over
+ * the creature details modal - and only the top one may answer Escape or trap
  * focus, or dismissing the picker would tear down its parent too.
  */
 const modalStack: string[] = [];
@@ -673,7 +673,7 @@ let openPopups = 0;
 /**
  * Close callbacks for every popover currently open. Module scope because
  * popovers are independent components with no common ancestor to coordinate
- * through — and there should only ever be one entry in here.
+ * through - and there should only ever be one entry in here.
  */
 const openPopoverClosers = new Set<() => void>();
 
@@ -693,7 +693,7 @@ const MODAL_PLACEMENT_LABELS: Record<ModalPlacement, string> = {
  * with a Back button, or Alt+Left, moved the app to another page while the
  * dialog stayed open on top of it. So an entry pointing at the same page is
  * parked on the stack when a dialog opens, and the Back that pops it closes
- * the dialog instead of going anywhere — which is what pressing Back over a
+ * the dialog instead of going anywhere - which is what pressing Back over a
  * dialog is asking for anyway.
  *
  * The entry is deliberately *not* taken off again when the dialog closes some
@@ -701,7 +701,7 @@ const MODAL_PLACEMENT_LABELS: Record<ModalPlacement, string> = {
  * navigation the router also reacts to, and under React's development double
  * mount the push and the pop interleave and land the app a page back. The cost
  * of leaving it is one Back press that does nothing, once, and only after a
- * dialog has been opened and closed without using Back — and the next dialog
+ * dialog has been opened and closed without using Back - and the next dialog
  * reuses the same entry rather than adding another.
  */
 /** Marks the entry this hook parks on top of the real one. */
@@ -721,7 +721,7 @@ function useHistoryDismiss(onClose: () => void) {
     if (typeof window === "undefined") return;
     // Only when there is not one there already. React's development double
     // mount runs this effect twice, and a nested confirmation is a second
-    // dialog over the same page — neither should stack a second entry, and
+    // dialog over the same page - neither should stack a second entry, and
     // one entry closes whatever is open on top of it either way.
     if (!onDialogEntry()) {
       window.history.pushState({ ddDialog: true }, "", window.location.href);
@@ -791,7 +791,7 @@ export function Modal({
   /** Confirmations must sit above the modal whose action requested them. */
   layer?: "default" | "confirmation";
 }) {
-  // Only dismiss when the press *starts* on the backdrop — otherwise
+  // Only dismiss when the press *starts* on the backdrop - otherwise
   // selecting text inside and releasing outside would close the modal.
   const pressedBackdrop = useRef(false);
   const panel = useRef<HTMLDivElement>(null);
@@ -843,7 +843,7 @@ export function Modal({
     modalStack.push(id);
     const restoreTo = document.activeElement as HTMLElement | null;
 
-    // Focus the first control *in the body*, not the header's close button —
+    // Focus the first control *in the body*, not the header's close button -
     // landing on Close means a picker's search box never gets the caret and
     // the admin has to click before typing. An explicit autofocus wins.
     const target =

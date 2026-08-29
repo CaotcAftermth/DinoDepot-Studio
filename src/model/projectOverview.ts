@@ -64,7 +64,7 @@ export interface InventoryCard {
   id: string;
   label: string;
   value: string;
-  /** Second line — the "is it okay?" half. */
+  /** Second line - the "is it okay?" half. */
   sub: string;
   to: string;
   /** Draws the amber border. Reserved for things a person should act on. */
@@ -107,8 +107,8 @@ export interface OverviewInput {
 /**
  * Mods checks actually run for.
  *
- * A parked entry is history — the acknowledged version is kept so re-enabling
- * resumes correctly — and counting those inflated the watched total and, worse,
+ * A parked entry is history - the acknowledged version is kept so re-enabling
+ * resumes correctly - and counting those inflated the watched total and, worse,
  * raised review warnings for mods the cluster no longer runs.
  */
 export function activeWatched(watchlist: Watchlist): WatchedMod[] {
@@ -159,8 +159,8 @@ function issueItems(
 ): AttentionItem[] {
   const rows: AttentionItem[] = [];
   const blocking = level === "error";
-  // One rule feeds several outputs — a broken production rule is reported by
-  // Passive Production and again by Cluster Viewer Data — and it is still one
+  // One rule feeds several outputs - a broken production rule is reported by
+  // Passive Production and again by Cluster Viewer Data - and it is still one
   // thing to go and fix. The first output to report it wins, which is the one
   // that owns the rule.
   const seen = new Set<string>();
@@ -288,7 +288,7 @@ export function buildOverview(input: OverviewInput): OverviewModel {
 
   // Deliberately no attention item for "ready but not verified this session".
   // Not having clicked Test Connection is not a defect, and raising it here
-  // would put every healthy project permanently in amber — which is exactly
+  // would put every healthy project permanently in amber - which is exactly
   // how a health signal stops meaning anything. The distinction is shown on
   // the publishing card's target chip instead, as ready vs verified.
 
@@ -337,7 +337,7 @@ export function buildOverview(input: OverviewInput): OverviewModel {
       firstError: errorRows[0]?.to ?? "/publish",
       needReview: needReview.length,
       // Nagging about a repository is only useful once there is something to
-      // send to it — otherwise a brand-new project greets you with a chore.
+      // send to it - otherwise a brand-new project greets you with a chore.
       needsGithub: totals.withContent.length > 0 && !github.ready,
     }),
     github,
@@ -380,7 +380,7 @@ function headlineFor(
         ? `${plural(x.errors, "validation error")} must be fixed before publishing.`
         : "Publishing cannot run until its prerequisites are met.";
     case "attention":
-      return `${plural(x.attention, "item")} worth a look — nothing is blocking publishing.`;
+      return `${plural(x.attention, "item")} worth a look - nothing is blocking publishing.`;
     case "changes":
       return `${plural(x.dirty, "output")} ready to publish. Everything else is in sync.`;
     case "healthy":
@@ -388,7 +388,7 @@ function headlineFor(
       // published would be true only in the emptiest sense.
       return x.configured
         ? `All ${x.synchronized.total} outputs valid and synchronized.`
-        : "Nothing configured yet — add production rules to get started.";
+        : "Nothing configured yet - add production rules to get started.";
   }
 }
 
@@ -514,7 +514,7 @@ function buildInventory(x: {
 /**
  * What to do next.
  *
- * Every entry navigates, and every label says so — the old Quick Actions
+ * Every entry navigates, and every label says so - the old Quick Actions
  * offered "Run cosmetics collector" on a button that only opened a page.
  */
 function buildActions(x: {
@@ -564,7 +564,7 @@ function buildActions(x: {
 
   if (actions.length > 0) return actions;
 
-  // Nothing outstanding — offer the work someone actually comes here to do.
+  // Nothing outstanding - offer the work someone actually comes here to do.
   return [
     { id: "new-rule", label: "New production rule", to: "/production", primary: false },
     { id: "new-remap", label: "Add creature remap", to: "/remaps", primary: false },

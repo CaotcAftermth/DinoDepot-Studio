@@ -35,7 +35,7 @@ export function useReferenceName() {
 /**
  * Renders prose with its catalog references resolved to icon + name.
  *
- * This is the read side — the preview card and anything else showing stored
+ * This is the read side - the preview card and anything else showing stored
  * text. A reference whose target has left the catalog still renders, marked,
  * rather than vanishing or showing a raw token.
  */
@@ -122,7 +122,7 @@ function InlineMarkdown({ text }: { text: string }) {
  * The markdown subset the notes editor advertises: `#` headers, `**bold**`,
  * `- lists`, blank-line-separated paragraphs.
  *
- * Deliberately the same subset the published page understands — a preview
+ * Deliberately the same subset the published page understands - a preview
  * that showed the raw `**` while the Atlas showed bold would be misleading
  * about the one thing a preview exists to answer.
  */
@@ -200,8 +200,8 @@ export function MarkdownText({
  * A text field that understands `{item}` and `{creature}`.
  *
  * Typing either opens the catalog picker and swaps the trigger for a stored
- * reference. The icon cannot live *inside* a native input — an `<input>` and
- * `<textarea>` render text only — so the resolved references show as chips
+ * reference. The icon cannot live *inside* a native input - an `<input>` and
+ * `<textarea>` render text only - so the resolved references show as chips
  * directly beneath the field, and render inline everywhere the text is
  * displayed for reading. That keeps typing, undo, paste and IME behaving
  * exactly like the plain fields they replace, which a contenteditable would
@@ -297,7 +297,7 @@ export function ReferenceInput({
             picking.kind === "creature" ? "Insert a creature" : "Insert an item"
           }
           onClose={() => {
-            // Leave the trigger text alone — cancelling should not silently
+            // Leave the trigger text alone - cancelling should not silently
             // eat what the admin typed.
             setPicking(null);
             field.current?.focus();

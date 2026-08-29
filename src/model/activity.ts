@@ -3,7 +3,7 @@ import { z } from "zod";
 /**
  * A log of meaningful things that happened to this project.
  *
- * Recorded at commit boundaries only — a published output, a rule created, a
+ * Recorded at commit boundaries only - a published output, a rule created, a
  * scrape applied. Deliberately not an edit journal: production rules save on
  * every keystroke, and an entry per character would bury the events worth
  * seeing. Nothing is ever inferred after the fact either; if the app did not
@@ -42,7 +42,7 @@ export const ActivityEventSchema = z.object({
   kind: ActivityKindSchema,
   /** One line, already written for display. */
   title: z.string(),
-  /** Optional second line — counts, names, commit shas. */
+  /** Optional second line - counts, names, commit shas. */
   detail: z.string().default(""),
   /** Overrides the kind's default route when the event has a better target. */
   to: z.string().default(""),
@@ -72,7 +72,7 @@ export function emptyActivity(): ActivityFile {
 /**
  * Adds an event, newest first, trimming to {@link ACTIVITY_LIMIT}.
  *
- * Pure so the trimming rule is testable on its own — the store just calls it.
+ * Pure so the trimming rule is testable on its own - the store just calls it.
  */
 export function appendActivity(
   file: ActivityFile,
@@ -101,7 +101,7 @@ export function activityRoute(event: ActivityEvent): string {
 
 /**
  * Clock time for the activity list. The list only ever shows the last day or
- * two of work, so the date is noise — but an event that is not from today
+ * two of work, so the date is noise - but an event that is not from today
  * needs one, or "9:14 AM" silently means the wrong day.
  */
 export function formatActivityTime(at: string, now = new Date()): string {

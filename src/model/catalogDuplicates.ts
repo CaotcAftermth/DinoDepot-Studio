@@ -4,7 +4,7 @@ import { normalizeBpPath, type CatalogEntry, type ContentSource } from "./catalo
  * Duplicate protection for the catalog.
  *
  * The catalog index is a `Map` keyed on the normalized blueprint path, so a
- * class catalogued twice does not error — the second one silently wins, and
+ * class catalogued twice does not error - the second one silently wins, and
  * whichever source "owns" it depends on iteration order. That shows up later
  * as a picker offering the same creature under the wrong mod, or a rule that
  * points at content the admin thought they had removed.
@@ -58,7 +58,7 @@ export function findEntryOwner(
   return hits.find((h) => !ignoreEntryIds?.has(h.entry.id)) ?? null;
 }
 
-/** "Rex in Official ASA" — the half of the message that says where to look. */
+/** "Rex in Official ASA" - the half of the message that says where to look. */
 export function describeOwner(owner: EntryOwner): string {
   return `"${owner.entry.name}" in ${owner.source.name}`;
 }
@@ -86,7 +86,7 @@ export interface InsertPlan {
  *
  * Two collisions matter and are reported apart: against what is already
  * catalogued anywhere, and against an earlier line of the same paste. The
- * second is the one that silently corrupted a source before — a list pasted
+ * second is the one that silently corrupted a source before - a list pasted
  * twice used to double every entry.
  */
 export function planEntryInsert(
@@ -137,7 +137,7 @@ export interface MovePlan {
  * What a move between sources can actually carry.
  *
  * The entries being moved are already in the owner index (they live in the
- * source they are leaving), so they are excluded by id — otherwise every move
+ * source they are leaving), so they are excluded by id - otherwise every move
  * would collide with itself. A genuine collision means the destination, or
  * some third source, already catalogues that class; those are reported rather
  * than dropped on the floor, which is what the old `Set` of lowercased paths
@@ -189,7 +189,7 @@ export interface DuplicateClass {
 /**
  * Duplicate classes already present in a project.
  *
- * Reporting only — a project saved before this check existed may legitimately
+ * Reporting only - a project saved before this check existed may legitimately
  * need its duplicates resolved by hand (which of the two names is right is not
  * something the app can know), and deleting one automatically would throw away
  * an admin's work.
@@ -229,7 +229,7 @@ export function findCatalogDuplicates(
  * Two sources carrying the same CurseForge project ID produce a duplicated id
  * in the `-mods=` list and an ambiguous watchlist entry (the watcher keys on
  * `curseforgeId || source.id`, so the second mod's results overwrite the
- * first's). Empty stays legal — a mod known only by URL is a real case.
+ * first's). Empty stays legal - a mod known only by URL is a real case.
  */
 export function normalizeCurseforgeId(id: string): string {
   return id.trim();
@@ -269,7 +269,7 @@ export interface DuplicateCurseforgeId {
   sourceNames: string[];
 }
 
-/** CurseForge IDs used by more than one source — reporting only. */
+/** CurseForge IDs used by more than one source - reporting only. */
 export function findDuplicateCurseforgeIds(
   sources: ContentSource[],
 ): DuplicateCurseforgeId[] {
@@ -292,8 +292,8 @@ export function findDuplicateCurseforgeIds(
 /**
  * A mod page URL pointing at CurseForge's current site.
  *
- * Every installed mod's `.uplugin` carries a `legacy.curseforge.com` link —
- * verified across the local corpus — which still resolves but sends an
+ * Every installed mod's `.uplugin` carries a `legacy.curseforge.com` link -
+ * verified across the local corpus - which still resolves but sends an
  * administrator to the old site. The host is the only difference; the path is
  * already correct, so dropping the subdomain is the whole fix.
  */

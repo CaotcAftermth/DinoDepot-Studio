@@ -32,7 +32,7 @@ vi.mock("./ipc", () => ({
 
 const { readPackageManifestFile } = await import("./packageManager");
 
-/** A minimal but real RIFF/WEBP header — the signature check reads these. */
+/** A minimal but real RIFF/WEBP header - the signature check reads these. */
 const WEBP = new Uint8Array([
   0x52, 0x49, 0x46, 0x46, 0x10, 0x00, 0x00, 0x00, 0x57, 0x45, 0x42, 0x50,
   0x56, 0x50, 0x38, 0x20,

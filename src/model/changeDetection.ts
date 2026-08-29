@@ -8,7 +8,7 @@ import { deepEqual } from "./merge/core";
  * is a promise nobody keeps: the twentieth place that edits a creature forgets,
  * and the commit silently degrades to "files changed". Diffing the before and
  * after states cannot be forgotten, because it happens in the one place every
- * edit already goes through — the store setter.
+ * edit already goes through - the store setter.
  *
  * Deliberately shallow about *values*. "Changed interval on Rex" is what an
  * administrator wants; "changed interval from 300 to 600" is what the file
@@ -22,7 +22,7 @@ export interface DiffSpec<T> {
   domain: string;
   keyOf(item: T): string;
   labelOf(item: T): string;
-  /** Fields never worth mentioning — caches, timestamps, scrape results. */
+  /** Fields never worth mentioning - caches, timestamps, scrape results. */
   ignore?: string[];
 }
 
@@ -70,8 +70,8 @@ export function diffList<T extends Record<string, unknown>>(
 /**
  * Which top-level fields differ.
  *
- * Nested structures collapse to their own name — "cycles" rather than a path
- * three levels deep — because the point is to tell the administrator *where* to
+ * Nested structures collapse to their own name - "cycles" rather than a path
+ * three levels deep - because the point is to tell the administrator *where* to
  * look, and they will look at the creature either way.
  */
 function changedFields(
@@ -97,7 +97,7 @@ function action(
   return StructuredActionSchema.parse({ type, id, label, fields });
 }
 
-/** Compares two string-keyed maps — icon assignments, notes, maps of origin. */
+/** Compares two string-keyed maps - icon assignments, notes, maps of origin. */
 export function diffMap(
   before: Record<string, string>,
   after: Record<string, string>,
@@ -193,7 +193,7 @@ export const IMPORT_SPEC: DiffSpec<Any> = {
  * Everything that changed between two versions of the catalog.
  *
  * Four shapes in one file, and the three maps are where most edits actually
- * happen — assigning an icon, writing a note — so they get described rather
+ * happen - assigning an icon, writing a note - so they get described rather
  * than collapsing into "the catalog changed".
  */
 export function diffCatalog(before: Any, after: Any): StructuredAction[] {

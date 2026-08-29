@@ -22,7 +22,7 @@ import type {
  *
  * Everything it produces is a count, a version, or a fact about the machine's
  * browser. It never touches a credential store, never reads a file, and never
- * copies anything an administrator typed — the closest it comes is the number
+ * copies anything an administrator typed - the closest it comes is the number
  * of rules a project has.
  *
  * Keeping the reading here and the *rules* in `model/feedback/diagnostics.ts`
@@ -168,8 +168,8 @@ function viewportSize(): string {
 export async function collectProject(): Promise<ProjectDiagnostics | null> {
   // Imported here rather than at the top of the file, and the reason is the
   // launch time this project spent real effort on. The Feedback Center is
-  // mounted eagerly — the shortcut and the right-click menu have to work
-  // before anything is open — and a static import would drag the project and
+  // mounted eagerly - the shortcut and the right-click menu have to work
+  // before anything is open - and a static import would drag the project and
   // draft stores, and everything they touch, into the first script the window
   // has to evaluate. Nothing needs them until somebody actually opts into
   // sending project shape.
@@ -199,7 +199,7 @@ export async function collectProject(): Promise<ProjectDiagnostics | null> {
     mapCount: project.settings.maps.length,
     sourceCount: sources.length,
     // Package identity and version only. A package id names a published
-    // content pack rather than anything about this cluster — but a locally
+    // content pack rather than anything about this cluster - but a locally
     // built one is named by whoever built it, so the ids go through the same
     // guard component context does before anything is published.
     packages: (project.settings.packageDependencies ?? [])
@@ -227,7 +227,7 @@ export function currentRoute(): { route: string; page: string } {
  * The full bundle for a report.
  *
  * Assembled fresh every time the diagnostics panel is opened or a report is
- * sent, so what the reporter reviewed is what gets sent — a bundle captured
+ * sent, so what the reporter reviewed is what gets sent - a bundle captured
  * when the form opened would go stale the moment they navigated to reproduce
  * the problem.
  */

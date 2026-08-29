@@ -5,14 +5,12 @@
  * distinction matters to anyone deciding whether to trust a field:
  *
  *   availability, spawn maps, drag weight, drops
- *     Read from the ARK Official Community Wiki. Each row in the workbook
- *     names the exact revision it was taken from.
+ *     Imported from the legacy source workbook with source revisions retained.
  *
  *   acquisition methods and their steps
- *     Captured from Chrome AI (ChatGPT and Gemini). Useful, spot-checked, but
- *     *not* wiki-verified — treat as a starting point an administrator may
- *     correct. A method is only attached to a creature the wiki says is
- *     acquirable, so no untameable creature is given a taming route.
+ *     Imported legacy guide text. Treat it as a starting point an
+ *     administrator may correct. A method is only attached to a creature
+ *     marked acquirable in the source workbook.
  *
  * Anything an administrator writes themselves wins: this arrives as the
  * dependency layer's defaults, and `differentEntries` subtracts it again

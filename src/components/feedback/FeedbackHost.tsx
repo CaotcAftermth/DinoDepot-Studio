@@ -24,8 +24,8 @@ import { FeedbackPanels } from "./FeedbackPanels";
  * screen, because a bug on the welcome screen is still a bug and there is no
  * project open to report it from.
  *
- * Nothing here decides anything. It owns the document-level listeners — the
- * shortcut, the right-click menu, the crash handlers — and renders whichever
+ * Nothing here decides anything. It owns the document-level listeners - the
+ * shortcut, the right-click menu, the crash handlers - and renders whichever
  * panel the store says is current.
  */
 
@@ -40,7 +40,7 @@ export function FeedbackHost() {
   const enabled = effectiveConfig(settings).enabled;
 
   // Reads the stored history once, on the first mount. Failure is handled
-  // inside — this must not be able to stop the app rendering.
+  // inside - this must not be able to stop the app rendering.
   useEffect(() => {
     void useFeedbackStore.getState().init();
   }, []);
@@ -126,8 +126,8 @@ function useContextMenu(enabled: boolean) {
 /**
  * Records crashes that no component caught.
  *
- * These are the failures nobody can describe afterwards — a rejected promise
- * in a background refresh, an error from a listener — and they are exactly
+ * These are the failures nobody can describe afterwards - a rejected promise
+ * in a background refresh, an error from a listener - and they are exactly
  * what makes the log worth attaching to a report. Nothing is sent; the entry
  * simply exists if a report is made later.
  */

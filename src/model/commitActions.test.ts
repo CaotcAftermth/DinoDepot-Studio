@@ -209,7 +209,7 @@ describe("decodeCommitMessage", () => {
     expect(decoded.unreadableActions).toBe(0);
   });
 
-  /** Counted, not discarded — the UI must not show less than happened. */
+  /** Counted, not discarded - the UI must not show less than happened. */
   it("counts action trailers it cannot parse", () => {
     const message = [
       "Updated creature configuration",

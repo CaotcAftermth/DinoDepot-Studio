@@ -19,7 +19,7 @@ export type ScraperEvent =
       url: string;
       ok: boolean;
     }
-  /** Emitted once, just before `done` — see ScraperMetrics. */
+  /** Emitted once, just before `done` - see ScraperMetrics. */
   | ({ type: "metrics" } & ScraperMetrics)
   | { type: "done"; count: number }
   | { type: "error"; message: string }
@@ -129,7 +129,7 @@ export interface ModLookup {
  * answer and a form is waiting for it.
  *
  * Costs a Chrome launch, so this belongs behind something the administrator
- * pressed — never behind typing.
+ * pressed - never behind typing.
  */
 export async function lookupModByProjectId(
   projectId: string,

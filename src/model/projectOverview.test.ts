@@ -103,7 +103,7 @@ describe("project health", () => {
 
 describe("publishing readiness gates health", () => {
   it("does not block an empty project for having no GitHub destination", () => {
-    // Nothing to publish means nowhere to publish it to — not a red banner.
+    // Nothing to publish means nowhere to publish it to - not a red banner.
     const model = overviewFor({ github: githubConfig({ owner: "", repo: "", branch: "" }) });
     expect(model.health).toBe("healthy");
     expect(item(model, "github-not-ready")).toBeUndefined();
@@ -353,7 +353,7 @@ describe("attention ordering and aggregation", () => {
 
   it("does not repeat a blocked output as unpublished changes", () => {
     // It is already named in the errors row, and it cannot be published
-    // anyway — two rows for one problem is the noise this aggregation exists
+    // anyway - two rows for one problem is the noise this aggregation exists
     // to prevent.
     const model = overviewFor({ production: production(rule({ dinoType: "" })) });
     expect(firstIssue(model)?.detail).toContain("Passive Production");
@@ -462,7 +462,7 @@ describe("optional outputs in the publishing list", () => {
   });
 
   it("groups viewer outputs as one public site in publishing health", () => {
-    // Production published but public site left behind — still pending work.
+    // Production published but public site left behind - still pending work.
     const fixture = { production: production(rule()) };
     const history = historyMatching(fixture);
     const model = overviewFor({

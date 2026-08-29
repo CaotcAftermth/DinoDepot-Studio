@@ -17,15 +17,15 @@ import { assignCanonicalIconKeys } from "./iconKey";
 /**
  * Modpacks: one mod's catalogued content as a single shareable file.
  *
- * The point is that cataloguing a mod is real work — every creature and item
- * path, the INI settings, the taming write-ups — and it is the same work for
+ * The point is that cataloguing a mod is real work - every creature and item
+ * path, the INI settings, the taming write-ups - and it is the same work for
  * every cluster running that mod. A modpack is that work, done once, reviewed,
  * and published so the next admin adds the mod in one click instead of a
  * weekend.
  *
  * A pack is deliberately close to a `ContentSource` plus the slice of
  * catalog-level data belonging to its blueprint paths. Project storage does
- * not change to accommodate this — a pack is an import/export format, not a
+ * not change to accommodate this - a pack is an import/export format, not a
  * new home for the data.
  */
 
@@ -61,7 +61,7 @@ export function defaultModpackRegistry(): ModpackRegistry {
 
 export const ModpackMetaSchema = z.object({
   /**
-   * Stable slug identifying the pack across versions — this is what an
+   * Stable slug identifying the pack across versions - this is what an
    * installed source remembers, so renaming the mod never orphans it.
    */
   id: z.string().min(1),
@@ -70,7 +70,7 @@ export const ModpackMetaSchema = z.object({
   version: z.string().default("1.0.0"),
   /** ISO date the pack was last edited, for display only. */
   updatedAt: z.string().default(""),
-  /** Who catalogued it — credit for the work, and someone to ask. */
+  /** Who catalogued it - credit for the work, and someone to ask. */
   author: z.string().default(""),
   description: z.string().default(""),
   curseforgeId: z.string().default(""),
@@ -193,7 +193,7 @@ export function packFileName(entry: { id: string; file?: string }): string {
 /**
  * The folder a pack occupies in the registry, and the name an export writes.
  *
- * `<curseforgeId>-<Mod_Name>` — the id makes it unambiguous which mod this is
+ * `<curseforgeId>-<Mod_Name>` - the id makes it unambiguous which mod this is
  * (names collide and get rebranded; project IDs do not), and the readable name
  * means a directory listing is browsable without opening anything.
  */
@@ -255,7 +255,7 @@ export function registryEntryFor(pack: Modpack): RegistryEntry {
 
 /**
  * Compares dotted numeric versions. Unparsable segments sort as 0 rather than
- * throwing — a malformed version in community data should not break the list.
+ * throwing - a malformed version in community data should not break the list.
  */
 export function compareVersions(a: string, b: string): number {
   const parts = (v: string) =>
@@ -282,7 +282,7 @@ export function compareVersions(a: string, b: string): number {
  * Whether the registry has something newer than what this source installed.
  *
  * A source with no `modpackId` was added by hand and is nobody's business to
- * update — it never reports an update, whatever the registry happens to hold.
+ * update - it never reports an update, whatever the registry happens to hold.
  */
 export function updateAvailable(
   source: Pick<ContentSource, "modpackId" | "modpackVersion">,
@@ -333,7 +333,7 @@ function slice<T>(
 /**
  * Turns one of the project's mods into a shareable pack.
  *
- * Only data belonging to this mod's own blueprint paths travels — a pack must
+ * Only data belonging to this mod's own blueprint paths travels - a pack must
  * never carry the exporting cluster's notes on official creatures, which are
  * that cluster's opinions rather than facts about the mod.
  */
@@ -366,7 +366,7 @@ export function sourceToModpack(
     },
     iniNotes: source.iniNotes,
     // The Build INI composer's working state is this cluster's in-progress
-    // choices, not documentation of the mod — it stays behind.
+    // choices, not documentation of the mod - it stays behind.
     iniSettings: source.iniSettings.map((s) => ({ ...s, added: false })),
     creatures,
     items,
@@ -442,7 +442,7 @@ export function mergeStructuralEntries(
  * Everything this returns passes through the source's `excludedPaths` last.
  * The entry lists are rebuilt from the package on every install and on every
  * dependency refresh, so a path an admin dropped during review has to be
- * subtracted here rather than at the point it was dropped — otherwise the
+ * subtracted here rather than at the point it was dropped - otherwise the
  * next refresh silently restores it.
  */
 export function enrichSourceStructure(
@@ -531,7 +531,7 @@ export function matchModpackSource(
  *
  * `keepLocalEdits` decides the one genuinely contested case: per-entry records
  * the admin has written themselves. Defaulting to keeping them means an update
- * can never silently discard a cluster's own taming write-ups — the incoming
+ * can never silently discard a cluster's own taming write-ups - the incoming
  * data only fills gaps. Turning it off takes the pack's version wholesale.
  */
 export function applyModpack(
@@ -553,7 +553,7 @@ export function applyModpack(
     ...(existing ?? {}),
     id: existing?.id ?? newId(),
     // An upstream rename should show, but an admin who renamed this source
-    // locally chose that on purpose — the same rule Discovery applies.
+    // locally chose that on purpose - the same rule Discovery applies.
     name: existing?.name?.trim() || pack.meta.name,
     kind: "mod",
     curseforgeId: pack.meta.curseforgeId,
@@ -601,7 +601,7 @@ export function applyModpack(
         : [...catalog.sources, source],
       // A pack's own `file:` icons never become project icons. Their bytes
       // live in the package, resolved from the managed library, and none of
-      // them is ever copied into the project's images folder — so writing the
+      // them is ever copied into the project's images folder - so writing the
       // reference into the project's icon map would leave a row pointing at a
       // file that is not there, which publishing then reports as missing
       // artwork for as long as the row survives. An assignment the project
@@ -638,7 +638,7 @@ export function applyModpack(
 // ---------------------------------------------------------------------------
 
 /**
- * A worked example rather than an empty shell — the fastest way to learn the
+ * A worked example rather than an empty shell - the fastest way to learn the
  * format is to see one real creature, one real item and one INI setting with
  * every field filled in.
  */
@@ -751,8 +751,8 @@ export function templateModpack(): Modpack {
 export function templateReadme(): string {
   return `# Dino Depot modpack
 
-One mod's catalogued data — creatures, items, INI settings and taming
-write-ups — as a folder other clusters can install in one click.
+One mod's catalogued data - creatures, items, INI settings and taming
+write-ups - as a folder other clusters can install in one click.
 
 Format 2 is data-only. It contains canonical \`iconKey\` identities, never
 artwork bytes, URLs, or local paths. DinoDepot resolves approved artwork from
@@ -778,18 +778,18 @@ as you normally would, then use **Content Sources → the mod → Export modpack
 That writes this whole data-only folder and can open the pull request
 for you.
 
-Editing by hand works too. The example entries show the shape of each section —
+Editing by hand works too. The example entries show the shape of each section -
 replace them rather than adding alongside.
 
 ## Fields worth getting right
 
-- \`meta.id\` — a stable slug. Installed projects remember it, so changing it
+- \`meta.id\` - a stable slug. Installed projects remember it, so changing it
   later orphans every install. Pick it once.
-- \`meta.version\` — dotted numbers. Bump it on every submission; that is what
+- \`meta.version\` - dotted numbers. Bump it on every submission; that is what
   tells an existing install an update exists.
-- \`meta.curseforgeId\` — also decides the folder name, and lets the app match
+- \`meta.curseforgeId\` - also decides the folder name, and lets the app match
   your pack to a mod someone already added by hand.
-- Blueprint paths — must match what the mod actually ships, including the
+- Blueprint paths - must match what the mod actually ships, including the
   trailing \`_C\` on creature classes. Everything else keys off these.
 
 ## Submitting

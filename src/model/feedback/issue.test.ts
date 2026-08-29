@@ -20,7 +20,7 @@ import { FeedbackReportSchema, type FeedbackReport } from "./types";
  *
  * Two readers have to be able to rely on it: a maintainer triaging, and a
  * coding agent later asked to fix it. Both want the component id, the area,
- * the expected behaviour and the build, always in the same place — so these
+ * the expected behaviour and the build, always in the same place - so these
  * tests assert on structure as much as on content.
  */
 

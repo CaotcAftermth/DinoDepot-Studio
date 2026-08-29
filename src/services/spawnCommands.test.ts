@@ -40,7 +40,7 @@ describe("serializeStats", () => {
     expect(serializeStats({ craft: 5 })).toBe("0,0,0,0,0,0,0,0,5");
   });
 
-  it("clamps negatives and rounds fractions — the argument is integer points", () => {
+  it("clamps negatives and rounds fractions - the argument is integer points", () => {
     expect(serializeStats({ health: -4, melee: 2.6 })).toBe("0,0,0,0,0,0,3,0,0");
   });
 
@@ -79,7 +79,7 @@ describe("serializeTraits", () => {
     ).toBe("aggressive[0],angry[1],swimmer[2]");
   });
 
-  it("keeps duplicate traits — a creature can carry more than one", () => {
+  it("keeps duplicate traits - a creature can carry more than one", () => {
     expect(
       serializeTraits([
         { id: "a", token: "aggressive", tier: 1 },
@@ -93,7 +93,7 @@ describe("serializeTraits", () => {
   });
 });
 
-describe("buildCreatureCommands — ball command", () => {
+describe("buildCreatureCommands - ball command", () => {
   it("uses the level when no stats are assigned", () => {
     const cmd = ball(params({ level: 150 }));
     expect(cmd).toContain("-l=150");
@@ -166,12 +166,12 @@ describe("buildCreatureCommands — ball command", () => {
 });
 
 /**
- * Argument lists checked against ark.wiki.gg / the ASA command reference.
+ * Argument lists checked against the ASA command reference.
  * These are exact-string assertions on purpose: a spawn command that is one
  * argument short fails silently in the console, which is exactly how the
  * missing SDF argument went unnoticed.
  */
-describe("buildCreatureCommands — vanilla console commands", () => {
+describe("buildCreatureCommands - vanilla console commands", () => {
   const byLabel = (p: CreatureSpawnParams, match: RegExp) =>
     buildCreatureCommands(REX, p).find((c) => match.test(c.label))!;
 
@@ -197,16 +197,16 @@ describe("buildCreatureCommands — vanilla console commands", () => {
   // The last two are ASA-only, and both matter: without bLoadIfUnloaded the
   // command does nothing for a creature not already in the world, and
   // bSkipAddingTamedLevels decides whether the level asked for is the level
-  // that arrives. These mirror the wiki's own worked examples.
+  // that arrives. These mirror retained worked examples.
   it("SDF spawns a tamed creature at exactly the level given", () => {
-    // Wiki "Tamed 150": cheat sdf dodo 1 150 1 1
+    // Tamed 150 example: cheat sdf dodo 1 150 1 1
     expect(byLabel(params({ tamed: true, level: 150 }), /^SDF/).command).toBe(
       "admincheat SDF Rex_Character_BP 1 150 1 1",
     );
   });
 
   it("SDF spawns wild with the tamed flags off", () => {
-    // Wiki "Wild 150": cheat sdf dodo 0 150 1 0
+    // Wild 150 example: cheat sdf dodo 0 150 1 0
     expect(byLabel(params({ tamed: false, level: 150 }), /^SDF/).command).toBe(
       "admincheat SDF Rex_Character_BP 0 150 1 0",
     );
@@ -243,7 +243,7 @@ describe("ARK colour palette", () => {
   it("covers both the creature block and the dye block", () => {
     expect(colorById(36)?.name).toBe("Dino Albino");
     expect(colorById(254)?.name).toBe("Bubblegum Coloring");
-    // The ids are not contiguous — nothing lives between 100 and 128.
+    // The ids are not contiguous - nothing lives between 100 and 128.
     expect(colorById(110)).toBeUndefined();
   });
 

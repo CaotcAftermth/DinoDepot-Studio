@@ -7,7 +7,7 @@ import { findIpAddresses } from "./profileSanitizer";
  * nothing else.
  *
  * Built into a staging map first, scanned, and only then committed. The scan is
- * the part that matters — the project this is generated from holds a player
+ * the part that matters - the project this is generated from holds a player
  * roster and profile backups, and the site is world-readable forever once it is
  * pushed.
  *
@@ -25,7 +25,7 @@ import { findIpAddresses } from "./profileSanitizer";
 export const PUBLIC_ROOT = "docs";
 
 /**
- * Version of the *published output* contract — what a viewer can expect to
+ * Version of the *published output* contract - what a viewer can expect to
  * find. Independent of the project schema and of the Studio version, because a
  * viewer cached in somebody's browser has to keep working across both.
  */
@@ -136,7 +136,7 @@ const PRIVATE_FIELDS = [
   "SavedNetworkAddress",
 ];
 
-/** Windows and UNC absolute paths — somebody's folder layout is not public data. */
+/** Windows and UNC absolute paths - somebody's folder layout is not public data. */
 const LOCAL_PATH_PATTERNS = [
   /\b[A-Za-z]:\\\\?[^"'\s]{2,}/g,
   /\\\\\\\\[^"'\s]{2,}/g,

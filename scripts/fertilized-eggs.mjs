@@ -1,8 +1,8 @@
 /**
  * Fertilized egg entries, added from a mapping read out of the game.
  *
- * ARK ships a fertilized counterpart for most eggs, but the wiki's Id item
- * pages do not list them — so a catalog built from those pages can name the
+ * ARK ships a fertilized counterpart for most eggs, but the source dataset
+ * pages do not list them - so a catalog built from those pages can name the
  * egg a creature lays and not the egg it hatches from, and a production rule
  * consuming one is flagged as referring to content that is not in the catalog.
  *
@@ -12,7 +12,7 @@
  *   PrimalItemConsumable_Egg_Para_Bionic
  *     -> PrimalItemConsumable_Egg_Para_Fertilized_Bionic   (not _Bionic_Fertilized)
  *
- * and some eggs have no fertilized form at all — the generic Small/Medium/
+ * and some eggs have no fertilized form at all - the generic Small/Medium/
  * Large eggs, Titanoboa, Pachyrhino. Guessing produced sixteen wrong entries
  * out of eighty, so the pairs come from `scripts/data/fertilized-eggs.json`,
  * which was read from the game's own containers.
@@ -22,7 +22,7 @@
  * a new image per egg.
  *
  * Run standalone to apply this to the catalog already on disk, without
- * re-reading the wiki:
+ * re-reading an external source:
  *
  *   node scripts/fertilized-eggs.mjs
  */
@@ -33,7 +33,7 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-/** What the wiki reports for the fertilized eggs it does list. */
+/** Bundled defaults for listed fertilized eggs. */
 const FERTILIZED_STACK = 1;
 const FERTILIZED = /_fertilized/i;
 
@@ -97,7 +97,7 @@ export function withFertilizedEggs(catalog) {
       name: fertilizedNameFor(item.name),
       category: item.category,
       bpPath,
-      // Fertilized eggs do not stack. Taken from the ones the wiki does list
+      // Fertilized eggs do not stack. Taken from listed bundled examples
       // rather than from the plain egg, which stacks to 100.
       stack: FERTILIZED_STACK,
     });

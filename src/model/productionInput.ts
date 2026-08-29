@@ -62,14 +62,14 @@ export function parseDurationInput(raw: string): number | null {
 
 /** Stored probability as a percentage for the subdued field hint. */
 export function formatChance(value: number): string {
-  if (!Number.isFinite(value)) return "—";
+  if (!Number.isFinite(value)) return " - ";
   const percentage = Math.round(value * 10_000) / 100;
   return `${percentage}%`;
 }
 
 /** Seconds as a compact, exact human-readable duration. */
 export function formatDuration(seconds: number): string {
-  if (!Number.isFinite(seconds) || !(seconds > 0)) return "—";
+  if (!Number.isFinite(seconds) || !(seconds > 0)) return " - ";
 
   const rounded = Math.round(seconds * 1000) / 1000;
   const hours = Math.floor(rounded / 3600);
@@ -79,5 +79,5 @@ export function formatDuration(seconds: number): string {
   if (hours) parts.push(`${hours}hr`);
   if (minutes) parts.push(`${minutes}min`);
   if (remaining) parts.push(`${remaining}s`);
-  return parts.join(" ") || "—";
+  return parts.join(" ") || " - ";
 }

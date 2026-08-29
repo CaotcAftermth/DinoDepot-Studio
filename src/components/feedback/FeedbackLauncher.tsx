@@ -11,7 +11,7 @@ import { Button, Modal, cx } from "../ui";
  * The first screen: what kind of thing is this?
  *
  * Three choices, in the words somebody would use themselves. Nothing here
- * mentions GitHub, issues or labels — a cluster administrator reporting that a
+ * mentions GitHub, issues or labels - a cluster administrator reporting that a
  * quantity field eats their entry should not have to know or care that the
  * report becomes an issue in a repository, and the ones who do care can see it
  * on the confirmation screen afterwards.
@@ -58,7 +58,7 @@ export function FeedbackLauncher() {
       <div {...feedbackTarget("feedback-center")}>
         <p className="text-sm text-ink-300 mb-4">
           Tell us what happened. {STUDIO_NAME} collects a little information
-          about this build and the page you were on — you can read all of it
+          about this build and the page you were on - you can read all of it
           before anything is sent.
         </p>
 
@@ -108,7 +108,7 @@ export function FeedbackLauncher() {
           </div>
           <div className="mt-1">
             Right-click any part of the app to report a problem with that exact
-            control — it fills in the affected area for you.
+            control - it fills in the affected area for you.
           </div>
         </div>
 

@@ -7,23 +7,23 @@ import { ProfileSummarySchema } from "./profileData";
  * last .arkprofile taken for that player.
  *
  * Profiles are copied into the project's `profiles/` folder rather than being
- * embedded here — they are binary save data, and a JSON file is the wrong home
+ * embedded here - they are binary save data, and a JSON file is the wrong home
  * for them.
  */
 
 /**
  * A profile on disk. Only what the admin actually needs to see: that one is
- * stored, and when — the byte count and origin path were noise.
+ * stored, and when - the byte count and origin path were noise.
  */
 export const StoredProfileSchema = z.object({
   /**
    * File name inside the project's profiles/ folder. Tolerates being absent:
    * a missing name means the reference is broken and the profile needs
-   * re-uploading — which must not cost the admin their whole roster.
+   * re-uploading - which must not cost the admin their whole roster.
    */
   fileName: z.string().default(""),
   storedAt: z.string().default(""),
-  /** ASA map the save came from — a profile is per-map, so this matters. */
+  /** ASA map the save came from - a profile is per-map, so this matters. */
   map: z.string().default(""),
   /** When this profile was last pushed to GitHub; null = local only. */
   backedUpAt: z.string().nullable().default(null),
@@ -38,7 +38,7 @@ export const StoredProfileSchema = z.object({
   generated: z.boolean().default(false),
   /**
    * When the admin moved this save out of the default roster view. Null while
-   * it is current. Archiving never touches the file — see PlayerDataSettings.
+   * it is current. Archiving never touches the file - see PlayerDataSettings.
    */
   archivedAt: z.string().nullable().default(null),
 });
@@ -47,13 +47,13 @@ export type StoredProfile = z.infer<typeof StoredProfileSchema>;
 export const PlayerSchema = z.object({
   id: z.string(),
   discordName: z.string().default(""),
-  /** Discord's numeric snowflake — the part that survives a name change. */
+  /** Discord's numeric snowflake - the part that survives a name change. */
   discordId: z.string().default(""),
   steamName: z.string().default(""),
   /** SteamID64. */
   steamId: z.string().default(""),
   /**
-   * Platform account name as ASA records it — a Steam persona, an Xbox
+   * Platform account name as ASA records it - a Steam persona, an Xbox
    * gamertag, whatever the account is. Distinct from the survivor's name, and
    * the one identifier a `.arkprofile` can be relied on to carry.
    */
@@ -62,7 +62,7 @@ export const PlayerSchema = z.object({
   gameName: z.string().default(""),
   /** In-game Player ID (the number `ListPlayers` reports). */
   playerId: z.string().default(""),
-  /** Epic Online Services id — how ASA identifies the account. */
+  /** Epic Online Services id - how ASA identifies the account. */
   eosId: z.string().default(""),
   notes: z.string().default(""),
   profile: StoredProfileSchema.nullable().default(null),
@@ -97,7 +97,7 @@ export const PLAYER_FIELDS: PlayerFieldSpec[] = [
   {
     key: "discordId",
     label: "Discord ID",
-    hint: "Numeric — survives a rename",
+    hint: "Numeric - survives a rename",
     mono: true,
     placeholder: "e.g. 218450941836787712",
   },
@@ -172,7 +172,7 @@ export type CleanSlate = z.infer<typeof CleanSlateSchema>;
 export const PlayersFileSchema = z.object({
   schemaVersion: z.literal(1),
   players: z.array(PlayerSchema).default([]),
-  /** Blank starting profiles, keyed by nothing — the map lives on each entry. */
+  /** Blank starting profiles, keyed by nothing - the map lives on each entry. */
   cleanSlates: z.array(CleanSlateSchema).default([]),
 });
 export type PlayersFile = z.infer<typeof PlayersFileSchema>;
@@ -233,7 +233,7 @@ export function playerChoices(
     .sort((a, b) => a.label.localeCompare(b.label));
 }
 
-/** Best label for a player row — whichever identifier they actually filled in. */
+/** Best label for a player row - whichever identifier they actually filled in. */
 export function playerLabel(player: Player): string {
   return (
     player.discordName.trim() ||
@@ -247,7 +247,7 @@ export function playerLabel(player: Player): string {
 }
 
 /**
- * A profile reference that lost its file name — the file on disk can no
+ * A profile reference that lost its file name - the file on disk can no
  * longer be found, so it has to be uploaded again.
  */
 export function profileIsBroken(profile: StoredProfile | null): boolean {
@@ -265,7 +265,7 @@ export function hasPlayerDetails(player: Player): boolean {
  * Matches a player against a search box across every identifier, since an
  * admin will have exactly one of them to hand when they come looking.
  *
- * The stored profile's map is searchable too — "who do I have on Ragnarok"
+ * The stored profile's map is searchable too - "who do I have on Ragnarok"
  * is a question the roster should answer, and the map is not one of the
  * identifier fields.
  */
@@ -285,7 +285,7 @@ export function playerMatches(player: Player, query: string): boolean {
  * Roster order: by the name each row actually shows, case-insensitively.
  *
  * Sorting by the displayed label rather than a fixed field keeps the list in
- * the order it reads in — sorting by, say, Discord name would scatter the
+ * the order it reads in - sorting by, say, Discord name would scatter the
  * entries that have none.
  */
 export function comparePlayers(a: Player, b: Player): number {

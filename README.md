@@ -53,8 +53,7 @@ Requires: Node 18+, Rust toolchain, Google Chrome (for the CurseForge scraper).
   Adding a mod by hand starts from its CurseForge project ID: the page link is
   derived from it, and *Look up name* reads the mod's own name off that page
   (desktop app + Chrome). The name is always yours to override.
-  Bundled official ASA data (538 creatures / 1,628 items from ark.wiki.gg;
-  refresh with `node scripts/build-official-catalog.mjs`) plus your own mod
+  Bundled official ASA data (538 creatures / 1,628 items) plus your own mod
   sources with bulk paste import. Mark a source *disabled* or *being removed*
   to get warnings wherever its content is referenced.
 - **Creature Remaps** - remap creature types before removing creatures/mods;
@@ -136,6 +135,6 @@ src/services/      IPC layer (mockable in browser), importers, publishing
 src-tauri/         Rust backend: project IO+backups, keyring secrets,
                    GitHub Contents API, scraper process runner
 sidecar/           Node/Puppeteer CurseForge scraper (NDJSON events)
-scripts/           official-catalog builder (ark.wiki.gg)
+scripts/           catalog, package, and maintenance tooling
 StructureExample/  original format reference documents
 ```

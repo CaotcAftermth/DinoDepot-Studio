@@ -55,7 +55,7 @@ export function validateRemaps(
           warn(
             entry.id,
             where,
-            "Destination creature is not in the catalog — make sure it exists on the server",
+            "Destination creature is not in the catalog - make sure it exists on the server",
           ),
         );
       } else if (dest.source.removed) {
@@ -63,7 +63,7 @@ export function validateRemaps(
           err(
             entry.id,
             where,
-            `Destination creature belongs to "${dest.source.name}", which is being removed — remapping into removed content defeats the purpose`,
+            `Destination creature belongs to "${dest.source.name}", which is being removed - remapping into removed content defeats the purpose`,
           ),
         );
       } else if (!dest.source.enabled) {
@@ -82,7 +82,7 @@ export function validateRemaps(
           warn(
             entry.id,
             where,
-            `Source creature's content ("${src.source.name}") is still enabled and not marked as being removed — if this remap is deliberate, turn on its "Intentional" toggle to dismiss this warning`,
+            `Source creature's content ("${src.source.name}") is still enabled and not marked as being removed - if this remap is deliberate, turn on its "Intentional" toggle to dismiss this warning`,
           ),
         );
       }
@@ -131,7 +131,7 @@ function checkClassPath(
       warn(
         entityId,
         where,
-        `${field} does not end in _C — remap files usually use class references (…_C)`,
+        `${field} does not end in _C - remap files usually use class references (…_C)`,
       ),
     );
   }

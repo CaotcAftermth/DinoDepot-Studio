@@ -11,7 +11,7 @@ import { z } from "zod";
  *
  * So a creature has an overall *availability* and any number of *methods*, each of
  * which is a small editorial workflow: tags, requirements, inputs, and ordered
- * phases of steps. Deliberately not a programmable node graph — an admin is
+ * phases of steps. Deliberately not a programmable node graph - an admin is
  * writing down how a thing is caught, not authoring a state machine.
  */
 
@@ -23,8 +23,8 @@ import { z } from "zod";
  * Whether the creature can be obtained at all. Deliberately only two values:
  * *what you end up with* varies per route, so that lives on the method.
  *
- * The wiki's own taxonomy is per-method (raise-only, craft-only, reward-only,
- * temporary…), and several creatures prove a creature-level category wrong —
+ * Legacy source taxonomy is per-method (raise-only, craft-only, reward-only,
+ * temporary…), and several creatures prove a creature-level category wrong -
  * Carcharodontosaurus is rideable on trust before it is fully tamed, and a
  * Gigantoraptor adult can never be tamed at all, only its baby claimed.
  */
@@ -66,9 +66,9 @@ export const OUTCOME_LABELS: Record<MethodOutcome, string> = {
 };
 
 export const OUTCOME_HINTS: Record<MethodOutcome, string> = {
-  "direct-tame": "Tamed in the world — a taming bar fills",
+  "direct-tame": "Tamed in the world - a taming bar fills",
   claim: "Claimed outright, no taming bar",
-  "hatch-and-raise": "From a wild, stolen or bred egg — raised from birth",
+  "hatch-and-raise": "From a wild, stolen or bred egg - raised from birth",
   "birth-from-host": "Born from a host creature",
   "temporary-control": "Yours for a limited time, then reverts",
   "craft-and-assemble": "Crafted or assembled rather than tamed",
@@ -106,7 +106,7 @@ export const TAG_LABELS: Record<MethodTag, string> = {
   temporary: "Temporary",
 };
 
-/** What an input is *for* — the old model could only express "food". */
+/** What an input is *for* - the old model could only express "food". */
 export const INPUT_ROLES = [
   "taming-food",
   "offering",
@@ -137,7 +137,7 @@ export const ROLE_LABELS: Record<InputRole, string> = {
  * item, and resolves against the creature catalog; a pheromone is an item.
  * Anything that isn't in either catalog stays free text.
  *
- * This is only for things consumed or supplied by the method — gear, mounts,
+ * This is only for things consumed or supplied by the method - gear, mounts,
  * structures and conditions belong in `requirements`.
  */
 export const REFERENCE_TYPES = ["item", "creature", "text"] as const;
@@ -163,7 +163,7 @@ export const AcquisitionInputSchema = z.object({
   label: z.string().default(""),
   role: z.string().default("taming-food"),
   /**
-   * @deprecated No longer edited or published — taming quantities depend on
+   * @deprecated No longer edited or published - taming quantities depend on
    * level and server rates, so a fixed number here was misleading more often
    * than it helped. Kept so existing project files round-trip without losing
    * what was written; put anything worth saying in `note`.
@@ -187,7 +187,7 @@ export const AcquisitionPhaseSchema = z.object({
   note: z.string().default(""),
   /**
    * Per-phase outcomes. A long workflow can loop and reset within a single
-   * phase — a Gigantoraptor's nest phase resets on adult aggro while the
+   * phase - a Gigantoraptor's nest phase resets on adult aggro while the
    * distraction phase merely needs another egg. All optional, so an ordinary
    * knockout never has to think about them.
    */
@@ -214,7 +214,7 @@ export const AcquisitionMethodSchema = z.object({
   /** What this particular route leaves you with. */
   outcome: z.enum(METHOD_OUTCOMES).or(z.literal("")).default(""),
   tags: z.array(z.string()).default([]),
-  /** What you need before starting — gear, levels, a mount, a structure. */
+  /** What you need before starting - gear, levels, a mount, a structure. */
   requirements: z.string().default(""),
   inputs: z.array(AcquisitionInputSchema).default([]),
   phases: z.array(AcquisitionPhaseSchema).default([]),
@@ -247,14 +247,14 @@ export const ABILITY_KIND_LABELS: Record<AbilityKind, string> = {
 };
 
 export const ABILITY_KIND_HINTS: Record<AbilityKind, string> = {
-  active: "Used deliberately — an attack, a toggle, a rider ability",
-  passive: "Always in effect — a resistance, an aura, a stat trait",
+  active: "Used deliberately - an attack, a toggle, a rider ability",
+  passive: "Always in effect - a resistance, an aura, a stat trait",
 };
 
 /**
  * Passive traits that are really per-item tables rather than prose.
  *
- * "Reduces weight" is useless on its own — an Ankylo reduces metal, stone and
+ * "Reduces weight" is useless on its own - an Ankylo reduces metal, stone and
  * flint by different amounts, and that is exactly what a player needs. So
  * these effects carry a list of items and numbers instead of a sentence.
  *
@@ -293,12 +293,12 @@ export const AbilityEffectRowSchema = z.object({
   bpPath: z.string().default(""),
   /** Free text fallback when the item is not in the catalog. */
   label: z.string().default(""),
-  /** Percentage, however the admin phrases it — "50", "50%", "up to 60%". */
+  /** Percentage, however the admin phrases it - "50", "50%", "up to 60%". */
   percent: z.string().default(""),
   /** Conversion output. */
   toBpPath: z.string().default(""),
   toLabel: z.string().default(""),
-  /** Conversion amounts, in and out — "3" feces becomes "1" oil. */
+  /** Conversion amounts, in and out - "3" feces becomes "1" oil. */
   rate: z.string().default(""),
   toRate: z.string().default(""),
   note: z.string().default(""),
@@ -424,7 +424,7 @@ export const DropEntrySchema = z.object({
   bpPath: z.string().default(""),
   /** Used for free text, and as a fallback when a path won't resolve. */
   label: z.string().default(""),
-  /** Free text — "1-3", "x5", "stack of 10". */
+  /** Free text - "1-3", "x5", "stack of 10". */
   qty: z.string().default(""),
   /**
    * Drop odds, as the admin wants to phrase them ("12%", "1 in 8").
@@ -432,7 +432,7 @@ export const DropEntrySchema = z.object({
    */
   chance: z.string().default(""),
   /**
-   * How often a tamed creature generates this, as an amount and a period —
+   * How often a tamed creature generates this, as an amount and a period -
    * "1" every "5 min". Only production entries have a rate; the other lists
    * describe a single event rather than something recurring.
    */
@@ -447,10 +447,10 @@ export const DropsSchema = z.object({
   harvest: z.array(DropEntrySchema).default([]),
   /** Special loot that always drops. */
   guaranteed: z.array(DropEntrySchema).default([]),
-  /** Special loot that drops by chance — record the odds. */
+  /** Special loot that drops by chance - record the odds. */
   random: z.array(DropEntrySchema).default([]),
   /**
-   * What a tamed one makes in its own inventory over time — Achatina paste,
+   * What a tamed one makes in its own inventory over time - Achatina paste,
    * Dung Beetle oil.
    *
    * This documents the creature's inherent behaviour, and is not the cluster's
@@ -468,7 +468,7 @@ export const DROP_LISTS: {
   key: DropListKey;
   label: string;
   hint: string;
-  /** Whether odds are worth asking for — they only mean something for random loot. */
+  /** Whether odds are worth asking for - they only mean something for random loot. */
   hasChance: boolean;
   /** Whether this recurs over time, and so needs a rate rather than a quantity. */
   hasRate: boolean;
@@ -483,14 +483,14 @@ export const DROP_LISTS: {
   {
     key: "guaranteed",
     label: "Guaranteed special loot",
-    hint: "Always dropped — no roll involved",
+    hint: "Always dropped - no roll involved",
     hasChance: false,
     hasRate: false,
   },
   {
     key: "random",
     label: "Random special loot",
-    hint: "Dropped by chance — record the odds you know",
+    hint: "Dropped by chance - record the odds you know",
     hasChance: true,
     hasRate: false,
   },
@@ -558,7 +558,7 @@ const RawCreatureInfoSchema = z.object({
    * Distinct from the catalog's single map *of origin*, which is derived from
    * the blueprint path and says only where the content came from. A Scorched
    * Earth wyvern also spawns on Ragnarok, and that is what a player needs to
-   * know — so this is a list, kept per creature, and overridable per variant
+   * know - so this is a list, kept per creature, and overridable per variant
    * because that is exactly where variants differ.
    */
   spawnMaps: z.array(z.string()).default([]),
@@ -570,7 +570,7 @@ const RawCreatureInfoSchema = z.object({
   /**
    * Sections this record owns. Anything not listed is inherited from the
    * parent creature, so an Aberrant variant stores only what differs.
-   * Ignored for a creature that has no parent — it owns everything.
+   * Ignored for a creature that has no parent - it owns everything.
    */
   overrides: z.array(z.enum(INFO_SECTIONS)).default([]),
 });
@@ -594,8 +594,8 @@ const ROLE_RENAMES: Record<string, InputRole> = {
 /**
  * Brings older records up to date on read. Two shapes came before this one:
  *
- *  v0 — one `tameMethod`, one food list, one flat step list.
- *  v1 — workflows, but a creature-level `status` and item-only inputs.
+ *  v0 - one `tameMethod`, one food list, one flat step list.
+ *  v1 - workflows, but a creature-level `status` and item-only inputs.
  *
  * Nothing is rewritten on disk until the record is next saved.
  */
@@ -633,7 +633,7 @@ function migrateLegacy(value: unknown): unknown {
 
   /**
    * A record written before sections could be owned says nothing about
-   * inheritance — but it plainly owns whatever it already contains.
+   * inheritance - but it plainly owns whatever it already contains.
    *
    * Defaulting those to "inherit everything" is not a harmless default: the
    * moment such a creature is detected as a variant, its own methods and notes
@@ -641,13 +641,13 @@ function migrateLegacy(value: unknown): unknown {
    * overwrites the hidden original with a copy of the parent's data.
    *
    * A record that stores `overrides: []` explicitly meant it, and is left
-   * alone — that is a variant deliberately following its parent in full.
+   * alone - that is a variant deliberately following its parent in full.
    */
   const declaresOverrides = "overrides" in raw;
 
   // ---- v0 -> v1 ----
   // `dragWeight` at the top level is the giveaway for a record that only ever
-  // had that set — it must still be lifted into `technical`.
+  // had that set - it must still be lifted into `technical`.
   const isV0 =
     "tameMethod" in raw ||
     "foods" in raw ||
@@ -825,7 +825,7 @@ export interface ResolvedCreatureInfo {
 
 /**
  * A variant's effective info: its own overridden sections, everything else
- * from its parent. One hop only — `variantParent` already resolves a variant
+ * from its parent. One hop only - `variantParent` already resolves a variant
  * straight to its base creature.
  */
 export function resolveCreatureInfo(
@@ -931,7 +931,7 @@ export interface MethodTemplate {
 
 /**
  * Starting shapes for each kind of acquisition. Scaffolds to edit, not
- * authoritative data — the wiki is the source of truth for any given creature.
+ * authoritative data; retained source records govern each creature.
  */
 export const METHOD_TEMPLATES: Record<MethodTag, MethodTemplate> = {
   knockout: {
@@ -1031,7 +1031,7 @@ export const METHOD_TEMPLATES: Record<MethodTag, MethodTemplate> = {
     outcome: "claim",
     phases: [
       { name: "Find a baby", steps: ["Locate a wild juvenile"] },
-      { name: "Claim", steps: ["Claim it", "Have food ready — it needs raising immediately"] },
+      { name: "Claim", steps: ["Claim it", "Have food ready - it needs raising immediately"] },
     ],
     completion: "Claimed, and now an unraised baby",
   },
@@ -1081,7 +1081,7 @@ export const TEMPLATE_MODE_LABELS: Record<TemplateMode, string> = {
 
 /**
  * What applying a template would change, as plain lines for a preview. Empty
- * means nothing would change — templates must never silently overwrite.
+ * means nothing would change - templates must never silently overwrite.
  */
 export function describeTemplate(
   method: AcquisitionMethod,
@@ -1095,7 +1095,7 @@ export function describeTemplate(
   );
 
   /**
-   * Identity fields, which every mode fills the same way — only when empty.
+   * Identity fields, which every mode fills the same way - only when empty.
    * These are listed first because they are the changes an admin is least
    * expecting: the preview promises the exact set, so leaving them out made
    * a template silently rename and re-tag the method.
@@ -1234,7 +1234,7 @@ const filled = (...values: string[]) => values.some((v) => v.trim());
  *
  * Adding a row is how you find out what a row wants, so half the rows an admin
  * creates are abandoned the moment they see the columns. Clearing those on
- * save keeps the record honest without nagging during editing — nothing is
+ * save keeps the record honest without nagging during editing - nothing is
  * removed while the modal is open, only when the work is committed.
  *
  * The test is always "is there anything identifying here": a row with only a
@@ -1327,7 +1327,7 @@ export function methodLabel(method: AcquisitionMethod): string {
   return "Untitled method";
 }
 
-/** Display label for an input — the catalog name is resolved by the caller. */
+/** Display label for an input - the catalog name is resolved by the caller. */
 export function inputLabel(input: AcquisitionInput, resolved: string): string {
   return input.bpPath ? resolved : input.label.trim() || "(unnamed)";
 }
@@ -1359,7 +1359,7 @@ export function creatureInfoSummary(info: CreatureInfo): string {
   return parts.join(" · ");
 }
 
-/** Total steps across every phase of a method — used for the method list. */
+/** Total steps across every phase of a method - used for the method list. */
 export function methodStepCount(method: AcquisitionMethod): number {
   return method.phases.reduce((n, p) => n + p.steps.length, 0);
 }

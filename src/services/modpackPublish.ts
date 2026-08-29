@@ -212,7 +212,7 @@ function pathSep(dir: string): string {
 // ---------------------------------------------------------------------------
 
 export interface PublishPlan {
-  /** Repo the branch and commits land on — a fork unless the user can push. */
+  /** Repo the branch and commits land on - a fork unless the user can push. */
   headOwner: string;
   headRepo: string;
   branch: string;
@@ -330,7 +330,7 @@ export function mergeRegistryIndex(
  * Works out where a submission would go, without changing anything.
  *
  * Separate from `publishPack` so the app can show exactly which repository,
- * branch and files are about to be touched *before* anything public happens —
+ * branch and files are about to be touched *before* anything public happens -
  * opening a pull request is not something to discover after the fact.
  */
 export async function planPublish(
@@ -368,7 +368,7 @@ export async function planPublish(
 /**
  * Forks if needed, commits the pack on its own branch, and opens the PR.
  *
- * Every step is idempotent — an existing fork, branch or open PR is reused —
+ * Every step is idempotent - an existing fork, branch or open PR is reused -
  * so a resubmission after a failure part-way through does not leave debris or
  * open a second pull request for the same pack.
  */
@@ -406,7 +406,7 @@ export async function publishPack(
       upstreamBranch: plan.baseBranch,
     }).catch(() => {
       /* a fresh fork is already current; a protected default branch is not
-         ours to force — either way the branch below still works */
+         ours to force - either way the branch below still works */
     });
   }
 
@@ -460,7 +460,7 @@ export async function publishPack(
     done++;
     say(`Uploading ${file.path} (${done}/${pack.files.length})…`);
     const path = repoPath(root, `${pack.dir}/${file.path}`);
-    const message = `Modpack: ${meta.name} ${meta.version} — ${file.path}`;
+    const message = `Modpack: ${meta.name} ${meta.version} - ${file.path}`;
     if (file.text !== undefined) {
       await ipc("github_put_file", {
         accountId,
@@ -525,7 +525,7 @@ export async function publishPack(
   return { ...plan, url: pr.url, number: pr.number };
 }
 
-/** The pull request description — what a reviewer needs, in review order. */
+/** The pull request description - what a reviewer needs, in review order. */
 function prBody(meta: Modpack["meta"], pack: AssembledPack): string {
   const entry = pack.registryEntry ?? registryEntryFor({ meta } as Modpack);
   const lines = [
@@ -536,9 +536,9 @@ function prBody(meta: Modpack["meta"], pack: AssembledPack): string {
     "| | |",
     "|---|---|",
     `| Pack id | \`${meta.id}\` |`,
-    `| CurseForge | ${meta.curseforgeId ? `\`${meta.curseforgeId}\`` : "—"} |`,
-    `| Mod page | ${meta.url || "—"} |`,
-    `| Author | ${meta.author || "—"} |`,
+    `| CurseForge | ${meta.curseforgeId ? `\`${meta.curseforgeId}\`` : " - "} |`,
+    `| Mod page | ${meta.url || " - "} |`,
+    `| Author | ${meta.author || " - "} |`,
     "| Artwork binaries | 0 (data-only) |",
     "",
     "### Index entry",

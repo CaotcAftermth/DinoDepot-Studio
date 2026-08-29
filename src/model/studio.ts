@@ -4,7 +4,7 @@
  *
  * Everything that needs to name the DinoDepot repository goes through here.
  * The slug used to be written out at each call site, which is how a rename
- * turns into a hunt through the codebase — and GitHub's rename redirects are
+ * turns into a hunt through the codebase - and GitHub's rename redirects are
  * not something to build on, because they stop working the moment somebody
  * else claims the old name.
  */
@@ -24,7 +24,7 @@ export const STUDIO_NAME = "DinoDepot Studio";
  *
  * Kept in step with package.json, Cargo.toml and tauri.conf.json by
  * `scripts/check-versions.mjs`, which the release workflow runs before it
- * builds anything — a version that disagrees with the installer is how an
+ * builds anything - a version that disagrees with the installer is how an
  * updater ships a downgrade.
  */
 export const STUDIO_VERSION = "0.8.0";

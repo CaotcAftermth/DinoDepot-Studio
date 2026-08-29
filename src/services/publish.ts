@@ -75,7 +75,7 @@ export async function publishFile(
 }
 
 // ---------------------------------------------------------------------------
-// Player .arkprofile backup — binary files, published one per player
+// Player .arkprofile backup - binary files, published one per player
 // ---------------------------------------------------------------------------
 
 /** Repo path a player's profile backup lives at. */
@@ -91,7 +91,7 @@ export function profileBackupPath(
  *
  * They are in `profileBackup.ts`, behind the sanitizer. This module is the
  * generic "put a file in the repository" layer, and a profile-shaped function
- * next to it would eventually be the one somebody called — uploading the
+ * next to it would eventually be the one somebody called - uploading the
  * original bytes, IP address and all.
  */
 

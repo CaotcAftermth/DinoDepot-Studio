@@ -88,7 +88,7 @@ describe("turning a commit into a row", () => {
     expect(toHistoryEntry(commit({ message: "" }), NOW).title).toBe("Changed the project");
   });
 
-  /** Counted, not hidden — the row must not claim less happened than did. */
+  /** Counted, not hidden - the row must not claim less happened than did. */
   it("counts changes a newer Studio described in a way this one cannot read", () => {
     const entry = toHistoryEntry(
       commit({

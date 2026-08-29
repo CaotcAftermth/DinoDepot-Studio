@@ -56,7 +56,7 @@ const MIN_TRUSTWORTHY_SCRAPE = 25;
  * channel flood.
  *
  * The first collection has nothing to compare against, so every mod in the
- * category is "new" — well over a thousand at the time of writing, which is
+ * category is "new" - well over a thousand at the time of writing, which is
  * sixty-odd Discord messages. The number is the point of the warning, so it is
  * counted from the real split rather than guessed from the mod count.
  */
@@ -80,7 +80,7 @@ export function CurseForgePage() {
   // Deliberately no `unsubscribe` on unmount. A collector run takes minutes,
   // and releasing the listener when the page went away threw the log, the
   // progress and the partial results on the floor while the sidecar kept
-  // going. The run owns its own listener now — see stores/scrapeStore.ts.
+  // going. The run owns its own listener now - see stores/scrapeStore.ts.
 
   return (
     <div {...feedbackTarget("curseforge")}>
@@ -115,7 +115,7 @@ export function CurseForgePage() {
 }
 
 // ---------------------------------------------------------------------------
-// 6A — Custom Cosmetics Collector
+// 6A - Custom Cosmetics Collector
 // ---------------------------------------------------------------------------
 
 function Collector() {
@@ -129,7 +129,7 @@ function Collector() {
     renderDiscordPost(discordFormat, mods, { cluster: settings?.cluster ?? "" });
   /**
    * A list of a few dozen new mods runs past Discord's per-message limit, and
-   * an over-long message is not truncated — it becomes a `message.txt`
+   * an over-long message is not truncated - it becomes a `message.txt`
    * attachment nobody opens. So it goes out as several messages instead, cut
    * on line boundaries. The webhook is capped at 2000 whatever the admin's own
    * plan is; the Nitro setting only widens the post they copy and paste.
@@ -138,8 +138,8 @@ function Collector() {
     splitDiscordPost(discordPostForNewMods(mods), discordLimit(discordFormat.nitro));
   const webhookSegments = (mods: ScrapedMod[]) =>
     splitDiscordPost(discordPostForNewMods(mods), DISCORD_WEBHOOK_LIMIT);
-  // The run lives in its own store so that leaving the page — for Settings,
-  // for Content Sources, for anything — does not end it. Everything below is
+  // The run lives in its own store so that leaving the page - for Settings,
+  // for Content Sources, for anything - does not end it. Everything below is
   // a read of whatever that run is currently doing.
   const running = useScrapeStore((s) => s.running);
   const log = useScrapeStore((s) => s.log);
@@ -242,7 +242,7 @@ function Collector() {
    * category rather than a list of changes.
    *
    * Read from the draft rather than from a flag, so importing a live CCM file
-   * counts as having collected before — which is exactly what it is.
+   * counts as having collected before - which is exactly what it is.
    */
   const firstCollection = cosmetics.entries.length === 0;
   /** How many Discord messages the current diff would actually become. */
@@ -269,7 +269,7 @@ function Collector() {
           name: mod.name || entry.name,
           url: mod.url || entry.url,
           updated: mod.updated || entry.updated,
-          // Found again — whatever happened last time, it is listed now.
+          // Found again - whatever happened last time, it is listed now.
           deprecatedAt: null,
         };
       }
@@ -314,7 +314,7 @@ function Collector() {
     clearResult();
     recordActivity({
       kind: "cosmetics",
-      title: `Cosmetics scan completed — ${scraped.size} entries`,
+      title: `Cosmetics scan completed - ${scraped.size} entries`,
       detail: [
         `${additions.length} added`,
         `${diff.changed.length} updated`,
@@ -330,7 +330,7 @@ function Collector() {
           ? `, ${diff.returned.length} back on CurseForge`
           : "") +
         (!diff.trustworthy && diff.missing.length > 0
-          ? ` — ${diff.missing.length} missing left active (scrape too small to trust)`
+          ? ` - ${diff.missing.length} missing left active (scrape too small to trust)`
           : ""),
     );
   }
@@ -359,7 +359,7 @@ function Collector() {
       message:
         `${mods.length} new cosmetic mod(s) will be posted to this project's webhook` +
         (segments.length > 1
-          ? ` as ${segments.length} messages — the list is longer than Discord's ${DISCORD_WEBHOOK_LIMIT.toLocaleString()}-character limit.`
+          ? ` as ${segments.length} messages - the list is longer than Discord's ${DISCORD_WEBHOOK_LIMIT.toLocaleString()}-character limit.`
           : "."),
       // A first collection is the whole CurseForge category, not an
       // announcement, and posting it fills the channel. Said here as well as
@@ -368,7 +368,7 @@ function Collector() {
         segments.length >= FLOOD_MESSAGES
           ? [
               `${segments.length} separate messages will be sent, a few seconds apart.`,
-              "If this is your first collection, skip it — the channel only wants what changed from here on.",
+              "If this is your first collection, skip it - the channel only wants what changed from here on.",
             ]
           : undefined,
       confirmLabel: "Post",
@@ -527,7 +527,7 @@ function Collector() {
               {firstCollection && floodMessages >= FLOOD_MESSAGES && (
                 <div className="text-xs rounded-md border border-amber-flag/30 bg-amber-flag/5 text-amber-300 px-2 py-1.5 mt-1">
                   This is the first collection for this project, so every mod
-                  in the category counts as new — posting it would send{" "}
+                  in the category counts as new - posting it would send{" "}
                   {floodMessages} messages to your channel. Apply it to the
                   draft and skip the Discord post; from the next run onwards,
                   only what actually changed is announced. Importing your live
@@ -536,7 +536,7 @@ function Collector() {
               )}
               {!diff.trustworthy && (
                 <div className="text-xs rounded-md border border-amber-flag/30 bg-amber-flag/5 text-amber-300 px-2 py-1.5 mt-1">
-                  Only {scraped?.size ?? 0} mods came back — below the{" "}
+                  Only {scraped?.size ?? 0} mods came back - below the{" "}
                   {MIN_TRUSTWORTHY_SCRAPE} needed to trust a result. New and
                   updated mods will still be applied, but nothing will be
                   deprecated: a run that was cancelled or broke partway looks
@@ -547,7 +547,7 @@ function Collector() {
                 <div key={entry.modId} className="text-amber-400/80 text-xs">
                   − {entry.name || entry.modId}{" "}
                   {diff.trustworthy
-                    ? "no longer on CurseForge — will be deprecated"
+                    ? "no longer on CurseForge - will be deprecated"
                     : "not found in scrape"}
                 </div>
               ))}
@@ -634,7 +634,7 @@ function Collector() {
           >
             <p className="text-xs text-ink-400 mb-3">
               A completed scrape no longer found these on CurseForge. Everything
-              known about them is kept — id, name, last-seen date — but they are
+              known about them is kept - id, name, last-seen date - but they are
               left out of the published CCM list, because a delisted mod is a
               download every client retries and fails. If one comes back, the
               next scrape reactivates it automatically.
@@ -664,7 +664,7 @@ function Collector() {
 
       {copySplit && (
         <Modal
-          title={`Discord post — ${copySplit.length} messages`}
+          title={`Discord post - ${copySplit.length} messages`}
           onClose={() => setCopySplit(null)}
           wide
           footer={
@@ -686,7 +686,7 @@ function Collector() {
 
 /**
  * The new mods from the most recent applied scrape, with the Discord post
- * ready to copy — the thing an admin comes back for after navigating away.
+ * ready to copy - the thing an admin comes back for after navigating away.
  */
 /**
  * The post as Discord will actually receive it: one block per message, each
@@ -702,7 +702,7 @@ function DiscordMessages({ segments }: { segments: string[] }) {
         <p className="text-xs text-ink-400">
           Longer than one Discord message. Pasted whole it would arrive as a{" "}
           <span className="mono">message.txt</span> attachment, so it is split
-          on line boundaries — copy and send these in order.
+          on line boundaries - copy and send these in order.
         </p>
       )}
       {segments.map((segment, i) => (
@@ -749,13 +749,13 @@ function PreviousScrapeModal({
 }) {
   return (
     <Modal
-      title={`Previous scrape — applied ${new Date(scrape.at).toLocaleString()}`}
+      title={`Previous scrape - applied ${new Date(scrape.at).toLocaleString()}`}
       onClose={onClose}
       wide
       footer={
         <div className="flex items-center justify-between">
           <span className="text-xs text-ink-500">
-            Saved with the project — this stays available after a restart.
+            Saved with the project - this stays available after a restart.
           </span>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>
@@ -764,7 +764,7 @@ function PreviousScrapeModal({
             {isTauri && scrape.added.length > 0 && (
               <Button onClick={onPost}>Post to Discord</Button>
             )}
-            {/* Only while it is one message — a split post is copied from the
+            {/* Only while it is one message - a split post is copied from the
                 per-message buttons beside each block, and a second modal
                 stacked on this one would say the same thing twice. */}
             {segments.length === 1 && (
@@ -801,7 +801,7 @@ function PreviousScrapeModal({
 
       {scrape.added.length === 0 ? (
         <EmptyState title="That scrape added no new mods">
-          Nothing to post — every mod on CurseForge was already in the list.
+          Nothing to post - every mod on CurseForge was already in the list.
         </EmptyState>
       ) : (
         <>
@@ -829,8 +829,8 @@ function PreviousScrapeModal({
 // ---------------------------------------------------------------------------
 
 /**
- * Cosmetics a completed scrape stopped finding. Kept whole — the id and name
- * are what an admin needs when a player asks where their skin went — but out
+ * Cosmetics a completed scrape stopped finding. Kept whole - the id and name
+ * are what an admin needs when a player asks where their skin went - but out
  * of the published list until CurseForge lists them again.
  */
 function DeprecatedCosmetics() {
@@ -880,7 +880,7 @@ function DeprecatedCosmetics() {
               Deprecated{" "}
               {entry.deprecatedAt
                 ? new Date(entry.deprecatedAt).toLocaleDateString()
-                : "—"}
+                : " - "}
               {entry.updated && ` · last updated ${entry.updated}`}
             </div>
           </div>
@@ -926,7 +926,7 @@ function CosmeticsTable() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
 
-  // Deprecated entries have their own card — this table is the active list.
+  // Deprecated entries have their own card - this table is the active list.
   const entries = useMemo(() => activeEntries(cosmetics), [cosmetics]);
 
   const sorted = useMemo(
@@ -1027,7 +1027,7 @@ function CosmeticsTable() {
                   <div className="mono text-ink-400">{entry.modId}</div>
                 </td>
                 <td className="py-1.5 text-ink-300 text-xs">
-                  {entry.updated || "—"}
+                  {entry.updated || " - "}
                 </td>
                 <td className="py-1.5">
                   <span className="inline-flex items-center gap-3">
@@ -1110,7 +1110,7 @@ function Pager({
 }
 
 // ---------------------------------------------------------------------------
-// 6B — Mod Update Watcher (every enabled mod in Content Sources is watched)
+// 6B - Mod Update Watcher (every enabled mod in Content Sources is watched)
 // ---------------------------------------------------------------------------
 
 /**
@@ -1118,7 +1118,7 @@ function Pager({
  * ID claimed by more than one source.
  *
  * Content Sources blocks new duplicate IDs, but a project saved before that
- * check can still hold them — and a repeated ID in the server's `-mods=`
+ * check can still hold them - and a repeated ID in the server's `-mods=`
  * argument is exactly the kind of thing that is painful to spot by eye. The
  * list is emitted once per ID; the duplicates are named instead.
  */
@@ -1149,7 +1149,7 @@ function useEnabledModIds() {
 }
 
 /**
- * The cluster's enabled mods as a comma-separated ID list — the shape the
+ * The cluster's enabled mods as a comma-separated ID list - the shape the
  * server's `-mods=` launch argument and CurseForge's bulk tools both want.
  */
 function EnabledModIdsModal({ onClose }: { onClose: () => void }) {
@@ -1163,7 +1163,7 @@ function EnabledModIdsModal({ onClose }: { onClose: () => void }) {
         <Link to="/content" className="text-accent-400 hover:underline">
           Content Sources
         </Link>
-        , comma-separated — ready to paste into the server's mod list.
+        , comma-separated - ready to paste into the server's mod list.
       </p>
       {ids.length === 0 ? (
         <EmptyState title="No enabled mods with a CurseForge ID" />
@@ -1179,12 +1179,12 @@ function EnabledModIdsModal({ onClose }: { onClose: () => void }) {
       )}
       {missing.length > 0 && (
         <p className="text-xs text-amber-400 mt-2">
-          Left out — no CurseForge ID recorded: {missing.join(", ")}
+          Left out - no CurseForge ID recorded: {missing.join(", ")}
         </p>
       )}
       {duplicates.length > 0 && (
         <p className="text-xs text-amber-400 mt-2">
-          Listed once each — these project IDs are on more than one source in{" "}
+          Listed once each - these project IDs are on more than one source in{" "}
           <Link to="/content" className="text-accent-400 hover:underline">
             Content Sources
           </Link>
@@ -1298,7 +1298,7 @@ function Watcher() {
         pushLog(
           `Checked in ${(event.durationMs / 1000).toFixed(1)}s` +
             (event.detailFailures > 0
-              ? ` — ${event.detailFailures} could not be read`
+              ? ` - ${event.detailFailures} could not be read`
               : ""),
         );
         break;
@@ -1346,7 +1346,7 @@ function Watcher() {
   async function checkNow() {
     if (active.length === 0) {
       toast.error(
-        "No watched mods — enable a mod in Content Sources and give it a CurseForge URL or project ID",
+        "No watched mods - enable a mod in Content Sources and give it a CurseForge URL or project ID",
       );
       return;
     }
@@ -1373,7 +1373,7 @@ function Watcher() {
 
   /**
    * Watching follows the mod's Enabled state, so the only way to stop watching
-   * is to disable the mod — which is a much bigger statement than it used to
+   * is to disable the mod - which is a much bigger statement than it used to
    * be, and the dialog has to say so plainly rather than bury it.
    */
   async function stopWatching(mod: WatchedMod) {
@@ -1384,7 +1384,7 @@ function Watcher() {
     const ok = await confirmDialog({
       title: `Disable "${source.name}" to stop watching it?`,
       message:
-        "Update checks follow a mod's Enabled state, so this marks the mod as not running on the cluster — the same as switching it off in Content Sources.",
+        "Update checks follow a mod's Enabled state, so this marks the mod as not running on the cluster - the same as switching it off in Content Sources.",
       details: [
         "Its creatures and items stay catalogued and keep working in rules and remaps",
         "The acknowledged version and your review notes are kept, so re-enabling picks up where you left off",
@@ -1442,7 +1442,7 @@ function Watcher() {
               disabled={running || collectorRunning || !isTauri}
               title={
                 collectorRunning
-                  ? "A cosmetics collector run is in progress — it and a watch check share one browser."
+                  ? "A cosmetics collector run is in progress - it and a watch check share one browser."
                   : undefined
               }
             >
@@ -1496,7 +1496,7 @@ function Watcher() {
                     </a>
                     <span className="mono text-xs text-ink-400">{mod.modId}</span>
                     {mod.needsReview ? (
-                      <Badge tone="warn">Update detected — review</Badge>
+                      <Badge tone="warn">Update detected - review</Badge>
                     ) : mod.lastCheckedAt ? (
                       <Badge tone="ok">Up to date</Badge>
                     ) : (
@@ -1504,7 +1504,7 @@ function Watcher() {
                     )}
                   </div>
                   <div className="text-xs text-ink-400 mt-1">
-                    Known: {mod.knownUpdated || "—"}
+                    Known: {mod.knownUpdated || " - "}
                     {mod.latestUpdated &&
                       mod.latestUpdated !== mod.knownUpdated &&
                       ` → Latest: ${mod.latestUpdated}`}
@@ -1562,7 +1562,7 @@ function Watcher() {
             <Link to="/content" className="text-accent-400 hover:underline">
               Content Sources
             </Link>{" "}
-            and the next check compares against the version below — so an update
+            and the next check compares against the version below - so an update
             released while it was unwatched still gets flagged.
           </p>
           <div className="flex flex-col divide-y divide-ink-800">
@@ -1577,7 +1577,7 @@ function Watcher() {
                     <span className="mono text-xs text-ink-500">{mod.modId}</span>
                   </div>
                   <div className="text-xs text-ink-400">
-                    Acknowledged: {mod.knownUpdated || "—"}
+                    Acknowledged: {mod.knownUpdated || " - "}
                     {mod.lastCheckedAt &&
                       ` · Last checked ${new Date(mod.lastCheckedAt).toLocaleDateString()}`}
                     {mod.notes && ` · ${mod.notes}`}

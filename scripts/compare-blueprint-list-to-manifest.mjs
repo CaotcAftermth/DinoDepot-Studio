@@ -148,7 +148,7 @@ const reportLines = [
   "",
   ...noMatch.map(
     (result) =>
-      `${result.number}. ${result.name || "(name unavailable)"} — \`${result.blueprintPath}\``,
+      `${result.number}. ${result.name || "(name unavailable)"} - \`${result.blueprintPath}\``,
   ),
   "",
   "## Listed path absent; same filename found elsewhere",

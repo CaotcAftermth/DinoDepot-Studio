@@ -4,8 +4,8 @@ import { conflictId, type Conflict } from "./conflicts";
  * Three-way merge over domain objects, not over lines.
  *
  * The whole point: a line-based merge of a JSON file produces conflict markers
- * inside the file, which is both unreadable and — since the app then cannot
- * parse it — actively destructive. Merging the parsed data instead means two
+ * inside the file, which is both unreadable and - since the app then cannot
+ * parse it - actively destructive. Merging the parsed data instead means two
  * administrators who touched different creatures never conflict at all, and
  * the ones who touched the same field get asked a question they can answer.
  *
@@ -21,7 +21,7 @@ export interface MergeContext {
   itemLabel: string;
   /** Field names to friendly labels. Anything absent falls back to the key. */
   labels?: Record<string, string>;
-  /** Fields never worth conflicting over — timestamps, caches. */
+  /** Fields never worth conflicting over - timestamps, caches. */
   ignore?: string[];
 }
 
@@ -142,7 +142,7 @@ export interface ListMergeOptions<T> {
  * Ordering is normalised rather than merged: these lists are sets the UI sorts
  * for display, so two people reordering them is not a disagreement worth
  * anybody's time. Base order is preserved, then this computer's additions, then
- * theirs — stable, and deterministic regardless of who syncs first.
+ * theirs - stable, and deterministic regardless of who syncs first.
  */
 export function mergeList<T extends Record<string, unknown>>(
   base: T[] | undefined,
@@ -206,7 +206,7 @@ export function mergeList<T extends Record<string, unknown>>(
     // Deleted on both sides: agreed.
     if (!inMine && !inTheirs) continue;
 
-    // Deleted on one side. Silent only when the other side left it alone —
+    // Deleted on one side. Silent only when the other side left it alone -
     // otherwise somebody's edit is about to vanish without being mentioned.
     if (!inMine || !inTheirs) {
       const survivor = inMine ?? inTheirs!;
@@ -272,7 +272,7 @@ function orderedIds<T>(base: T[], mine: T[], theirs: T[], key: (item: T) => stri
 // ---------------------------------------------------------------------------
 
 /**
- * Merges a plain string-keyed map — icon assignments, per-path notes.
+ * Merges a plain string-keyed map - icon assignments, per-path notes.
  *
  * The same rules as a list, one key at a time: independent keys both survive,
  * a key removed on one side and left alone on the other is removed, and only a

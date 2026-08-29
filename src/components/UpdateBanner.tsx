@@ -21,7 +21,7 @@ import { openExternal } from "../services/openExternal";
  *
  * Installing restarts the application. This app holds a cluster's
  * configuration, and an administrator part-way through editing it should not
- * lose their place because a release went out — so the check is quiet, the
+ * lose their place because a release went out - so the check is quiet, the
  * offer is a line in the sidebar, and the install waits for a click.
  */
 export function UpdateBanner() {
@@ -70,7 +70,7 @@ export function UpdateBanner() {
     setState("downloading");
     try {
       await installUpdate(handle, (progress) => setPercent(progressPercent(progress)));
-      // Unreachable in practice — `installUpdate` relaunches.
+      // Unreachable in practice - `installUpdate` relaunches.
       setState("ready");
     } catch (e) {
       setState("failed");

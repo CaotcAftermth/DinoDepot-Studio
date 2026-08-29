@@ -46,7 +46,7 @@ export function ProjectHomePage() {
   const [newCluster, setNewCluster] = useState("");
   /**
    * The folder every project is made inside. Empty until first asked for, and
-   * empty for the moment it takes to read it back off disk — the New project
+   * empty for the moment it takes to read it back off disk - the New project
    * card is not on screen yet when that read starts.
    */
   const [root, setRoot] = useState("");
@@ -62,7 +62,7 @@ export function ProjectHomePage() {
   const targetDir = projectDirFor(root, newName.trim());
   /**
    * What the card shows for the destination. An unnamed project still has a
-   * folder to show — its parent — so the naming is visibly what decides it.
+   * folder to show - its parent - so the naming is visibly what decides it.
    */
   const shownDir =
     targetDir || (root ? joinPath(root, folderNameFor(newName.trim()) || "…") : "");
@@ -196,7 +196,7 @@ export function ProjectHomePage() {
       return;
     }
     // The machine-local record is keyed by project id and has already followed
-    // the folder. Only the row naming the old path is stale — and only when it
+    // the folder. Only the row naming the old path is stale - and only when it
     // is the same project, so picking a different one leaves the original entry
     // alone rather than silently discarding it.
     const opened = useProjectStore.getState().settings;
@@ -328,7 +328,7 @@ export function ProjectHomePage() {
     }
     if (!targetDir) {
       toast.error(
-        "That name leaves nothing a folder can be called — try another, or choose a folder yourself",
+        "That name leaves nothing a folder can be called - try another, or choose a folder yourself",
       );
       return;
     }
@@ -358,7 +358,7 @@ export function ProjectHomePage() {
           </h1>
           <p className="text-ink-400 text-sm mt-1">
             Server configuration studio for ASA clusters
-            {!isTauri && " — running in browser mock mode"}
+            {!isTauri && " - running in browser mock mode"}
           </p>
         </div>
 

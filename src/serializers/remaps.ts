@@ -30,7 +30,7 @@ export function parseRemaps(text: string): RemapsDraft {
   if (!result.success) {
     const issue = result.error.issues[0];
     throw new Error(
-      `Not a valid remap file: ${issue.path.join(".")} — ${issue.message}`,
+      `Not a valid remap file: ${issue.path.join(".")} - ${issue.message}`,
     );
   }
   return {

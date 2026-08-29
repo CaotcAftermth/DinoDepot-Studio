@@ -55,7 +55,7 @@ function ArgButton({
 }: {
   label: string;
   title: string;
-  /** How many values are set — shown on the button so the modal stays honest. */
+  /** How many values are set - shown on the button so the modal stays honest. */
   count: number;
   /** The literal argument produced, so it can be sanity-checked at a glance. */
   summary: string;
@@ -141,7 +141,7 @@ export function StatsEditor({
     >
       {() => (
         <>
-          {/* Every stat is listed, in the order -s= expects — the argument is
+          {/* Every stat is listed, in the order -s= expects - the argument is
               positional, and seeing the full nine is how you check it. */}
           <div className="flex flex-col gap-1">
             {SPAWN_STATS.map((stat) => (
@@ -174,7 +174,7 @@ export function StatsEditor({
 
 // ---------------------------------------------------------------------------
 
-/** A swatch plus its id and name — the three things needed to pick a colour. */
+/** A swatch plus its id and name - the three things needed to pick a colour. */
 function ColorOption({ color }: { color: ArkColor }) {
   return (
     <>
@@ -383,7 +383,7 @@ export function TraitsEditor({
                   key={trait.token}
                   onClick={() => add(trait.token)}
                   // What the trait does is a hover away rather than a second
-                  // line under every row — the list is for finding a name.
+                  // line under every row - the list is for finding a name.
                   title={trait.hint}
                   className="flex items-center gap-2 px-2 py-1 rounded hover:bg-ink-800 cursor-pointer text-left"
                 >
@@ -396,7 +396,7 @@ export function TraitsEditor({
                 </button>
               ))}
               {/* The list is not authoritative, so an unlisted trait must
-                  still be reachable — otherwise a valid command is untypeable. */}
+                  still be reachable - otherwise a valid command is untypeable. */}
               {custom && !traitByToken(custom) && (
                 <button
                   onClick={() => add(custom)}
@@ -429,7 +429,7 @@ export function TraitsEditor({
                   return (
                     <div key={assignment.id} className="flex items-center gap-2">
                       {/* Name only. The token is what goes in the command, but
-                          for a known trait it is the same word twice — and the
+                          for a known trait it is the same word twice - and the
                           command itself is printed at the foot of the panel. */}
                       <span
                         className="text-sm text-ink-100 truncate min-w-0 flex-1"
@@ -438,7 +438,7 @@ export function TraitsEditor({
                             ? [known.hint, `-g= token: ${assignment.token}`]
                                 .filter(Boolean)
                                 .join("\n")
-                            : `Not in the trait list — sent as "${assignment.token}"`
+                            : `Not in the trait list - sent as "${assignment.token}"`
                         }
                       >
                         {known?.name ?? assignment.token}

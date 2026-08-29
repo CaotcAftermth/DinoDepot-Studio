@@ -15,7 +15,7 @@ fn err<E: std::fmt::Display>(e: E) -> String {
 ///
 /// This checks the shape rather than matching a fixed list: the list only ever
 /// existed to stop path traversal, and keeping a copy of it here in sync with
-/// the TypeScript one was a silent-failure waiting to happen — a new project
+/// the TypeScript one was a silent-failure waiting to happen - a new project
 /// file would be rejected at runtime with nothing to show for it.
 pub(crate) fn validate_file_name(file_name: &str) -> Result<(), String> {
     let bad_shape = file_name.is_empty()
@@ -37,7 +37,7 @@ pub(crate) fn validate_file_name(file_name: &str) -> Result<(), String> {
 /// The temp-file-then-rename dance is only half of it: without the explicit
 /// flush, the rename can reach the disk before the contents do, and a power
 /// cut in that window leaves a correctly-named file full of zeroes. This is
-/// the single write primitive — the project files, the lock, and the local
+/// the single write primitive - the project files, the lock, and the local
 /// state records all go through it.
 pub fn write_atomic(target: &Path, bytes: &[u8]) -> Result<(), String> {
     use std::io::Write;
@@ -135,7 +135,7 @@ pub fn save_project_file(dir: String, file_name: String, content: String) -> Res
 
 /// Moves a file that could not be understood out of the way, unread.
 ///
-/// The alternative — carrying on with empty data — is what turns one bad file
+/// The alternative - carrying on with empty data - is what turns one bad file
 /// into a lost roster: the store starts from nothing, the next keystroke
 /// autosaves, and the damaged original is gone. Renaming it first means the
 /// worst case is a file the admin has to go and look at.
@@ -210,7 +210,7 @@ fn copy_tree(from: &Path, to: &Path) -> Result<usize, String> {
         // `backups` holds previous snapshots, `.dinodepot-staging` holds a
         // migration in flight, and neither belongs inside a new snapshot. The
         // lock files describe who is editing right now, which is never true of
-        // a copy — restoring one would hand the restored project a lock.
+        // a copy - restoring one would hand the restored project a lock.
         if name == "backups"
             || name == ".git"
             || name == STAGING_DIR
@@ -239,7 +239,7 @@ fn copy_tree(from: &Path, to: &Path) -> Result<usize, String> {
 /// was; a failure *during* it leaves the snapshot, which the recovery flow
 /// restores from.
 ///
-/// The migration itself is not here — it is pure TypeScript, tested against
+/// The migration itself is not here - it is pure TypeScript, tested against
 /// fixtures. This is only the part that has to touch the disk.
 #[tauri::command]
 pub fn commit_migrated_project(
@@ -270,7 +270,7 @@ pub fn commit_migrated_project(
         if &staged != content {
             fs::remove_dir_all(&staging).map_err(err)?;
             return Err(format!(
-                "The updated {name} did not read back correctly — nothing was changed"
+                "The updated {name} did not read back correctly - nothing was changed"
             ));
         }
     }
@@ -329,7 +329,7 @@ mod tests {
             "watchlist.json",
             "history.json",
             "players.json",
-            // A file added later must not need a change here — that drift is
+            // A file added later must not need a change here - that drift is
             // what silently dropped player data.
             "something-new.json",
         ] {
@@ -361,7 +361,7 @@ mod tests {
     }
 
     /// Tauri renames arguments but not return values, so a snake_case field
-    /// here reaches TypeScript as `undefined` — which is exactly how a whole
+    /// here reaches TypeScript as `undefined` - which is exactly how a whole
     /// player roster once got dropped on load.
     #[test]
     fn stored_profile_info_serializes_as_camel_case() {
@@ -602,7 +602,7 @@ pub fn read_text_file(path: String) -> Result<String, String> {
     fs::read_to_string(&path).map_err(err)
 }
 
-/// Reads any file as base64 — used to carry icon images into a modpack.
+/// Reads any file as base64 - used to carry icon images into a modpack.
 #[tauri::command]
 pub fn read_file_b64(path: String) -> Result<String, String> {
     let bytes = fs::read(&path).map_err(err)?;
@@ -647,7 +647,7 @@ pub fn save_text_file(path: String, contents: String) -> Result<(), String> {
 /// Returned to the frontend, so the field names must be camelCase.
 ///
 /// Tauri renames command *arguments* automatically, but return values go
-/// through serde untouched — a snake_case field here silently arrives as
+/// through serde untouched - a snake_case field here silently arrives as
 /// `undefined` in TypeScript.
 #[derive(serde::Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -692,9 +692,9 @@ pub fn store_player_profile(
 
 /// Writes profile bytes the app produced into the project's profiles/ folder.
 ///
-/// The bulk importer and the profile generator both hold the file in memory —
+/// The bulk importer and the profile generator both hold the file in memory -
 /// the importer because it has already parsed it to work out who it belongs
-/// to, the generator because it built it — so neither has a source path to
+/// to, the generator because it built it - so neither has a source path to
 /// copy from the way `store_player_profile` does.
 #[tauri::command]
 pub fn store_player_profile_b64(
@@ -731,7 +731,7 @@ pub struct ProfileFileContent {
 /// general "read any file" command.
 ///
 /// The modified time comes back with the bytes because it is the only thing
-/// that distinguishes two saves of the same account — a server backup folder
+/// that distinguishes two saves of the same account - a server backup folder
 /// holds several, and the admin picks between them by date.
 #[tauri::command]
 pub fn read_profile_file_b64(path: String) -> Result<ProfileFileContent, String> {
@@ -743,7 +743,7 @@ pub fn read_profile_file_b64(path: String) -> Result<ProfileFileContent, String>
         .unwrap_or(false);
     if !is_profile {
         return Err(format!(
-            "'{path}' is not a .arkprofile — only profile files can be read here"
+            "'{path}' is not a .arkprofile - only profile files can be read here"
         ));
     }
     if !source.is_file() {

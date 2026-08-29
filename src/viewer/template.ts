@@ -21,7 +21,7 @@ export function buildViewerHtml(config: ViewerPageConfig): string {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${cluster} — Dino Depot Production Atlas</title>
+<title>${cluster} - Dino Depot Production Atlas</title>
 <style>
 :root{
   --bg:#070c12;--bg2:#0a1119;--panel:#0c141d;--panel2:#101a25;--panel3:#15202d;
@@ -324,7 +324,7 @@ button.drop:hover{border-color:var(--cyan)}
 
   <!-- OVERVIEW -->
   <section id="v-overview" style="display:none">
-    <p class="tag">Your guide to the creatures of ${cluster} — how they're caught, what they drop, and what they make.</p>
+    <p class="tag">Your guide to the creatures of ${cluster} - how they're caught, what they drop, and what they make.</p>
     <div class="hero">
       <div class="panel cre">
         <div class="hex">🧬</div>
@@ -395,7 +395,7 @@ var CFG = {
 };
 var DATA = null;
 var byC = new Map(), byI = new Map();
-/* Items again, by normalized path — a drop and a production rule can spell the
+/* Items again, by normalized path - a drop and a production rule can spell the
    same blueprint differently, and both must reach the one resource page. */
 var byIn = new Map();
 var selC = null, selI = null;
@@ -551,7 +551,7 @@ function lookupItem(ref){ return byI.get(ref) || byIn.get(normRef(ref)) || null;
 /*
  * Whether a creature is on the production roster. The page and the data file
  * publish separately, so data written before "produces" existed still has to
- * read correctly — back then, being listed at all meant being a producer.
+ * read correctly - back then, being listed at all meant being a producer.
  */
 function isProducer(c){
   return c.produces === undefined
@@ -559,7 +559,7 @@ function isProducer(c){
     : Boolean(c.produces);
 }
 
-/* Every map a creature is known from — spawns if recorded, else its origin. */
+/* Every map a creature is known from - spawns if recorded, else its origin. */
 function creatureMaps(c){
   var mp = c.maps || {};
   return (mp.spawns && mp.spawns.length) ? mp.spawns : (mp.origin ? [mp.origin] : []);
@@ -577,8 +577,8 @@ function creatureTags(c){
  * Searchable text for a creature, built once and cached on the record.
  *
  * The list is now a creature lookup rather than a producer list, so searching
- * has to reach what was written about it — a route's name, what it eats, what
- * it drops — not just its own name.
+ * has to reach what was written about it - a route's name, what it eats, what
+ * it drops - not just its own name.
  */
 function cHay(c){
   if(c._q) return c._q;
@@ -722,7 +722,7 @@ function fillMaps(sel, list){
 
 /**
  * Opens whatever the URL asks for. "#creature=Rex" and "#item=PrimalItem…"
- * make a lookup shareable — the reason someone sends this page to someone
+ * make a lookup shareable - the reason someone sends this page to someone
  * else is almost always one specific creature.
  */
 function openInitial(hash){
@@ -801,7 +801,7 @@ function openC(id){
     '<div class="cls">'+esc(c.cls)+'</div>' +
     '<button class="copy" onclick="copyLink()">🔗 Copy link</button></span>' +
     '<button class="dclose" onclick="closeDetail()">✕</button></div>';
-  /* Only a creature on the production roster gets a Produces block — for the
+  /* Only a creature on the production roster gets a Produces block - for the
      rest, an empty one would read as "makes nothing", which is a claim about
      the mod rather than about this cluster's configuration. */
   if(isProducer(c)){
@@ -827,7 +827,7 @@ function openC(id){
           '<div class="tn">🔻 '+esc(ct?ct.name:"?")+'</div><div class="tv">−'+cn.qty+(it.consumeChance<1?' · '+pct(it.consumeChance):'')+'</div></button>';
       });
     });
-    body += '<div class="dsec"><h3>Cycle '+(i+1)+(cy.name?' — '+esc(cy.name):'')+'</h3>' +
+    body += '<div class="dsec"><h3>Cycle '+(i+1)+(cy.name?' - '+esc(cy.name):'')+'</h3>' +
       '<div class="cycbox"><div class="m">Runs every <b>'+fmtI(cy.interval)+'</b>' +
       (cy.items.length>1 ? ' · <b>'+esc(cy.mode)+'</b> of '+cy.items.length+' outputs' : '') + '</div>' +
       '<div class="tiles">'+inner+'</div></div></div>';
@@ -847,10 +847,10 @@ function openC(id){
       (mp.caution
         ? '<div class="cautionnote">This cluster does not run '+
           (mapList.length>1?'any of these maps':'this map')+
-          ' — it may still be obtainable elsewhere, so check before counting on it.</div>'
+          ' - it may still be obtainable elsewhere, so check before counting on it.</div>'
         : '') +
       ((!mp.spawns || !mp.spawns.length) && mp.origin
-        ? '<div class="note">Map of origin — specific spawn maps have not been recorded.</div>'
+        ? '<div class="note">Map of origin - specific spawn maps have not been recorded.</div>'
         : '') +
       '</div>';
   }
@@ -931,7 +931,7 @@ function openC(id){
       if(!entries || !entries.length) return;
       out += '<div class="akind">'+l[1]+'</div><div class="drops">' +
         entries.map(function(e){
-          // A drop that is also a tracked resource links through to it — that
+          // A drop that is also a tracked resource links through to it - that
           // is the whole point of publishing both sides.
           var known = e.ref ? lookupItem(e.ref) : null;
           var inner = iconBox(e,"dic")+'<b>'+esc(e.name)+'</b>' +

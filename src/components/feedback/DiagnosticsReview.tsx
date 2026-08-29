@@ -44,7 +44,7 @@ const CATEGORIES: {
   {
     key: "project",
     label: "Project shape",
-    blurb: "How many rules, creatures and maps — never their names",
+    blurb: "How many rules, creatures and maps - never their names",
     sensitive: true,
   },
 ];

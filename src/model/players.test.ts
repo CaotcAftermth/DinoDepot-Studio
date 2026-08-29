@@ -241,7 +241,7 @@ describe("PlayersFile schema", () => {
   /**
    * A Rust struct returning snake_case once wrote `fileName: undefined` into
    * every stored profile. JSON.stringify drops undefined keys, so the file
-   * came back missing the name — and a strict schema threw away the entire
+   * came back missing the name - and a strict schema threw away the entire
    * roster over it. The record must survive; only the file link is lost.
    */
   it("keeps the roster when a profile lost its file name", () => {

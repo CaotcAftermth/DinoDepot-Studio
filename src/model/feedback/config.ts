@@ -10,7 +10,7 @@ import { STUDIO_REPO, studioRepoPath } from "../studio";
  * one of them is decoration.
  *
  * The API address is deliberately empty in a stock build. An unset address is
- * a working configuration, not a broken one — the app falls back to preparing
+ * a working configuration, not a broken one - the app falls back to preparing
  * the issue in the administrator's browser, which needs no service at all. See
  * `docs/architecture/feedback.md`.
  */
@@ -119,7 +119,7 @@ export function hasManagedFeedbackService(): boolean {
 /**
  * Whether an address is one the app will actually send a report to.
  *
- * HTTPS only, and no credentials in the URL — the same rule the package
+ * HTTPS only, and no credentials in the URL - the same rule the package
  * downloader applies, for the same reason: a URL with a password in it ends up
  * in a log the moment anything goes wrong.
  */

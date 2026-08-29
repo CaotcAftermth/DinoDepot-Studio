@@ -7,7 +7,7 @@
  * Sharing rather than reimplementing is the point. The issue formatter in
  * particular has to produce byte-identical output on both sides: the app uses
  * it for the "open a prepared issue" fallback and this service uses it for the
- * real thing, and two copies would drift within a release — leaving reports
+ * real thing, and two copies would drift within a release - leaving reports
  * that look different depending on whether the network happened to be up.
  *
  * Everything imported here is free of runtime dependencies apart from Zod,

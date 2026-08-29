@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 /**
- * Purely presentational preferences — which cards the admin has folded up or
+ * Purely presentational preferences - which cards the admin has folded up or
  * opened out.
  *
  * Deliberately *not* in the project files: collapsing a card says nothing
@@ -12,8 +12,8 @@ import { create } from "zustand";
  * mock.
  *
  * What is stored is the set of cards whose state *differs from their default*,
- * not the set of collapsed ones. Sections have different defaults — a rule
- * editor opens, a remap in a long list does not — and storing deviations means
+ * not the set of collapsed ones. Sections have different defaults - a rule
+ * editor opens, a remap in a long list does not - and storing deviations means
  * an untouched card always follows its section's default, and the store stays
  * empty until the admin actually changes something.
  */
@@ -45,7 +45,7 @@ interface UiPrefsState {
   /**
    * Drops stored ids that no longer exist. Called with the live ids of a
    * family (`remap:*`, `rule:*`…) so deleting a rule doesn't leave its key
-   * behind forever — and so a *new* rule reusing an id can't inherit it.
+   * behind forever - and so a *new* rule reusing an id can't inherit it.
    */
   prune(prefix: string, liveKeys: string[]): void;
 }

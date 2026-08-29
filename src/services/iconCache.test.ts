@@ -148,8 +148,8 @@ describe("resolving an icon", () => {
 
     const a = resolveIcon("abcdefgh", fetch);
     const b = resolveIcon("abcdefgh", fetch);
-    // The fetcher runs after the cache lookup, so it has not been called — and
-    // `resolveFetch` not yet assigned — until the microtask queue drains.
+    // The fetcher runs after the cache lookup, so it has not been called - and
+    // `resolveFetch` not yet assigned - until the microtask queue drains.
     await vi.waitFor(() => expect(fetch).toHaveBeenCalled());
     resolveFetch({ contentB64: "UklGRgAAAABXRUJQ", etag: '"v1"', notModified: false });
 

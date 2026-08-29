@@ -8,7 +8,7 @@ import { Input, cx, useEscapeLayer } from "./ui";
 /**
  * A text field for a player identifier that can also pick from the roster.
  *
- * Admins know players by name, not by a twenty-digit EOS id — so when the
+ * Admins know players by name, not by a twenty-digit EOS id - so when the
  * Player Data module is on and someone in the roster has the identifier this
  * field wants, a picker offers them by name and fills in the value. Typing is
  * never blocked: rosters are incomplete, and the module may be off entirely,
@@ -66,7 +66,7 @@ export function PlayerFieldInput({
     };
   }, [open]);
 
-  // Nothing to offer — this is just an input.
+  // Nothing to offer - this is just an input.
   if (choices.length === 0) {
     return (
       <Input
@@ -158,7 +158,7 @@ export function PlayerFieldInput({
               ))}
               {filtered.length === 0 && (
                 <p className="text-xs text-ink-400 px-3 py-3">
-                  No player matches — type the value instead.
+                  No player matches - type the value instead.
                 </p>
               )}
             </div>

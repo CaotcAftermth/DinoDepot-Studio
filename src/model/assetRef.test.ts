@@ -70,7 +70,7 @@ describe("asset references", () => {
 describe("official asset references", () => {
   it("names base-game art without pinning the release it came from", () => {
     // An administrator picking the stock Rex icon means "the base game's
-    // Rex" — pinning 1.1.0 into the value would orphan the assignment the
+    // Rex" - pinning 1.1.0 into the value would orphan the assignment the
     // next time Core Content moves.
     expect(
       parseAssetValue("official:creatures/Rex.webp", {

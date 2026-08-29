@@ -16,7 +16,7 @@ import { Button, Input, Modal, Toggle, cx } from "../../components/ui";
  *
  * The mod ships the picture; nothing in it says which entry the picture
  * belongs to. Filename matching was measured and does not work, so this shows
- * the administrator what is in there and lets them decide — the one part of
+ * the administrator what is in there and lets them decide - the one part of
  * the problem a person is better at than the data.
  *
  * Only the selected texture is decoded. A mod's art is mostly 4096x4096
@@ -180,7 +180,7 @@ export function TexturePickerModal({
               onClick={() => setShowKeywords((open) => !open)}
             >
               <span>
-                {showKeywords ? "▾" : "▸"} Excluded material words —{" "}
+                {showKeywords ? "▾" : "▸"} Excluded material words - {" "}
                 {excluded.size} of {keywords.length} on, hiding {hiddenCount}{" "}
                 texture{hiddenCount === 1 ? "" : "s"}
               </span>
@@ -268,7 +268,7 @@ export function TexturePickerModal({
 
         {!textures && !error && (
           <p className="text-sm text-ink-400 py-8 text-center">
-            Reading this mod's artwork — a large mod takes a few seconds…
+            Reading this mod's artwork - a large mod takes a few seconds…
           </p>
         )}
 
@@ -298,7 +298,7 @@ export function TexturePickerModal({
                     ? "This mod ships no textures."
                     : query.trim()
                       ? `Nothing matches “${query.trim()}”.`
-                      : "Everything here looks like a material map — turn the filter off to see them."}
+                      : "Everything here looks like a material map - turn the filter off to see them."}
                 </p>
               )}
             </div>

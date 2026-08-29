@@ -24,7 +24,7 @@ beforeEach(() => {
  * The credential boundary, guarded at the one place it could be undone.
  *
  * An earlier cut of the Git layer took the token as a command argument, which
- * would have required the webview to be able to read it — undoing the whole
+ * would have required the webview to be able to read it - undoing the whole
  * point of removing `secret_get`. These assertions exist so that change cannot
  * come back unnoticed.
  */
@@ -69,7 +69,7 @@ describe("the credential boundary", () => {
  *
  * Rust rejects with a JSON-encoded failure carrying a code. Decoding it here is
  * what lets the orchestration tell "the branch moved on, go round again" apart
- * from "your access was revoked, stop and ask" — without reading English out of
+ * from "your access was revoked, stop and ask" - without reading English out of
  * an error string.
  */
 describe("decodeFailure", () => {
@@ -99,7 +99,7 @@ describe("decodeFailure", () => {
 
   /**
    * A code this build has never heard of must not become a code it *has* heard
-   * of by accident — the retry logic branches on these.
+   * of by accident - the retry logic branches on these.
    */
   it("does not trust a code it does not recognise", () => {
     const error = decodeFailure(
@@ -127,8 +127,8 @@ describe("decodeFailure", () => {
   });
 
   /**
-   * A classified failure raised above this layer — by the mock backend, or by
-   * a wrapper — passes straight through. Re-wrapping it as "unknown" would
+   * A classified failure raised above this layer - by the mock backend, or by
+   * a wrapper - passes straight through. Re-wrapping it as "unknown" would
    * throw away the very classification the retry logic needs.
    */
   it("passes an already-classified failure through untouched", () => {

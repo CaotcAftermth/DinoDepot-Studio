@@ -381,7 +381,7 @@ describe("pruneEmptyPlaceholderSections", () => {
     expect(pruneEmptyPlaceholderSections("K<test>", "V", typed)).toBe("<test>");
   });
 
-  it("keeps a stale section that has options — that's admin work", () => {
+  it("keeps a stale section that has options - that's admin work", () => {
     const notes = "<old>\n- Ammonite\n- Cnidaria";
     expect(pruneEmptyPlaceholderSections("K<new>", "V", notes)).toBe(notes);
   });

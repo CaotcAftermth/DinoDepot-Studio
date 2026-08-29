@@ -5,8 +5,8 @@ import type { ProjectSettings } from "../model/project";
  * Optional pages load on demand, like the core sections.
  *
  * The sidebar reads this list on every render, so a static import here put
- * every optional page — and everything it touches, the official catalog
- * included — into the first script the window has to evaluate, whether or not
+ * every optional page - and everything it touches, the official catalog
+ * included - into the first script the window has to evaluate, whether or not
  * the module was even switched on.
  */
 const loadPlayerData = () => import("../pages/PlayerDataPage");
@@ -20,7 +20,7 @@ export function prefetchModules(): void {
 }
 
 /**
- * Optional pages that sit below the separator in the sidebar — functionality
+ * Optional pages that sit below the separator in the sidebar - functionality
  * beyond the production studio itself, off unless the admin turns it on in
  * Settings.
  *
@@ -29,7 +29,7 @@ export function prefetchModules(): void {
  * needs touching.
  */
 export interface AppModule {
-  /** Stable key stored in settings.modules — never rename it. */
+  /** Stable key stored in settings.modules - never rename it. */
   id: string;
   to: string;
   label: string;

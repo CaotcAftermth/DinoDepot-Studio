@@ -137,7 +137,7 @@ export function upsertDependency(
 /**
  * Merges by package identity rather than replacing the whole array.
  *
- * Two operations can be in flight at once — a project opening adds the managed
+ * Two operations can be in flight at once - a project opening adds the managed
  * official pin while an administrator installs a modpack. Writing back a list
  * captured before the other one landed used to drop it. Merging means the last
  * writer only decides its *own* rows.
@@ -177,7 +177,7 @@ export interface PackPresence {
  *
  * Two different facts were being reported with one word. A package lives in a
  * machine-wide library shared by every project, and deleting a mod from *this*
- * project never removes it from there — correctly, since immutable versions
+ * project never removes it from there - correctly, since immutable versions
  * are cache. Saying "installed" for that read as "installed here", so a mod
  * deleted a moment ago still looked present.
  *

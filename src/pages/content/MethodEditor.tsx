@@ -46,7 +46,7 @@ import { confirmDialog } from "../../components/confirm";
  * One acquisition method: what it's called, how it's classified, what you need,
  * and the ordered phases of the process.
  *
- * Editorial rather than programmable — phases are cards with short steps, not
+ * Editorial rather than programmable - phases are cards with short steps, not
  * a node graph. The point is that an admin can write down Rhyniognatha's host
  * mechanic as readily as a Dodo's passive tame.
  */
@@ -76,7 +76,7 @@ export function MethodEditor({
   /**
    * An input is well-formed when it says what it points at: free text needs a
    * label, a catalog reference needs a path that resolves in the catalog its
-   * type names. Surfaced rather than blocked — a half-written method should
+   * type names. Surfaced rather than blocked - a half-written method should
    * still save.
    */
   const inputProblems = method.inputs.filter((input) => {
@@ -97,7 +97,7 @@ export function MethodEditor({
     });
   }
 
-  /** Tags the admin typed — anything not backed by a preset chip above. */
+  /** Tags the admin typed - anything not backed by a preset chip above. */
   const freeTags = method.tags.filter(
     (t) => !(METHOD_TAGS as readonly string[]).includes(t),
   );
@@ -126,7 +126,7 @@ export function MethodEditor({
   function addInput(bpPath: string, referenceType: "item" | "creature") {
     // A creature input is almost always the host it's being used as.
     const role = referenceType === "creature" ? "host-creature" : "taming-food";
-    // The same item can legitimately appear twice in different roles — kibble
+    // The same item can legitimately appear twice in different roles - kibble
     // that is both the taming food and a crafting ingredient, say. Only an
     // identical path *and* role is a genuine duplicate.
     if (
@@ -360,7 +360,7 @@ export function MethodEditor({
                 {input.referenceType !== "text" && input.bpPath ? (
                   <ReferencedInput input={input} />
                 ) : input.referenceType !== "text" ? (
-                  // A catalog-backed input with no path yet — the state a type
+                  // A catalog-backed input with no path yet - the state a type
                   // change lands in. It has to be repairable in place.
                   <span className="w-44 shrink-0 text-xs text-amber-400 truncate">
                     No {input.referenceType} chosen
@@ -477,7 +477,7 @@ export function MethodEditor({
         {inputProblems > 0 && (
           <p className="text-xs text-amber-400 mt-1.5">
             {inputProblems} input
-            {inputProblems === 1 ? " needs" : "s need"} finishing — free text
+            {inputProblems === 1 ? " needs" : "s need"} finishing - free text
             needs a label, and an item or creature needs a blueprint that
             resolves in that catalog.
           </p>
@@ -496,8 +496,8 @@ export function MethodEditor({
         </div>
         {method.phases.length === 0 ? (
           <p className="text-xs text-ink-500 border border-dashed border-ink-700 rounded-md px-3 py-2">
-            No phases yet. Group the process into stages — "Prepare", "Knock
-            out", "Feed" — with short steps in each. <b>Template…</b> offers a
+            No phases yet. Group the process into stages - "Prepare", "Knock
+            out", "Feed" - with short steps in each. <b>Template…</b> offers a
             starting shape for the tags above.
           </p>
         ) : (
@@ -626,7 +626,7 @@ export function MethodEditor({
 
 /**
  * A catalog-backed input. Resolves against the creature or item catalog per
- * its reference type — a v1 host that pointed at an item lands here as an
+ * its reference type - a v1 host that pointed at an item lands here as an
  * unresolved creature, which is surfaced rather than silently shown wrong.
  */
 function ReferencedInput({ input }: { input: AcquisitionInput }) {
@@ -646,7 +646,7 @@ function ReferencedInput({ input }: { input: AcquisitionInput }) {
         title={
           known
             ? input.bpPath
-            : `Not in the ${kind === "creatures" ? "creature" : "item"} catalog — re-pick it`
+            : `Not in the ${kind === "creatures" ? "creature" : "item"} catalog - re-pick it`
         }
       >
         {input.label.trim() || name}
@@ -682,7 +682,7 @@ function InputNoteModal({
 
   return (
     <Modal
-      title={`Note — ${name}`}
+      title={`Note - ${name}`}
       onClose={onClose}
       footer={
         <div className="flex justify-end gap-2">
@@ -701,7 +701,7 @@ function InputNoteModal({
         autoFocus
         value={text}
         onChange={setText}
-        placeholder="Anything worth knowing about this input — where to get it, what it substitutes for, how much you actually need."
+        placeholder="Anything worth knowing about this input - where to get it, what it substitutes for, how much you actually need."
       />
       {input.note.trim() && (
         <Button
@@ -827,7 +827,7 @@ function PhaseCard({
           </Button>
         </div>
 
-        {/* Optional — a simple knockout phase never needs these. */}
+        {/* Optional - a simple knockout phase never needs these. */}
         {showOutcomes && (
           <div className="grid grid-cols-2 gap-2 mt-1 pt-2 border-t border-ink-700/60">
             <Field label="Repeat until">
@@ -942,7 +942,7 @@ function TemplateModal({
       </span>
       {changes.length === 0 ? (
         <p className="text-sm text-ink-400 border border-dashed border-ink-700 rounded-md px-3 py-3">
-          Nothing would change — this method already has everything the
+          Nothing would change - this method already has everything the
           template offers.
         </p>
       ) : (

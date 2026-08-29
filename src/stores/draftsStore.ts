@@ -83,8 +83,8 @@ export interface SaveFailure {
  *
  * Returned rather than thrown so a caller can report every failure at once,
  * and typed rather than boolean so Sync and Publish can refuse for a reason
- * they can show. `flushPendingSaves` resolving used to mean nothing at all —
- * it swallowed rejections into a toast — which is how an admin could Publish
+ * they can show. `flushPendingSaves` resolving used to mean nothing at all -
+ * it swallowed rejections into a toast - which is how an admin could Publish
  * work that had never reached the disk.
  */
 export interface FlushResult {
@@ -94,7 +94,7 @@ export interface FlushResult {
 
 /**
  * Surfaces a failed write. Losing an admin's work silently is the worst
- * outcome this app has, so a persist error is never swallowed — it was
+ * outcome this app has, so a persist error is never swallowed - it was
  * `console.error` once, and a rejected file name went unnoticed because of it.
  */
 async function reportSaveFailure(fileName: string, error: StudioError) {
@@ -108,7 +108,7 @@ async function reportSaveFailure(fileName: string, error: StudioError) {
  *
  * Called from the setters rather than from the call sites, because a promise
  * that every place editing a creature describes its own change is one nobody
- * keeps — the twentieth one forgets, and the commit degrades to "files
+ * keeps - the twentieth one forgets, and the commit degrades to "files
  * changed". Every edit already goes through here.
  *
  * Failing to describe a change must never stop the change itself, so this is
@@ -261,7 +261,7 @@ async function quarantineDamaged(dir: string, damaged: UnloadableFile[]) {
       const { movedTo } = await quarantineFile(dir, entry.fileName);
       resolved.push({ ...entry, movedTo });
     } catch {
-      // Could not be moved — it stays where it is, and stays on the blocked
+      // Could not be moved - it stays where it is, and stays on the blocked
       // list, so nothing writes over it either way.
       resolved.push(entry);
     }
@@ -272,7 +272,7 @@ async function quarantineDamaged(dir: string, damaged: UnloadableFile[]) {
   for (const entry of resolved) {
     toast.error(
       entry.movedTo
-        ? `${entry.fileName} ${entry.why}. The original has been set aside in the project's recovery folder — nothing will be written over it.`
+        ? `${entry.fileName} ${entry.why}. The original has been set aside in the project's recovery folder - nothing will be written over it.`
         : `${entry.fileName} ${entry.why} and could not be set aside. Do not save until you have checked it.`,
     );
   }
@@ -303,7 +303,7 @@ interface DraftsState {
   imageFiles: string[];
   /**
    * Files that could not be read. Their store slots hold empty defaults, so
-   * nothing may write them back — see the filter in `flushPendingSaves`.
+   * nothing may write them back - see the filter in `flushPendingSaves`.
    */
   unloadable: UnloadableFile[];
 
@@ -321,8 +321,8 @@ interface DraftsState {
   setPlayers(players: PlayersFile): void;
   setCreatureImports(imports: CreatureImportsFile): void;
   /**
-   * Appends one project activity event. Called from commit boundaries — a
-   * completed publish, a created rule — never from an in-progress edit.
+   * Appends one project activity event. Called from commit boundaries - a
+   * completed publish, a created rule - never from an in-progress edit.
    */
   recordActivity(event: ActivityInput): void;
 }
@@ -443,7 +443,7 @@ export const useDraftsStore = create<DraftsState>((set, get) => ({
       // Merged rather than assigned: an administrator may be installing a
       // modpack at this very moment, and its pin must not be erased by a list
       // that was read before it landed. An existing official pin is left
-      // exactly as it is — this never silently upgrades one.
+      // exactly as it is - this never silently upgrades one.
       try {
         await project.updateSettings((current) => ({
           ...current,
@@ -534,7 +534,7 @@ export const useDraftsStore = create<DraftsState>((set, get) => ({
   async setCatalogDurable(catalog) {
     // Same bookkeeping as `setCatalog`, but the write is awaited rather than
     // debounced. Used where an operation may not report success until the
-    // content is actually on disk — see `commitPackageActivation`.
+    // content is actually on disk - see `commitPackageActivation`.
     recordChanges(diffCatalog(get().catalog, catalog));
     const projectCatalog = projectOverridesFromResolved(
       catalog,
@@ -572,7 +572,7 @@ export const useDraftsStore = create<DraftsState>((set, get) => ({
   },
 
   recordActivity(event) {
-    // No project open means no project folder to write to — the event would
+    // No project open means no project folder to write to - the event would
     // be attributed to whichever project opened next.
     if (!useProjectStore.getState().dir) return;
     const activity = appendActivity(get().activity, {
@@ -591,7 +591,7 @@ export const useDraftsStore = create<DraftsState>((set, get) => ({
  * Records project activity from outside a component.
  *
  * A free function so services and event handlers can log without threading
- * the store through — the store action is the single implementation.
+ * the store through - the store action is the single implementation.
  */
 export function recordActivity(event: ActivityInput) {
   useDraftsStore.getState().recordActivity(event);

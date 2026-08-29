@@ -18,7 +18,7 @@ These get confused, and the confusion is expensive.
 | **Who checks it** | DinoDepot Studio, before installing an update | Windows SmartScreen, when the installer is run |
 | **Key** | a key pair you generate yourself, free | a code-signing certificate bought from a CA |
 | **If missing** | updates fail to verify and are refused | SmartScreen warns on first download |
-| **Set up below** | yes | no — see the note at the end |
+| **Set up below** | yes | no - see the note at the end |
 
 Updater signing is **required**: without it every existing install refuses the
 update. Authenticode is optional and costs money.
@@ -29,7 +29,7 @@ update. Authenticode is optional and costs money.
 
 **This section is done.** The key pair exists, the public half is in the app,
 and both Actions secrets are set. It is kept as a record of the established
-setup — not as a procedure to re-run. If the key is ever lost or leaked,
+setup - not as a procedure to re-run. If the key is ever lost or leaked,
 generating another pair is only the first step of a much larger problem; read
 the warning in step 1 first.
 
@@ -46,17 +46,17 @@ $keyPath = Join-Path $env:USERPROFILE ".tauri\dinodepot-updater.key"
 The binary is invoked directly because the npm-script form,
 `npm run tauri signer generate -- -w …`, failed on the maintainer's Windows and
 npm setup: it exited before the generator ran. The underlying npm behaviour was
-not diagnosed — the direct invocation works, so it is the documented one.
+not diagnosed - the direct invocation works, so it is the documented one.
 
 It writes two files and prints the public half:
 
-- `%USERPROFILE%\.tauri\dinodepot-updater.key` — the **private** key
-- `%USERPROFILE%\.tauri\dinodepot-updater.key.pub` — the public key
+- `%USERPROFILE%\.tauri\dinodepot-updater.key` - the **private** key
+- `%USERPROFILE%\.tauri\dinodepot-updater.key.pub` - the public key
 
 Note the path: `~\.tauri\`, outside the repository entirely, so no `.gitignore`
 rule has to be right for the private key to stay out of Git.
 
-You are asked for a password. Use one, and keep it — the workflow needs it.
+You are asked for a password. Use one, and keep it - the workflow needs it.
 
 > **Do not run this again on its own.** A new key pair is a *different* key
 > pair. An install verifies each update against the public key compiled into
@@ -70,7 +70,7 @@ You are asked for a password. Use one, and keep it — the workflow needs it.
 > the new private key.** That strands every install in the field. What to do
 > instead depends on whether the old private key still exists:
 >
-> - **Old private key still available — controlled rotation.** Plan a
+> - **Old private key still available - controlled rotation.** Plan a
 >   transition release: build it with the *new* public key embedded in
 >   `tauri.conf.json`, but sign it with the *old* private key. Existing installs
 >   verify it against the old key, accept it, and install a binary that now
@@ -80,7 +80,7 @@ You are asked for a password. Use one, and keep it — the workflow needs it.
 >   only by the new key will reject it. Reliable rotation therefore needs a
 >   deliberately designed and tested migration strategy, potentially including
 >   a version-aware endpoint that keeps serving the bridge to old clients.
-> - **Old private key lost or destroyed — no transition possible.** Nothing can
+> - **Old private key lost or destroyed - no transition possible.** Nothing can
 >   produce an update that existing installs will accept, so there is no signed
 >   route forward. Every user has to download and run a fresh installer by hand.
 >   That is the cost of losing the key, and it is why step 4 exists.
@@ -95,7 +95,7 @@ You are asked for a password. Use one, and keep it — the workflow needs it.
 > run. Treat it exactly as you would a signing certificate: it never goes in the
 > repository, never in a chat message, never in a screenshot.
 >
-> `.gitignore` excludes `*.key`, but do not rely on that — keeping the key
+> `.gitignore` excludes `*.key`, but do not rely on that - keeping the key
 > outside the repository folder is what actually protects it.
 
 ### 2. Put the public key in the app
@@ -111,13 +111,13 @@ Copy the contents of `dinodepot-updater.key.pub` into
 }
 ```
 
-It ships in the binary, which is the point — the running app uses it to check
+It ships in the binary, which is the point - the running app uses it to check
 that an update was signed by the matching private key.
 
 **Done.** The real public key was merged in
 [#3](https://github.com/CaotcAftermth/DinoDepot-Studio/pull/3); `pubkey` no
 longer holds a placeholder. Changing that value is the same decision as
-regenerating the key pair — see the warning above — because an install checks
+regenerating the key pair - see the warning above - because an install checks
 updates against whatever public key its own binary was built with.
 
 ### 3. Add the GitHub Actions secrets
@@ -131,12 +131,12 @@ In the repository, under *Settings → Secrets and variables → Actions*:
 
 `GITHUB_TOKEN` is provided by Actions; nothing to add.
 
-**Done.** Both secrets are configured. Neither has been exercised yet — the
+**Done.** Both secrets are configured. Neither has been exercised yet - the
 Release workflow has not run (see *What has and has not been proven* below).
 
 ### 4. Keep a backup of the private key
 
-Losing it means no existing install can ever be updated again — you would have
+Losing it means no existing install can ever be updated again - you would have
 to ship a new public key, which every user would have to install by hand.
 Keep an offline copy somewhere you would keep a password.
 
@@ -193,22 +193,22 @@ draft still needs the asset and update checks below before it is published.
 
 6. Look at the draft. It should carry exactly three assets:
 
-   - `DinoDepot Studio_0.4.0_x64-setup.exe` — the installer, which is also the
+   - `DinoDepot Studio_0.4.0_x64-setup.exe` - the installer, which is also the
      updater artifact; they are the same file
-   - `DinoDepot Studio_0.4.0_x64-setup.exe.sig` — its detached signature
-   - `latest.json` — the manifest the updater reads
+   - `DinoDepot Studio_0.4.0_x64-setup.exe.sig` - its detached signature
+   - `latest.json` - the manifest the updater reads
 
    **There is no `.nsis.zip`.** With `createUpdaterArtifacts: true`, Tauri v2
    signs the installer itself, and what the updater downloads *is* the
    installer. The zipped artifact and its `.nsis.zip.sig` belong to
    `createUpdaterArtifacts: "v1Compatible"`, which exists so that installs made
    by Tauri v1 can still be updated. This project has never shipped a v1 build,
-   so that mode is not set and should not be — turning it on would change the
+   so that mode is not set and should not be - turning it on would change the
    asset names for no one's benefit.
 
    **`latest.json` is generated by `tauri-action`, not by the bundler.** After
    the build, the action reads the version, the release's asset URL and the
-   `.sig` file the bundler just produced, and writes the manifest from them —
+   `.sig` file the bundler just produced, and writes the manifest from them -
    which is why `uploadUpdaterJson: true` is set in the workflow, and why the
    manifest and the file it describes cannot disagree. Nothing writes
    `latest.json` locally, so a local `npm run tauri build` produces the
@@ -236,7 +236,7 @@ is why the draft step matters.
 The application then:
 
 1. fetches `latest.json`;
-2. verifies its signature against the built-in public key — an unsigned or
+2. verifies its signature against the built-in public key - an unsigned or
    wrongly-signed update is **refused**, never installed;
 3. refuses anything that is not strictly newer than the running version, so a
    mistagged release cannot roll everybody backwards;
@@ -252,7 +252,7 @@ No step is silent, and there is no automatic install.
 Do not delete the release or retag. Existing installs may already have it.
 
 Cut a **new** version with the fix. That is the only mechanism the updater has,
-and it is the honest one — going forwards to something known-good rather than
+and it is the honest one - going forwards to something known-good rather than
 pretending the bad version never happened.
 
 If the bad release is actively harmful, un-publish it back to draft first: the
@@ -264,7 +264,7 @@ have not updated yet stop being offered it.
 ## Windows Authenticode (optional, not set up)
 
 Without it, Windows SmartScreen shows a warning the first time somebody runs the
-installer. It does not affect updates — those are covered by the updater
+installer. It does not affect updates - those are covered by the updater
 signature above.
 
 To add it later you need a code-signing certificate from a CA (an EV

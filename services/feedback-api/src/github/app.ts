@@ -9,7 +9,7 @@ import type { Settings } from "../env";
  * never leaves the service and the token never leaves this module.
  *
  * The app's permissions are deliberately two: Issues read and write, and
- * Metadata read. That is everything issue filing needs and nothing else — a
+ * Metadata read. That is everything issue filing needs and nothing else - a
  * compromise of this service could file and read issues in one repository,
  * which is close to what the endpoint openly offers anyway.
  *
@@ -72,7 +72,7 @@ const RSA_ALGORITHM_IDENTIFIER = [
  * GitHub hands out PKCS#1 (`BEGIN RSA PRIVATE KEY`) and `importKey` only takes
  * PKCS#8. Converting is a fixed ASN.1 header around the same bytes, which is
  * cheaper than telling every operator to run `openssl pkcs8` before they can
- * deploy — and a step like that is one somebody eventually skips.
+ * deploy - and a step like that is one somebody eventually skips.
  */
 function pkcs1ToPkcs8(pkcs1: Uint8Array): Uint8Array {
   const body = [
@@ -146,7 +146,7 @@ export async function appJwt(settings: Settings, now = Date.now()): Promise<stri
 
 interface CachedToken {
   token: string;
-  /** Epoch milliseconds. Held short of the real expiry — see below. */
+  /** Epoch milliseconds. Held short of the real expiry - see below. */
   expiresAt: number;
 }
 

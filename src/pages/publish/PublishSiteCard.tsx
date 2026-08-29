@@ -15,7 +15,7 @@ import { feedbackTarget } from "../../model/feedback/targets";
  *
  * One button and one commit. The previous version published each output
  * separately, so a failure halfway through left a site that was half last
- * week's — and there was no single moment at which the site was known to
+ * week's - and there was no single moment at which the site was known to
  * correspond to a particular version of the project.
  */
 export function PublishSiteCard() {
@@ -91,7 +91,7 @@ export function PublishSiteCard() {
 
       {ready && !synchronized && (
         <p className="text-sm text-amber-400 mb-3">
-          Share your changes with the team first — use Sync and publish, or Sync
+          Share your changes with the team first - use Sync and publish, or Sync
           on its own.
         </p>
       )}

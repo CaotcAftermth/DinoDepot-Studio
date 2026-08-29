@@ -13,7 +13,7 @@
  * needs to change.
  */
 
-/** First half of a suggestion. Material, colour, weather — nothing literal. */
+/** First half of a suggestion. Material, colour, weather - nothing literal. */
 export const FIRST_WORDS = [
   "Amber",
   "Ashen",

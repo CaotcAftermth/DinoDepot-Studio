@@ -16,8 +16,8 @@ import {
  * cluster. Stored under a single machine-wide key it did two wrong things at
  * once: a project made five minutes ago reported a webhook it had never been
  * given, and posting from it announced into somebody else's channel. So every
- * call here has to carry the project id, and the one that does not — the
- * legacy entry — must never be reached by accident.
+ * call here has to carry the project id, and the one that does not - the
+ * legacy entry - must never be reached by accident.
  */
 
 /** The fake credential store, and what the backend was asked to do. */
@@ -81,7 +81,7 @@ describe("one project's webhook", () => {
   });
 
   /**
-   * A project with no id must not fall through to a key of its own — an empty
+   * A project with no id must not fall through to a key of its own - an empty
    * tail is how the machine-wide entry gets reached by accident.
    */
   it("is absent, and asks the backend nothing, without a project id", async () => {

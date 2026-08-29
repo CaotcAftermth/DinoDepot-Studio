@@ -6,7 +6,7 @@ use tauri::Manager;
 /// GitHub account it authenticates as, and which repositories it is bound to.
 ///
 /// Kept in the OS application-data folder rather than in the project, because
-/// none of it is true of the project — it is true of this machine. Storing it
+/// none of it is true of the project - it is true of this machine. Storing it
 /// in `project.json` (schema 1) meant every administrator's drive letters and
 /// repository name synchronized to everybody else, and the first save on the
 /// other machine put them straight back.
@@ -37,7 +37,7 @@ fn state_root(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 /// Keeps a project id to one safe file-name segment.
 ///
 /// The id is a UUID the app generates, but it arrives here from a project file
-/// that may have been edited by hand — an opened project is untrusted input,
+/// that may have been edited by hand - an opened project is untrusted input,
 /// and `../../` in an id must not be able to name a file outside the folder.
 fn state_file_name(project_id: &str) -> Result<String, String> {
     let safe: String = project_id
@@ -163,7 +163,7 @@ fn write_projects_root(path: &Path, dir: &str) -> Result<(), String> {
 /// Machine-local like everything else here, and for the same reason: it names a
 /// drive letter that is true of this computer and nobody else's. It lives in
 /// application data rather than the webview's `localStorage` because that store
-/// is cleared out from under the app — which is exactly how the answer to
+/// is cleared out from under the app - which is exactly how the answer to
 /// "where do projects live" kept being forgotten between runs.
 #[tauri::command]
 pub fn projects_root_get(app: tauri::AppHandle) -> Result<Option<String>, String> {
@@ -183,7 +183,7 @@ pub fn projects_root_set(app: tauri::AppHandle, dir: String) -> Result<(), Strin
 /// second Git repository inside the project folder would make the project's own
 /// repository try to track it.
 ///
-/// Keyed by project id, like everything else here — a moved project folder must
+/// Keyed by project id, like everything else here - a moved project folder must
 /// not orphan its published site.
 #[tauri::command]
 pub fn delivery_dir(app: tauri::AppHandle, project_id: String) -> Result<String, String> {
@@ -201,8 +201,8 @@ pub fn delivery_dir(app: tauri::AppHandle, project_id: String) -> Result<String,
 
 /// A cheap guard against a token reaching disk in the clear.
 ///
-/// Not a security boundary — the boundary is that the frontend cannot read a
-/// token at all — but it catches the mistake at the moment it is made rather
+/// Not a security boundary - the boundary is that the frontend cannot read a
+/// token at all - but it catches the mistake at the moment it is made rather
 /// than months later in somebody's roaming profile.
 pub fn looks_like_credential(text: &str) -> bool {
     text.contains("github_pat_")
@@ -224,7 +224,7 @@ mod tests {
             "11111111-2222-4333-8444-555555555555.json"
         );
         // Separators and dots are dropped rather than rejected, so a slightly
-        // odd id still resolves — but never outside the folder.
+        // odd id still resolves - but never outside the folder.
         assert_eq!(state_file_name("../../evil").unwrap(), "evil.json");
         assert!(state_file_name("").is_err());
         assert!(state_file_name("///").is_err());
@@ -243,7 +243,7 @@ mod tests {
     }
 
     /// The projects folder used to live in the webview's `localStorage`, which
-    /// is cleared out from under the app — so "where do projects live" was
+    /// is cleared out from under the app - so "where do projects live" was
     /// asked again on every launch. Surviving a restart is the whole point of
     /// moving it here, and a file that reads back as anything other than what
     /// was written puts it straight back to being asked.

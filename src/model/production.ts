@@ -77,7 +77,7 @@ export function emptyProductionDraft(): ProductionDraft {
 }
 
 // ---------------------------------------------------------------------------
-// Published format (strict Dino Depot v2 JSON) — used by parser & serializer.
+// Published format (strict Dino Depot v2 JSON) - used by parser & serializer.
 // ---------------------------------------------------------------------------
 
 export const PublishedSubItemSchema = z.object({

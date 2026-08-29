@@ -11,7 +11,7 @@ import { formatActivityTime, type ActivityKind } from "./activity";
  * The previous version kept `activity.json` in the project and synchronized it
  * as a shared append-only array. Two administrators fight over that array
  * forever, and it lies the moment anybody edits a file outside Studio. Git
- * already records what happened, who did it and when — so this reads that
+ * already records what happened, who did it and when - so this reads that
  * instead, and the structured trailers Sync writes are what make it readable
  * rather than a list of shas.
  */
@@ -33,7 +33,7 @@ export interface HistoryEntry {
   at: number;
   when: string;
   author: string;
-  /** The subject line — already written for a person to read. */
+  /** The subject line - already written for a person to read. */
   title: string;
   /** One line per change, from the structured trailers. */
   details: string[];
@@ -41,7 +41,7 @@ export interface HistoryEntry {
   undescribed: number;
   /** Which page this belongs to, for the click target. */
   kind: ActivityKind;
-  /** False for a commit DinoDepot did not write — a web edit, say. */
+  /** False for a commit DinoDepot did not write - a web edit, say. */
   fromStudio: boolean;
   isHead: boolean;
   /** True when this commit was a Publish rather than a Sync. */
@@ -68,7 +68,7 @@ const KIND_BY_DOMAIN: [prefix: string, kind: ActivityKind][] = [
  * Which page a commit belongs to.
  *
  * The first action decides, because a commit's subject is generated from the
- * same order — so the row and the place it takes you agree.
+ * same order - so the row and the place it takes you agree.
  */
 function kindOf(actions: StructuredAction[]): ActivityKind {
   for (const action of actions) {
@@ -109,7 +109,7 @@ export function toHistoryEntry(commit: CommitSummary, now = new Date()): History
  * The history, newest first.
  *
  * Commits are already ordered by the Git layer; this only decodes them. A
- * commit DinoDepot did not write still becomes a row — somebody editing a file
+ * commit DinoDepot did not write still becomes a row - somebody editing a file
  * through the GitHub web UI is a real event, and hiding it would make the list
  * disagree with the repository.
  */
@@ -142,7 +142,7 @@ export function summarizeEntry(entry: HistoryEntry): string {
 /**
  * Whether an entry can be restored from.
  *
- * The current version is not a restore target — there would be nothing to do —
+ * The current version is not a restore target - there would be nothing to do -
  * and a Publish commit lives in the *delivery* repository, whose contents are
  * regenerated rather than restored.
  */

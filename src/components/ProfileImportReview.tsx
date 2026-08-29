@@ -5,7 +5,7 @@ import { Badge, Button, Modal } from "./ui";
 /**
  * What a bulk import did, file by file.
  *
- * Import runs unattended — the admin drops a folder and walks away — so the
+ * Import runs unattended - the admin drops a folder and walks away - so the
  * result has to be reviewable afterwards rather than confirmed up front. The
  * two things worth their attention are files that could not be read and values
  * that disagreed with what they had already typed; both are called out rather
@@ -68,7 +68,7 @@ export function ProfileImportReview({
 
             {!result.summary ? (
               <p className="text-sm text-red-400 mt-1">
-                Could not be read — {result.error}
+                Could not be read - {result.error}
               </p>
             ) : (
               <>
@@ -109,7 +109,7 @@ export function ProfileImportReview({
 
                 {result.storeError && (
                   <p className="text-xs text-amber-400 mt-1">
-                    Details recorded, but the file was not saved — {result.storeError}
+                    Details recorded, but the file was not saved - {result.storeError}
                   </p>
                 )}
               </>

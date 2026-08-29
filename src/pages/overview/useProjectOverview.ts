@@ -29,7 +29,7 @@ export interface ProjectOverview extends OverviewModel {
  * Everything the Overview page renders, assembled from the shared models.
  *
  * Subscribes to the individual draft slices rather than the whole store, so
- * editing an unrelated slice does not re-run the output build — which
+ * editing an unrelated slice does not re-run the output build - which
  * serializes the entire catalog for the viewer data and is the most expensive
  * thing on the page.
  */
@@ -55,7 +55,7 @@ export function useProjectOverview(): ProjectOverview {
   const ensureToken = useGithubStatus((s) => s.ensureToken);
 
   useEffect(hydrate, [hydrate]);
-  // Read once per session, never during render — Overview re-renders on every
+  // Read once per session, never during render - Overview re-renders on every
   // keystroke elsewhere in the app and this reaches the credential store.
   useEffect(() => ensureToken(githubConfig.accountId), [ensureToken, githubConfig.accountId]);
 

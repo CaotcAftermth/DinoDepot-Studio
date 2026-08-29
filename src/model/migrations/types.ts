@@ -23,7 +23,7 @@ export interface MigrationOutcome {
   files: ProjectFiles;
   /**
    * Values lifted out of the portable project and into this machine's local
-   * state — repository binding, image folder, mods folder. The caller writes
+   * state - repository binding, image folder, mods folder. The caller writes
    * them; the migration only says what they are.
    */
   localHints: Partial<LocalProjectState>;
@@ -34,7 +34,7 @@ export interface MigrationOutcome {
 /**
  * One step from one schema to the next.
  *
- * Steps are always adjacent — 1→2, 2→3 — and never skip. A "jump" migration
+ * Steps are always adjacent - 1→2, 2→3 - and never skip. A "jump" migration
  * looks like a shortcut until the intermediate step is the one that carried
  * the data-repair logic, at which point the skipped project is quietly wrong.
  */

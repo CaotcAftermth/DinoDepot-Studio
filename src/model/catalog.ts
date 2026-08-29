@@ -21,7 +21,7 @@ export const SourceKindSchema = z.enum(["official", "mod", "imported"]);
 export type SourceKind = z.infer<typeof SourceKindSchema>;
 
 /**
- * The handful of facts worth recording about an item. Deliberately small —
+ * The handful of facts worth recording about an item. Deliberately small -
  * anything longer belongs in the viewer notes.
  */
 export const ItemInfoSchema = z.object({
@@ -29,10 +29,10 @@ export const ItemInfoSchema = z.object({
   type: z.string().default(""),
   /** Cluster-defined rarity tier. */
   rarity: z.string().default(""),
-  /** Max stack size. Null = unknown / use the bundled wiki value. */
+  /** Max stack size. Null = unknown / use the bundled default. */
   stackSize: z.number().int().min(0).nullable().default(null),
   /**
-   * Items/hour above which the simulator flags this item specifically —
+   * Items/hour above which the simulator flags this item specifically -
    * 500 Element/hr is not the same problem as 500 Fiber/hr. Null = use the
    * project-wide simulator default.
    */
@@ -53,11 +53,11 @@ export const IniSettingSchema = z.object({
   value: z.string().default(""),
   /**
    * Documented value type (bool, int, float, string, url, struct) used for
-   * validation hints. Blank means unspecified — INI values are always text
+   * validation hints. Blank means unspecified - INI values are always text
    * on disk, so this is documentation rather than storage.
    */
   type: z.string().default(""),
-  /** Target file — GameUserSettings.ini, Game.ini, or blank if unknown. */
+  /** Target file - GameUserSettings.ini, Game.ini, or blank if unknown. */
   file: z.string().default(""),
   /** One-line summary shown in the settings list. */
   description: z.string().default(""),
@@ -65,14 +65,14 @@ export const IniSettingSchema = z.object({
   details: z.string().default(""),
   /** Flagged as required for this mod to work correctly. */
   required: z.boolean().default(false),
-  /** Included in the Build INI composer — the persistent working selection. */
+  /** Included in the Build INI composer - the persistent working selection. */
   added: z.boolean().default(false),
 });
 export type IniSetting = z.infer<typeof IniSettingSchema>;
 
 /**
  * The Build INI composer's working state for one setting. Stored with the mod
- * rather than held in the modal, so a composed block survives closing it —
+ * rather than held in the modal, so a composed block survives closing it -
  * picking values across a dozen settings is real work to redo.
  */
 export const IniBuildStateSchema = z.object({
@@ -108,16 +108,16 @@ export const ContentSourceSchema = z.object({
   curseforgeId: z.string(),
   /** CurseForge mod page URL (also used by the Mod Update Watcher). */
   url: z.string().default(""),
-  /** Secondary reference link: wiki, Google Doc, spawn-code sheet, etc. */
+  /** Secondary reference link: documentation, spawn-code sheet, etc. */
   docsUrl: z.string().default(""),
-  /** The mod's Discord — invite link or a channel/thread deep link. */
+  /** The mod's Discord - invite link or a channel/thread deep link. */
   discordUrl: z.string().default(""),
   /**
    * A folder of this mod's own icon art, searched by the icon picker alongside
    * the project-wide images folder from Settings.
    *
-   * Mod icons arrive as a folder per mod — extracted from the mod, or the
-   * `icons/` of a modpack — and copying every one of them into the images
+   * Mod icons arrive as a folder per mod - extracted from the mod, or the
+   * `icons/` of a modpack - and copying every one of them into the images
    * folder to assign a handful is work nobody should have to do. Picking from
    * here copies just the chosen file across, because a `file:` icon is
    * relative to the images folder and only what lives there is published.
@@ -191,8 +191,7 @@ export function isWatched(source: ContentSource): boolean {
 
 /**
  * Project-owned additions to the bundled Official ASA source. Kept separate
- * so the bundled dataset can be regenerated (scripts/build-official-catalog)
- * without discarding hand-added content.
+ * so bundled dataset updates do not discard hand-added content.
  */
 export const OfficialOverlaySchema = z.object({
   docsUrl: z.string().default(""),
@@ -202,8 +201,8 @@ export const OfficialOverlaySchema = z.object({
   creatures: z.array(CatalogEntrySchema).default([]),
   items: z.array(CatalogEntrySchema).default([]),
   /**
-   * ASA availability review of the bundled dataset (which is compiled from a
-   * wiki covering both ASE and ASA): normalized blueprint path -> verdict.
+   * ASA availability review of the bundled dataset: normalized blueprint path
+   * to verdict.
    * `absent` entries are hidden from the catalog everywhere but stay
    * recoverable, and the verdicts survive regenerating the bundled file.
    */
@@ -246,12 +245,12 @@ const CatalogSharedSchema = z.object({
   /**
    * Structured per-item facts (type, rarity, stack size, its own high-output
    * threshold): normalized blueprint path -> info. Only values the admin set
-   * live here; official items fall back to the bundled wiki data.
+   * live here; official items fall back to bundled defaults.
    */
   itemInfo: z.record(z.string(), ItemInfoSchema).default({}),
   /**
    * Structured taming/ability data per creature: normalized blueprint path ->
-   * info. Kept beside `notes` rather than replacing it — notes stays the
+   * info. Kept beside `notes` rather than replacing it - notes stays the
    * free-text field published to the cluster viewer.
    */
   creatureInfo: z.record(z.string(), CreatureInfoSchema).default({}),
@@ -429,7 +428,7 @@ export function pathsOf(sources: readonly ContentSource[]): Set<string> {
  *
  * Icons, notes, maps, variant parents and the two info maps are keyed by
  * blueprint path rather than by source, so deleting a mod used to leave all six
- * behind. The rows are invisible — nothing lists them — but publishing
+ * behind. The rows are invisible - nothing lists them - but publishing
  * validates every icon assignment, so a deleted mod went on producing "not in
  * the images folder" warnings for artwork no entry could ever ask for.
  *

@@ -70,7 +70,7 @@ export function ProductionRulesPage() {
    * A rule created a moment ago and not yet given a creature.
    *
    * The creature picker opens on top of it, and if it closes with nothing
-   * chosen the rule goes with it — a rule with no creature publishes nothing,
+   * chosen the rule goes with it - a rule with no creature publishes nothing,
    * validates as an error, and sorts to the bottom of the list forever.
    */
   const [pendingRuleId, setPendingRuleId] = useState<string | null>(null);
@@ -168,7 +168,7 @@ export function ProductionRulesPage() {
    * Removes the just-created rule when the picker closed without a creature.
    *
    * Reads the store rather than the render's `production`, because the choice
-   * that led here may already have written to it — picking a creature that
+   * that led here may already have written to it - picking a creature that
    * turned out to be a duplicate moves a cycle onto the existing rule, and the
    * copy left behind is exactly what has to go.
    */
@@ -223,7 +223,7 @@ export function ProductionRulesPage() {
    * admins out:
    *
    * 1. Variants. Dino Depot reads a child class as its parent, so one rule on
-   *    the Rex already covers every Rex variant on the cluster — a separate
+   *    the Rex already covers every Rex variant on the cluster - a separate
    *    rule per variant is usually wasted work. It stays available, because
    *    that is exactly how you give one variant its own output.
    * 2. Duplicates. A second rule for a creature that already has one is
@@ -248,7 +248,7 @@ export function ProductionRulesPage() {
         title: `${childName} is a variant of ${parent.label}`,
         message:
           `Dino Depot treats a child class as its parent, so a rule on ${parent.label} ` +
-          `already applies to ${childName} — you don't need a rule per variant.\n\n` +
+          `already applies to ${childName} - you don't need a rule per variant.\n\n` +
           `Add one only when this variant should produce something different.`,
         // Display names repeat across mods; the class is what actually differs.
         details: [
@@ -281,7 +281,7 @@ export function ProductionRulesPage() {
         message:
           `That rule has ${plural(existing.cycles.length, "production cycle")}. ` +
           `Two rules for the same creature would both apply, so add a cycle to ` +
-          `the existing one — or pick a different creature.`,
+          `the existing one - or pick a different creature.`,
         details: [`Class: ${shortClassName(chosen)}`],
         options: [
           {
@@ -364,7 +364,7 @@ export function ProductionRulesPage() {
       kind: "production",
       title: `Duplicated the ${displayNameFor(index, "creatures", rule.dinoType)} rule`,
     });
-    toast.info("Rule duplicated — pick the creature it is for");
+    toast.info("Rule duplicated - pick the creature it is for");
   }
 
   async function importFromFile() {
@@ -393,7 +393,7 @@ export function ProductionRulesPage() {
       toast.success(
         `Imported ${result.draft.rules.length} rules` +
           (result.catalogAdded > 0
-            ? ` — ${result.catalogAdded} unknown paths added to "Imported / unsorted"`
+            ? ` - ${result.catalogAdded} unknown paths added to "Imported / unsorted"`
             : ""),
       );
     } catch (e) {
@@ -532,7 +532,7 @@ export function ProductionRulesPage() {
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold text-ink-300 uppercase tracking-wide truncate">
                 {selected
-                  ? `${displayNameFor(index, "creatures", selected.dinoType)} — published JSON`
+                  ? `${displayNameFor(index, "creatures", selected.dinoType)} - published JSON`
                   : "Published JSON preview"}
               </span>
               <Button
@@ -554,7 +554,7 @@ export function ProductionRulesPage() {
       </div>
 
       {/* The same preview the Publish page opens, from the page the rules are
-          written on — the one place an admin is when they want to check what
+          written on - the one place an admin is when they want to check what
           the whole file ends up looking like. */}
       {showOutput && (
         <OutputPreviewModal

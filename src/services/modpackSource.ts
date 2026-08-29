@@ -26,7 +26,7 @@ import { PackageManifestSchema } from "../model/package";
  * Getting a pack into the project from somewhere other than the search list.
  *
  * The registry search only knows what `index.json` lists, and browsing the
- * registry on GitHub — which is the thing the Browse button does — leaves an
+ * registry on GitHub - which is the thing the Browse button does - leaves an
  * admin holding a link to a pack the app could not otherwise install. A pull
  * request under review, a fork, a pack a mod author sent over: all of them are
  * a URL or a file, and both end up here.
@@ -166,7 +166,7 @@ export function linkedPackageFromDownloaded(
  *
  * Both kinds are accepted so a locally built official package can be tested
  * without a GitHub round trip. The kind is preserved on the dependency, and
- * the folder is reported separately for machine-local state — it must not
+ * the folder is reported separately for machine-local state - it must not
  * reach shared project JSON.
  */
 export async function localPackageFromFile(
@@ -219,7 +219,7 @@ export function resolvePackUrls(
       base = github;
     } else if (/^https?:\/\/(?:www\.)?github\.com\//i.test(trimmed)) {
       throw new Error(
-        "That is a GitHub page rather than a pack — open the pack's folder or its modpack.json and copy that link",
+        "That is a GitHub page rather than a pack - open the pack's folder or its modpack.json and copy that link",
       );
     } else {
       base = trimmed;
@@ -257,7 +257,7 @@ export async function packFromUrl(
   }
   if (res.status === 404) {
     throw new Error(
-      `Nothing at ${packUrl} — link the pack's folder, or its ${PACK_FILE} directly.`,
+      `Nothing at ${packUrl} - link the pack's folder, or its ${PACK_FILE} directly.`,
     );
   }
   if (res.status < 200 || res.status >= 300) {
@@ -268,7 +268,7 @@ export async function packFromUrl(
   try {
     raw = JSON.parse(packageHttpText(res)) as unknown;
   } catch {
-    throw new Error(`${packUrl} is not JSON — that link is not a modpack.`);
+    throw new Error(`${packUrl} is not JSON - that link is not a modpack.`);
   }
   const pack = parsePack(raw, packUrl);
   return {
@@ -299,7 +299,7 @@ function parsePack(raw: unknown, where: string): Modpack {
   const parsed = ModpackSchema.safeParse(raw);
   if (!parsed.success) {
     throw new Error(
-      `${where} does not match the modpack format — ${
+      `${where} does not match the modpack format - ${
         parsed.error.issues[0]?.message ?? "unknown problem"
       }`,
     );

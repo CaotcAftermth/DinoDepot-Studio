@@ -23,7 +23,7 @@ function catalogWith(path: string, info: Record<string, unknown>): CatalogFile {
 }
 
 describe("bundledItemInfo", () => {
-  it("reads type and stack size from the bundled wiki data", () => {
+  it("reads type and stack size from bundled data", () => {
     const info = bundledItemInfo(FIBER);
     expect(info.type).toBe("Resources");
     expect(info.stackSize).toBe(300);

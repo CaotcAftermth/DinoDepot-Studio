@@ -681,7 +681,7 @@ describe("review then apply", () => {
   });
 
   it("keeps an exclusion for a path this review could not show", () => {
-    // The mod no longer ships it, so no tick could speak for it — but a
+    // The mod no longer ships it, so no tick could speak for it - but a
     // package may still carry it, and the decision to drop it still stands.
     const gone = "/M/Items/PrimalItemResource_Gone.PrimalItemResource_Gone";
     const catalog = catalogWithMod([]);

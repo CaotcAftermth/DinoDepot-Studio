@@ -3,9 +3,9 @@ use keyring::Entry;
 /// Credential storage, backed by Windows Credential Manager.
 ///
 /// The important property here is what is *missing*: there is no command that
-/// returns a secret. `secret_get` used to be one, which meant the webview —
+/// returns a secret. `secret_get` used to be one, which meant the webview -
 /// the part of the app that renders untrusted project content and talks to the
-/// network — could ask for the GitHub token and get it. Now the token never
+/// network - could ask for the GitHub token and get it. Now the token never
 /// leaves Rust: the frontend asks for an *operation*, and this module hands the
 /// credential to the HTTP or Git layer directly.
 ///
@@ -21,7 +21,7 @@ pub const LEGACY_GITHUB_KEY: &str = "github-token";
 /// The key the single-webhook build used.
 ///
 /// A Discord webhook points at one channel in one server, which belongs to one
-/// cluster — so it belongs to one *project*, and a global key meant a freshly
+/// cluster - so it belongs to one *project*, and a global key meant a freshly
 /// created project opened Settings already claiming to have a webhook stored,
 /// and posted its announcements into somebody else's channel. Read so an
 /// upgrade can adopt it into a project the administrator names; never written.
@@ -89,7 +89,7 @@ pub fn secret_set(key: String, value: String) -> Result<(), String> {
     entry(&key)?.set_password(&value).map_err(|e| e.to_string())
 }
 
-/// Reads a secret. Deliberately **not** a Tauri command — see the module note.
+/// Reads a secret. Deliberately **not** a Tauri command - see the module note.
 pub fn secret_read(key: &str) -> Result<Option<String>, String> {
     match entry(key)?.get_password() {
         Ok(v) => Ok(Some(v)),
@@ -161,7 +161,7 @@ pub fn github_token(account_id: &str) -> Result<String, String> {
     if let Some(token) = secret_read(LEGACY_GITHUB_KEY)? {
         return Ok(token);
     }
-    Err("No GitHub sign-in stored — connect your GitHub account in Settings".into())
+    Err("No GitHub sign-in stored - connect your GitHub account in Settings".into())
 }
 
 #[cfg(test)]
@@ -191,7 +191,7 @@ mod tests {
     }
 
     /// A project with no id must not be able to reach the legacy entry by
-    /// naming an empty tail — that is the global webhook all over again.
+    /// naming an empty tail - that is the global webhook all over again.
     #[test]
     fn a_webhook_key_needs_a_real_project_id() {
         assert!(!is_allowed_key("discord-webhook:"));

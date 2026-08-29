@@ -27,7 +27,7 @@ interface InstalledModRaw {
 export interface InstalledModSummary {
   folderName: string;
   projectId: string;
-  /** CurseForge file id — changes when the mod updates. */
+  /** CurseForge file id - changes when the mod updates. */
   fileId: string;
   shortName: string;
   name: string;
@@ -40,7 +40,7 @@ export interface InstalledModSummary {
    *
    * Cosmetics are already handled by the collector and add nothing a production
    * rule can reference, so the review screen hides them by default. This is the
-   * project's own list rather than a guess — nothing in a mod's files reliably
+   * project's own list rather than a guess - nothing in a mod's files reliably
    * distinguishes a cosmetic from a gameplay mod.
    */
   cosmetic: boolean;
@@ -71,7 +71,7 @@ const DESKTOP_ONLY =
   "Reading installed mods is only available in the desktop app";
 
 /**
- * Finds the mods folder from whatever path the admin supplied — the game's
+ * Finds the mods folder from whatever path the admin supplied - the game's
  * install root, or the mods folder itself.
  */
 export async function resolveModsRoot(dir: string): Promise<string> {

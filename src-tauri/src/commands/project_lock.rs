@@ -7,13 +7,13 @@ use std::sync::Mutex;
 /// A per-project advisory lock, so two DinoDepot Studio instances never write
 /// the same project folder.
 ///
-/// Two instances editing one project is not a merge problem — it is a lost-work
+/// Two instances editing one project is not a merge problem - it is a lost-work
 /// problem. Both hold the whole project in memory, both autosave, and whichever
 /// debounce fires last wins the file outright.
 ///
 /// The lock is a file in the project folder rather than an OS-level handle:
 /// it survives a hard kill in a readable form, it works for a project sitting
-/// on a synced folder, and — because it names the machine and the instance —
+/// on a synced folder, and - because it names the machine and the instance -
 /// the message can say *what* holds it rather than just refusing.
 ///
 /// Advisory by design. A stale lock never blocks the admin permanently; they
@@ -24,14 +24,14 @@ const LOCK_FILE: &str = ".dinodepot-lock";
 /// runs, opened so that no second instance may open it for writing.
 ///
 /// The JSON lock alone cannot tell "another instance is editing this" apart
-/// from "the last instance died holding it" — and the second is by far the
+/// from "the last instance died holding it" - and the second is by far the
 /// commoner case, because an update relaunches the app and a relaunch is a
 /// kill. Waiting out the heartbeat for that is five minutes of an administrator
 /// being locked out of their own project on their own machine.
 ///
 /// An operating-system handle answers the question exactly: it is released the
 /// instant the process ends, however it ends. It is only conclusive locally,
-/// which is why it is consulted only for a lock this machine wrote — a project
+/// which is why it is consulted only for a lock this machine wrote - a project
 /// on a synced folder held by another machine is still judged by its heartbeat.
 const HOLD_FILE: &str = ".dinodepot-lock.hold";
 
@@ -141,7 +141,7 @@ fn open_hold(_path: &Path) -> Option<File> {
 ///
 /// A hold file that opens for writing has no live owner. A missing one means
 /// the same: either the holder released it, or the lock was written by a build
-/// from before hold files existed — and in that case its process is a build
+/// from before hold files existed - and in that case its process is a build
 /// that has since been replaced, which is exactly the update case this exists
 /// for.
 ///
@@ -188,7 +188,7 @@ fn drop_hold(state: &LockState, dir: &str) {
 fn read_lock(path: &Path) -> Option<LockRecord> {
     let text = fs::read_to_string(path).ok()?;
     // A lock file we cannot parse is treated as absent rather than as a
-    // permanent block — it is a hint, not a source of truth about anyone's work.
+    // permanent block - it is a hint, not a source of truth about anyone's work.
     serde_json::from_str(&text).ok()
 }
 
@@ -206,7 +206,7 @@ fn status_from(record: Option<LockRecord>, mine: &str, dir: &str) -> LockStatus 
             let owned = record.instance_id == mine;
             let age_secs = (now_ms() - record.heartbeat_at) / 1000;
             // A lock this machine wrote whose owner is no longer running is
-            // abandoned, not contended — reported stale immediately rather
+            // abandoned, not contended - reported stale immediately rather
             // than after the heartbeat times out.
             let abandoned =
                 !owned && record.machine == machine_name() && !holder_is_alive(dir);
@@ -235,7 +235,7 @@ pub fn project_lock_status(
 /// Takes the lock.
 ///
 /// Succeeds when the folder is free, when we already hold it, or when the
-/// existing lock is stale. Refuses — without touching anything — when another
+/// existing lock is stale. Refuses - without touching anything - when another
 /// live instance holds it, unless `force` is set, which is what the admin's
 /// "open anyway" choice sends.
 #[tauri::command]
@@ -272,7 +272,7 @@ pub fn project_lock_acquire(
 /// Refreshes our heartbeat. Cheap; called on a timer while a project is open.
 ///
 /// Returns the status rather than a bare unit so the caller notices when the
-/// lock has been taken over from under it — which is exactly when it must stop
+/// lock has been taken over from under it - which is exactly when it must stop
 /// writing.
 #[tauri::command]
 pub fn project_lock_refresh(
@@ -298,7 +298,7 @@ pub fn project_lock_refresh(
     Ok(status_from(Some(record), &mine, &dir))
 }
 
-/// Gives the lock up. Only ever removes our own — releasing somebody else's
+/// Gives the lock up. Only ever removes our own - releasing somebody else's
 /// would turn a tidy-up into a way to trample a live session.
 #[tauri::command]
 pub fn project_lock_release(
@@ -323,8 +323,8 @@ pub fn project_lock_release(
 mod tests {
     use super::*;
 
-    /// A machine that is definitely not this one, so the hold-file check —
-    /// which only applies locally — stays out of the way.
+    /// A machine that is definitely not this one, so the hold-file check -
+    /// which only applies locally - stays out of the way.
     fn elsewhere() -> String {
         format!("NOT-{}", machine_name())
     }
@@ -415,7 +415,7 @@ mod tests {
     #[test]
     fn the_lock_file_is_hidden_from_project_loading() {
         // load_project only takes plain *.json names, and this starts with a
-        // dot — so the lock can never be parsed as project data.
+        // dot - so the lock can never be parsed as project data.
         assert!(super::super::project_io::validate_file_name(LOCK_FILE).is_err());
     }
 }

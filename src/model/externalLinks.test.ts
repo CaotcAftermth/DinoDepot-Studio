@@ -7,7 +7,7 @@ import {
 
 /**
  * These are the only URLs the app sends anybody to, and every one of them
- * is the kind that rots — an invite expires, a donation page changes host. The
+ * is the kind that rots - an invite expires, a donation page changes host. The
  * contract worth pinning down is what happens while one is *not* set: the
  * control that would open it has to know, rather than opening nothing and
  * looking broken.
@@ -21,7 +21,7 @@ describe("external links", () => {
 
   /**
    * `openExternal` refuses anything that is not http(s), so a placeholder that
-   * looks like a link — "TODO", a bare domain — must not read as configured.
+   * looks like a link - "TODO", a bare domain - must not read as configured.
    */
   it("only counts an http(s) address", () => {
     expect(isConfiguredLink({ url: "https://example.com", label: "x" })).toBe(true);

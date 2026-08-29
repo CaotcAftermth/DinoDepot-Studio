@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 // The sidecar runs as its own Node process; these are its pure decision
 // helpers, imported directly so the incremental-collection rules can be tested
 // without launching Chrome.
-// @ts-expect-error — plain .mjs sidecar, no type declarations
+// @ts-expect-error - plain .mjs sidecar, no type declarations
 import { canonicalUrl, canReuseKnown, cleanModName, mapLimit, PagePool } from "../../sidecar/scraper.mjs";
 import { canonicalCurseforgeUrl } from "../model/catalogDuplicates";
 
@@ -32,7 +32,7 @@ describe("canonicalUrl", () => {
   });
 
   it("agrees with the app-side canonicalizer it mirrors", () => {
-    // Two processes, two copies — they must not drift, or incremental
+    // Two processes, two copies - they must not drift, or incremental
     // matching silently stops matching anything.
     for (const url of [
       BASE,
@@ -70,7 +70,7 @@ describe("canReuseKnown", () => {
     expect(canReuseKnown({ updatedFromList: "" }, known)).toBe(false);
   });
 
-  it("does not trust a relative date — it cannot be compared", () => {
+  it("does not trust a relative date - it cannot be compared", () => {
     expect(canReuseKnown({ updatedFromList: "3 days ago" }, known)).toBe(false);
   });
 
@@ -114,7 +114,7 @@ describe("mapLimit", () => {
 });
 
 describe("PagePool", () => {
-  /** Stands in for a Puppeteer browser — the pool only ever asks for tabs. */
+  /** Stands in for a Puppeteer browser - the pool only ever asks for tabs. */
   function fakeBrowser() {
     let made = 0;
     return {
@@ -195,7 +195,7 @@ describe("cleanModName", () => {
 
   it("handles the separators CurseForge actually uses", () => {
     expect(cleanModName("Foo – CurseForge")).toBe("Foo");
-    expect(cleanModName("Foo — CurseForge")).toBe("Foo");
+    expect(cleanModName("Foo - CurseForge")).toBe("Foo");
     expect(cleanModName("Foo | CurseForge")).toBe("Foo");
   });
 

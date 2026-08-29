@@ -6,7 +6,7 @@ import { StructuredActionSchema } from "./commitActions";
  * project.
  *
  * Where the folder is, which GitHub account is signed in, which repositories
- * it is bound to, how far each has been synchronized — none of that travels
+ * it is bound to, how far each has been synchronized - none of that travels
  * with the project, and putting it in `project.json` (as v1 did) meant two
  * administrators fought over each other's local paths on every sync.
  *
@@ -30,19 +30,19 @@ export const RepoBindingSchema = z.object({
    * GitHub's immutable numeric repository id, as a string.
    *
    * Empty until the repository has actually been reached once. A schema-1
-   * project arrives bound by name only — that version never knew the id — and
+   * project arrives bound by name only - that version never knew the id - and
    * a binding is also half-built while setup is in progress. Requiring an id
    * here would make both of those fail to parse, and a local record that fails
    * to parse is rebuilt from nothing, which is how a migrated project would
    * quietly lose the repository it was pointing at.
    *
    * Operations that must not act on an unverified binding check for it
-   * explicitly — see `canSync` and `identityMatches`.
+   * explicitly - see `canSync` and `identityMatches`.
    */
   githubId: z.string().default(""),
   owner: z.string().default(""),
   name: z.string().default(""),
-  /** HTTPS remote. Stored without credentials — always. */
+  /** HTTPS remote. Stored without credentials - always. */
   remoteUrl: z.string().default(""),
   branch: z.string().default("main"),
   /** Whether GitHub reports this repository as private. */
@@ -338,7 +338,7 @@ export function topologyPatch(
  * Applies a rename or transfer detected by id.
  *
  * The id is the identity, so a changed owner or name is news about the same
- * repository — not a reason to disconnect. The remote URL is rebuilt from the
+ * repository - not a reason to disconnect. The remote URL is rebuilt from the
  * new names rather than kept, because the old one only works while GitHub's
  * redirect lasts.
  */

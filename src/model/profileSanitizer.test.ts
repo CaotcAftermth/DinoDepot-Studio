@@ -97,7 +97,7 @@ describe("sanitizing a profile", () => {
     const input = withIp(SAMPLE_V5);
     const result = sanitizeProfile(input);
     expect(result.bytes).not.toBe(input);
-    // And the caller's copy is untouched — the original stays readable locally.
+    // And the caller's copy is untouched - the original stays readable locally.
     expect(readNetworkAddress(parseArkProfile(input))).toBe(TEST_IP);
   });
 
@@ -116,7 +116,7 @@ describe("sanitizing a profile", () => {
 describe("what sanitizing must not disturb", () => {
   /**
    * A save that comes back with the right field cleared and the wrong level is
-   * not a success — it is a corrupted character the administrator will restore
+   * not a success - it is a corrupted character the administrator will restore
    * from one day.
    */
   it("preserves identity and progression exactly", () => {
@@ -220,7 +220,7 @@ describe("refusing to sanitize", () => {
    */
   /**
    * A file claiming a version this build has never met is refused. Note that a
-   * *bogus* version byte fails at the parser first — the version gate is what
+   * *bogus* version byte fails at the parser first - the version gate is what
    * catches a future format that parses but may keep the address somewhere
    * this build does not look.
    */

@@ -2,7 +2,7 @@
  * Inline catalog references inside prose.
  *
  * An admin writing a step wants to say "feed it Sweet Vegetable Cake" and have
- * that be the *real* item — resolving to its current name and icon, and
+ * that be the *real* item - resolving to its current name and icon, and
  * surviving a rename in the catalog. Typing the name as plain text gives none
  * of that.
  *
@@ -10,7 +10,7 @@
  *
  *   Feed it [[item:/Game/.../PrimalItemConsumable_SweetVeggieCake]] until tame
  *
- * Storing the path rather than the name is the whole point — the name is a
+ * Storing the path rather than the name is the whole point - the name is a
  * display concern and is looked up fresh every time it is rendered.
  */
 
@@ -25,7 +25,7 @@ export const TRIGGERS: Record<ReferenceKind, string> = {
 
 /**
  * A stored reference. The closing `]]` is what bounds it, so a path containing
- * a `]` would break — blueprint paths never do.
+ * a `]` would break - blueprint paths never do.
  */
 const TOKEN = /\[\[(item|creature):([^\]]+)\]\]/g;
 
@@ -40,7 +40,7 @@ export type TextSegment =
 /**
  * Splits prose into plain runs and references, in order.
  *
- * Every renderer goes through this — the preview card, the published viewer —
+ * Every renderer goes through this - the preview card, the published viewer -
  * so a token can never leak to a reader as raw `[[item:...]]`.
  */
 export function parseReferences(text: string): TextSegment[] {
@@ -77,8 +77,8 @@ export function hasReferences(text: string): boolean {
 /**
  * Flattens to plain text, using `resolve` for each reference.
  *
- * Used where markup is impossible — a tooltip, a one-line summary, a search
- * haystack — so those never show a raw token either.
+ * Used where markup is impossible - a tooltip, a one-line summary, a search
+ * haystack - so those never show a raw token either.
  */
 export function flattenReferences(
   text: string,
@@ -93,7 +93,7 @@ export function flattenReferences(
  * Finds a trigger the admin has just finished typing.
  *
  * Only the trigger nearest the caret counts, and only when the caret sits
- * right after it — otherwise editing earlier in a paragraph that already
+ * right after it - otherwise editing earlier in a paragraph that already
  * mentions `{item}` would keep reopening the picker.
  */
 export function triggerAt(

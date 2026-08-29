@@ -13,7 +13,7 @@ import { toast } from "../../components/toast";
  * Whether a creature stands on its own or hangs off another one.
  *
  * Dino Depot reads a child class as its parent, and the catalog groups
- * variants under a base creature — both of which come down to a single fact
+ * variants under a base creature - both of which come down to a single fact
  * the admin can state here rather than infer from the grouping heuristic.
  */
 export function AssociationModal({
@@ -79,7 +79,7 @@ export function AssociationModal({
 
   return (
     <Modal
-      title={`Association — ${entry.name}`}
+      title={`Association - ${entry.name}`}
       onClose={onClose}
       wide
       footer={

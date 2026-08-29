@@ -95,9 +95,9 @@ type Tab = "registry" | "discover" | "manual" | "template";
  *
  * Discovery comes first because it is the one that works with nothing
  * published: the installed files already list every blueprint path, and
- * reading them beats typing them. The library is next — when somebody has
+ * reading them beats typing them. The library is next - when somebody has
  * catalogued this mod, repeating that work is exactly what the registry
- * exists to prevent — with a link or a file accepted from any tab, since
+ * exists to prevent - with a link or a file accepted from any tab, since
  * being sent a pack is not something that happens in one place. Manual entry
  * covers everything else, and the template turns that work into a pack the
  * next admin gets for free.
@@ -210,8 +210,8 @@ function usePackageInstall({
   /**
    * Installs a pack, however it was found.
    *
-   * One path for all three routes — the search list, a pasted link, a file on
-   * disk — so a pack picked up from a pull request lands exactly as one from
+   * One path for all three routes - the search list, a pasted link, a file on
+   * disk - so a pack picked up from a pull request lands exactly as one from
    * the index does, including artwork quarantine and the "keep what you wrote" rule.
    */
   async function installFrom(
@@ -354,7 +354,7 @@ function usePackageInstall({
             (result.keptLocal > 0
               ? ` · ${result.keptLocal} of your own entries kept`
               : "")
-          : `${pack.meta.name} added — ${pack.creatures.length} creatures, ${pack.items.length} items`) +
+          : `${pack.meta.name} added - ${pack.creatures.length} creatures, ${pack.items.length} items`) +
           (fallbackIcons > 0
             ? ` · ${fallbackIcons} default fallback${fallbackIcons === 1 ? "" : "s"}`
             : ""),
@@ -390,7 +390,7 @@ function PackLinkInstall({
   const [link, setLink] = useState("");
   const { installing, installFrom } = install;
 
-  /** A pack someone linked — a registry folder, a fork, a pull request. */
+  /** A pack someone linked - a registry folder, a fork, a pull request. */
   function installLink() {
     return installFrom("link", async () => {
       const linked = await linkedPackageFromUrl(link, registry);
@@ -435,8 +435,8 @@ function PackLinkInstall({
       <p className="text-xs text-ink-400">
         Found one while browsing, or been sent a pack? Paste the link to its
         folder, <span className="mono">modpack.json</span>, or an immutable
-        <span className="mono"> manifest.json</span> — a pull request or fork
-        works too — or open one saved on this machine.
+        <span className="mono"> manifest.json</span> - a pull request or fork
+        works too - or open one saved on this machine.
       </p>
       <div className="flex items-center gap-2">
         <Input
@@ -591,7 +591,7 @@ function RegistryTab({
             <p className="text-xs text-ink-500">
               This registry has no <span className="mono">index.json</span>, so
               packs were read one by one
-              {listing.truncated && " — only the first 40 are listed"}.
+              {listing.truncated && " - only the first 40 are listed"}.
             </p>
           )}
 
@@ -685,8 +685,8 @@ function RegistryTab({
  * An installed ASA mod ships a plain-text listing of everything it cooked, so
  * its creatures and items can be read straight off disk instead of typed in one
  * blueprint path at a time. What comes back is a strong first draft rather than
- * fact — the listing gives paths, not types, so classification is a naming
- * convention — which is why nothing is written until it has been reviewed.
+ * fact - the listing gives paths, not types, so classification is a naming
+ * convention - which is why nothing is written until it has been reviewed.
  */
 function DiscoverTab({
   registry,
@@ -1030,7 +1030,7 @@ function DiscoverTab({
 
     if (firstSource) onInstalled(firstSource.id, firstSource.name);
     toast.success(
-      `${plans.length} mod${plans.length === 1 ? "" : "s"} catalogued — ` +
+      `${plans.length} mod${plans.length === 1 ? "" : "s"} catalogued - ` +
         `${creatures} creatures, ${items} items` +
         (packagesAdded > 0
           ? ` · ${packagesAdded} exact package${packagesAdded === 1 ? "" : "s"} installed`
@@ -1052,7 +1052,7 @@ function DiscoverTab({
    * Takes one mod straight to the published package version.
    *
    * Reviewing exists for what Discovery *guessed* off disk. A newer published
-   * package is not a guess — it is curated content pinned by hash — so an
+   * package is not a guess - it is curated content pinned by hash - so an
    * update is a decision about one mod, not a pass over every entry in it. The
    * review route still works for anyone who wants to look first.
    */
@@ -1102,11 +1102,11 @@ function DiscoverTab({
       <div className="flex flex-col gap-4">
         <p className="text-sm text-ink-300">
           Reads mods already installed on this machine and catalogues their
-          creatures and items automatically — no blueprint paths typed by hand.
+          creatures and items automatically - no blueprint paths typed by hand.
         </p>
         <div className="border border-ink-700 rounded-lg p-3">
           <p className="text-sm text-ink-300 mb-2">
-            Point this at your Ark: Survival Ascended install — the folder
+            Point this at your Ark: Survival Ascended install - the folder
             containing <span className="mono">ShooterGame</span>. A dedicated
             server install works just as well as the game.
           </p>
@@ -1160,7 +1160,7 @@ function DiscoverTab({
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
           <p className="text-sm text-ink-300">
-            Nothing has been saved yet — this is what applying would do.
+            Nothing has been saved yet - this is what applying would do.
           </p>
           <Button variant="ghost" onClick={() => setPlans(null)}>
             ← Back to the list
@@ -1182,7 +1182,7 @@ function DiscoverTab({
                   <span className="text-ink-400">
                     {impact.reference.kind === "remap" ? "Remap" : "Rule"}
                   </span>{" "}
-                  {impact.reference.where} —{" "}
+                  {impact.reference.where} - {" "}
                   {impact.movedTo ? (
                     <>
                       moved to <span className="mono">{impact.movedTo}</span>
@@ -1196,7 +1196,7 @@ function DiscoverTab({
               ))}
             </div>
             <p className="text-xs text-ink-400 mt-1.5">
-              Applying does not rewrite your rules — update these yourself
+              Applying does not rewrite your rules - update these yourself
               afterwards, or go back and leave this mod out for now.
             </p>
           </div>
@@ -1276,8 +1276,8 @@ function DiscoverTab({
 
                 {/*
                   The actual entries. Classification is a guess from naming
-                  conventions, so being able to read the list — and drop what
-                  should not be in a picker — is the point of reviewing at all.
+                  conventions, so being able to read the list - and drop what
+                  should not be in a picker - is the point of reviewing at all.
                 */}
                 <div className="flex gap-2 mt-2">
                   {(
@@ -1422,7 +1422,7 @@ function DiscoverTab({
       {cosmeticsUncollected && (listing?.length ?? 0) > 0 && (
         <div className="border border-ink-700 rounded-lg p-3 flex items-start justify-between gap-3">
           <p className="text-xs text-ink-400 min-w-0">
-            Custom cosmetic mods are not being filtered out of this list —
+            Custom cosmetic mods are not being filtered out of this list -
             nothing has collected them yet. The CurseForge collector sweeps the
             cosmetics category once, after which Discovery can tell them apart
             from content mods.
@@ -1590,7 +1590,7 @@ const REVIEW_ROW_CAP = 250;
  * The entries one mod contributes, with a tick for each.
  *
  * A big overhaul mod runs to thousands of items, so the list filters rather
- * than paginates — scrolling 2,000 rows to find the three that look wrong is
+ * than paginates - scrolling 2,000 rows to find the three that look wrong is
  * not reviewing, and rendering them all makes the modal crawl.
  */
 function EntryReviewList({
@@ -1685,7 +1685,7 @@ function EntryReviewList({
 
       {matching.length > shown.length && (
         <p className="text-xs text-ink-500">
-          Showing {shown.length} of {matching.length} — filter to narrow it down.
+          Showing {shown.length} of {matching.length} - filter to narrow it down.
           “None” still applies to all {matching.length}.
         </p>
       )}
@@ -1735,7 +1735,7 @@ function ManualTab({
    *
    * Behind a button rather than behind typing: it launches Chrome and loads a
    * page, which is far too much to do on every keystroke. The name it returns
-   * is a starting point, not a decision — this cluster's label stays editable
+   * is a starting point, not a decision - this cluster's label stays editable
    * here and on the source afterwards.
    */
   async function lookUp() {
@@ -1762,7 +1762,7 @@ function ManualTab({
     <div className="flex flex-col gap-4">
       <p className="text-xs text-ink-400">
         For a mod nobody has published a pack for yet. You catalogue its
-        creatures and items here as usual — and can export the result as a
+        creatures and items here as usual - and can export the result as a
         modpack afterwards.
       </p>
 
@@ -1777,10 +1777,10 @@ function ManualTab({
             setFound(null);
             setLookupError("");
           }}
-          placeholder="e.g. 972253 — or paste the mod page link"
+          placeholder="e.g. 972253 - or paste the mod page link"
           autoFocus
           onKeyDown={(event) => {
-            // Type an ID, press Enter, get the name — the whole point of
+            // Type an ID, press Enter, get the name - the whole point of
             // asking for the ID first.
             if (event.key !== "Enter" || !projectId || looking) return;
             event.preventDefault();
@@ -1829,7 +1829,7 @@ function ManualTab({
       {found && (
         <p className="text-xs text-ink-400 -mt-2 min-w-0 truncate">
           CurseForge calls this <span className="text-ink-200">{found.name}</span>
-          {found.updated && ` · updated ${found.updated}`} —{" "}
+          {found.updated && ` · updated ${found.updated}`} - {" "}
           <span className="mono">{found.url}</span>
         </p>
       )}
@@ -1850,7 +1850,7 @@ function ManualTab({
 
       <Field
         label="Mod name"
-        hint="Optional — this cluster's own label, changeable here or on the source afterwards"
+        hint="Optional - this cluster's own label, changeable here or on the source afterwards"
       >
         <Input
           value={name}
@@ -1945,7 +1945,7 @@ function TemplateTab({ registry }: { registry: ModpackRegistry }) {
       }).catch(() => {
         /* the pack is the deliverable; a missing README is not worth failing */
       });
-      toast.success("Template saved — edit modpack.json and open a PR");
+      toast.success("Template saved - edit modpack.json and open a PR");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : String(e));
     } finally {
@@ -1956,8 +1956,8 @@ function TemplateTab({ registry }: { registry: ModpackRegistry }) {
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-ink-300">
-        A modpack is one mod's catalogued data — creatures, items,
-        INI settings and the taming write-ups — in a single file. Publishing
+        A modpack is one mod's catalogued data - creatures, items,
+        INI settings and the taming write-ups - in a single file. Publishing
         one means the next admin running this mod adds it in a click instead of
         cataloguing it again.
       </p>

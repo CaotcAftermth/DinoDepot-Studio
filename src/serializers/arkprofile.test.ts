@@ -20,7 +20,7 @@ import {
 /**
  * A real Scorched Earth profile with the personal data replaced by same-length
  * stand-ins, so every byte offset and structure is exactly as the game wrote
- * it. Nothing about this format is documented — a fixture the game produced is
+ * it. Nothing about this format is documented - a fixture the game produced is
  * the only thing that makes these tests worth anything.
  */
 const SAMPLE = new Uint8Array(
@@ -28,8 +28,8 @@ const SAMPLE = new Uint8Array(
 );
 
 /**
- * A real Lost Colony profile, scrubbed the same way. This is save version 7 —
- * the Unreal 5.5 tag format — which the first reader could not open at all.
+ * A real Lost Colony profile, scrubbed the same way. This is save version 7 -
+ * the Unreal 5.5 tag format - which the first reader could not open at all.
  */
 const SAMPLE_V7 = new Uint8Array(
   readFileSync(fileURLToPath(new URL("./__fixtures__/sample-v7.arkprofile", import.meta.url))),
@@ -108,7 +108,7 @@ describe("serializeArkProfile", () => {
     expect(readString(findPath(reparsed.objects[0].properties, ["MyData", "PlayerName"]))).toBe(
       "a-much-longer-account-name",
     );
-    // The second object sits after the one that grew — if its offset were not
+    // The second object sits after the one that grew - if its offset were not
     // recomputed, this would read garbage.
     expect(reparsed.objects[1].className).toContain("HeatStroke");
     expect(

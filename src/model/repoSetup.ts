@@ -61,7 +61,7 @@ export interface SetupIssue {
  * The privacy checks are the ones that matter. A project repository holds the
  * roster and the profile backups; a public one would put both on the open web
  * the moment anything synchronized. A delivery repository has the opposite
- * requirement — a private one cannot serve Pages without a paid plan, so
+ * requirement - a private one cannot serve Pages without a paid plan, so
  * connecting one on the free topology produces a site nobody can reach.
  */
 export function checkSuitability(
@@ -160,7 +160,7 @@ export interface BindingUpdate {
  * Brings a stored binding up to date with what GitHub reports.
  *
  * A changed owner or name is *news about the same repository*, because the id
- * matched — so it is applied silently and mentioned, never treated as the
+ * matched - so it is applied silently and mentioned, never treated as the
  * repository having disappeared. `named` covers the schema-1 case, where the
  * binding was carried across by name only and is learning its id for the first
  * time.
@@ -232,7 +232,7 @@ export interface PairingProblem {
  *
  * Publishing generated output into the source repository would leave the
  * private roster one directory away from a public Pages site, so the two are
- * required to differ by id — not by name, which can be made to match by
+ * required to differ by id - not by name, which can be made to match by
  * renaming one of them.
  */
 export function checkPairing(state: LocalProjectState): PairingProblem | null {
@@ -267,7 +267,7 @@ export interface AvailabilityState {
   message: string;
   /** Operations that must be switched off while this lasts. */
   disabled: ("sync" | "publish")[];
-  /** Whether local work is still safe. Always true — this is the promise. */
+  /** Whether local work is still safe. Always true - this is the promise. */
   workIsSafe: true;
   /** Whether the administrator should be offered a reconnect flow. */
   offerReconnect: boolean;
@@ -477,7 +477,7 @@ export function currentStep(steps: SetupStep[]): SetupStep | null {
  * The GitHub page for creating a repository, pre-filled.
  *
  * Opened in the browser rather than created through the API, so the
- * administrator sees and agrees to what is being made — and so DinoDepot never
+ * administrator sees and agrees to what is being made - and so DinoDepot never
  * needs the Administration permission that creating one would require.
  */
 export function newRepoUrl(
@@ -490,7 +490,7 @@ export function newRepoUrl(
     name,
     description:
       role === "source"
-        ? `DinoDepot Studio project — ${privateRepo ? "private" : "public"}`
+        ? `DinoDepot Studio project - ${privateRepo ? "private" : "public"}`
         : "DinoDepot Studio public cluster site",
     visibility: privateRepo ? "private" : "public",
   });
@@ -510,14 +510,14 @@ export function newTokenUrl(): string {
 
 /** What the administrator has to grant, in the words GitHub uses. */
 export const REQUIRED_TOKEN_ACCESS = [
-  "Repository access: Only select repositories — this project's repositories",
+  "Repository access: Only select repositories - this project's repositories",
   "Repository permissions → Contents: Read and write",
   "Repository permissions → Metadata: Read-only (GitHub adds this for you)",
 ] as const;
 
 /** Extra permission used only by the separate Project Access screen. */
 export const OPTIONAL_TOKEN_ACCESS = [
-  "Repository permissions → Administration: Read and write — only to view pending invitations and invite project administrators",
+  "Repository permissions → Administration: Read and write - only to view pending invitations and invite project administrators",
 ] as const;
 
 /**
@@ -527,7 +527,7 @@ export const OPTIONAL_TOKEN_ACCESS = [
  * edit CI and is unrelated to every Studio operation.
  */
 export const UNNECESSARY_TOKEN_ACCESS = [
-  "Workflows — DinoDepot never edits GitHub Actions",
+  "Workflows - DinoDepot never edits GitHub Actions",
 ] as const;
 
 /** The collaborators page, retained as the authoritative management fallback. */

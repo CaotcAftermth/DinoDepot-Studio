@@ -61,7 +61,7 @@ describe("re-watching after a pause", () => {
     });
   });
 
-  it("silently baselines when the history was discarded — what we avoid", () => {
+  it("silently baselines when the history was discarded - what we avoid", () => {
     expect(reviewOutcome("", "2026-06-10")).toEqual({
       baselined: true,
       needsReview: false,

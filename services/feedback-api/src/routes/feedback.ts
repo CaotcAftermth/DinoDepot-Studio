@@ -101,7 +101,7 @@ export async function handleSubmit(context: RouteContext): Promise<Response> {
     // Said in the issue as well as in the reply, so a maintainer reading it
     // knows a screenshot was offered and does not go looking for it.
     body_ += `\n\n> Attachments not stored: ${outcome.rejected
-      .map((entry) => `${entry.fileName} — ${entry.reason}`)
+      .map((entry) => `${entry.fileName} - ${entry.reason}`)
       .join("; ")}`;
   }
 
@@ -165,7 +165,7 @@ export async function handleDuplicates(context: RouteContext): Promise<Response>
     }
   }
 
-  // Ranking happens on the client, against the full text of the draft — which
+  // Ranking happens on the client, against the full text of the draft - which
   // the client has and this service deliberately does not need.
   return json({ candidates: candidates.slice(0, 20) });
 }
@@ -196,7 +196,7 @@ export async function handleIssueLookup(context: RouteContext): Promise<Response
  *
  * Per installation catches one person retrying in frustration. Per address
  * catches a script, and catches somebody who realised the installation id is
- * theirs to change — which it is, because it is generated locally and there is
+ * theirs to change - which it is, because it is generated locally and there is
  * deliberately no way to tie it to a person.
  */
 async function applyRateLimits(context: RouteContext, reporterId: string): Promise<void> {

@@ -3,15 +3,15 @@
  *
  * Creating a project used to mean picking an empty folder every time, which
  * left an administrator's projects scattered wherever the file dialog happened
- * to open. Instead the location is asked for once — a folder named
- * `DinoDepot Studio Projects` is made inside whatever the administrator picks —
+ * to open. Instead the location is asked for once - a folder named
+ * `DinoDepot Studio Projects` is made inside whatever the administrator picks -
  * and every later project becomes a subfolder of it, named after the project.
  *
  * This is a machine preference, not project data: it says where *this* computer
  * files things, and synchronizing it to everybody editing the same cluster
  * would push one person's drive letters onto another's. It is kept in the
  * application-data folder, beside the machine-local project records, for that
- * reason — and, just as importantly, because it used to live in the webview's
+ * reason - and, just as importantly, because it used to live in the webview's
  * `localStorage` and was therefore forgotten whenever that store was cleared.
  *
  * Nothing here is a lock-in. The location can be pointed somewhere else at any
@@ -60,7 +60,7 @@ export function lastSegment(dir: string): string {
  * The projects folder to use, given the parent an administrator picked.
  *
  * Picking the projects folder itself is the obvious mistake to make on the
- * second run — the dialog opens where it was last used — so a parent that is
+ * second run - the dialog opens where it was last used - so a parent that is
  * already the projects folder is taken as the answer rather than nested inside
  * a second copy of itself.
  */

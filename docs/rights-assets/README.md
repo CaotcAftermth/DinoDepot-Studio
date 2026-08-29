@@ -66,7 +66,7 @@ CLOUDFLARE_API_TOKEN=<secret> CLOUDFLARE_ACCOUNT_ID=<account> npm run rights:ass
 
 The execute path uses the repository-pinned Wrangler and explicit remote R2 operations. It refuses absent credentials; neither credential is compiled into the desktop or viewer. Existing `publish:rights-assets` and the legacy Rust `prepare` form remain compatible.
 
-To prepare—but not execute—a metadata-first revocation:
+To prepare - but not execute - a metadata-first revocation:
 
 ```text
 npm run rights:assets -- mod revoke <ModID> <output-dir>

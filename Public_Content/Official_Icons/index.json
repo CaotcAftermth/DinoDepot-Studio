@@ -3,10 +3,10 @@
   "package": {
     "id": "official-asa",
     "name": "Official ASA Core Content",
-    "version": "2.0.0",
-    "manifest": "versions/2.0.0/manifest.json",
-    "integrity": "2de737caeff4d95149f35a862db125ccab4ab8f44c15f841f95d93b1870a9f19",
-    "publishedAt": "2026-08-27",
+    "version": "2.0.1",
+    "manifest": "versions/2.0.1/manifest.json",
+    "integrity": "bfb908470fcbc70304554e7f962ad6e34ea8483981fcac43e84dd1be47d600aa",
+    "publishedAt": "2026-08-29",
     "versions": [
       {
         "version": "1.0.1",
@@ -35,6 +35,14 @@
         "manifest": "versions/2.0.0/manifest.json",
         "integrity": "2de737caeff4d95149f35a862db125ccab4ab8f44c15f841f95d93b1870a9f19",
         "publishedAt": "2026-08-27",
+        "packageFormat": 4,
+        "minStudioVersion": "0.9.0"
+      },
+      {
+        "version": "2.0.1",
+        "manifest": "versions/2.0.1/manifest.json",
+        "integrity": "bfb908470fcbc70304554e7f962ad6e34ea8483981fcac43e84dd1be47d600aa",
+        "publishedAt": "2026-08-29",
         "packageFormat": 4,
         "minStudioVersion": "0.9.0"
       }

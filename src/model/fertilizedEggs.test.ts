@@ -5,12 +5,12 @@ import {
   officialVariantParents,
 } from "./officialCatalog";
 import { normalizeBpPath } from "./catalog";
-// @ts-expect-error — plain .mjs build script, no type declarations
+// @ts-expect-error - plain .mjs build script, no type declarations
 import { FERTILIZED_PAIRS } from "../../scripts/fertilized-eggs.mjs";
 
 /**
  * The generated fertilized eggs, checked against the shipped dataset rather
- * than a fixture — the point of generating them is that they are really there.
+ * than a fixture - the point of generating them is that they are really there.
  */
 describe("fertilized eggs in the bundled catalog", () => {
   const items = officialSource.items;
@@ -76,7 +76,7 @@ describe("fertilized eggs in the bundled catalog", () => {
 
   it("gives each derived egg the stack size a fertilized egg has", () => {
     // The plain egg stacks to 100; the fertilized one does not stack, which is
-    // what the nine the wiki does list all report.
+    // what all nine listed bundled examples report.
     const rex = items.find((item) => item.name === "Fertilized Allosaurus Egg")!;
     expect(officialStackSizes.get(normalizeBpPath(rex.bpPath))).toBe(1);
   });

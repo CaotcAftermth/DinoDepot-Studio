@@ -27,7 +27,7 @@ function rekey<T>(
 }
 
 /**
- * The entry's own data — what the catalog stores about it, as opposed to what
+ * The entry's own data - what the catalog stores about it, as opposed to what
  * has been recorded *for* it. Name, class, and icon in one place, so the row
  * itself needs no edit affordances of its own.
  */
@@ -61,7 +61,7 @@ export function EntryDataModal({
   function save() {
     if (!name.trim() || !trimmedPath || conflict) return;
     // Everything the catalog records for an entry hangs off its normalized
-    // path, so a repath has to take the icon, map, notes and info with it —
+    // path, so a repath has to take the icon, map, notes and info with it -
     // otherwise the edit silently strips the entry of its whole record.
     if (pathChanged) {
       const from = normalizeBpPath(entry.bpPath);
@@ -90,7 +90,7 @@ export function EntryDataModal({
 
   return (
     <Modal
-      title={`Entry data — ${entry.name}`}
+      title={`Entry data - ${entry.name}`}
       onClose={onClose}
       wide
       footer={
@@ -98,7 +98,7 @@ export function EntryDataModal({
           <span className="text-xs text-ink-500">
             {editable
               ? "The blueprint path is the identity of this entry."
-              : "Bundled official content — only the icon can be changed."}
+              : "Bundled official content - only the icon can be changed."}
           </span>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>
@@ -163,7 +163,7 @@ export function EntryDataModal({
 
         <Field
           label="Class"
-          hint="Derived from the blueprint path — this is what commands and remap files reference"
+          hint="Derived from the blueprint path - this is what commands and remap files reference"
         >
           <div className="flex gap-2 items-center">
             <Input
@@ -192,13 +192,13 @@ export function EntryDataModal({
         {pathChanged && !conflict && (
           <p className="text-xs rounded-lg border border-amber-flag/30 bg-amber-flag/5 text-amber-300 px-3 py-2">
             Changing the path moves this entry's icon, map, notes and recorded
-            info with it. Anything referencing the old class elsewhere —
-            production rules, remaps — keeps pointing at the old path.
+            info with it. Anything referencing the old class elsewhere -
+            production rules, remaps - keeps pointing at the old path.
           </p>
         )}
         {!editable && (
           <Badge tone="neutral">
-            Bundled Official ASA entry — name and path are read-only
+            Bundled Official ASA entry - name and path are read-only
           </Badge>
         )}
       </div>

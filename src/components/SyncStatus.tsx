@@ -76,7 +76,7 @@ export function SyncStatus() {
       </div>
 
       {/*
-        Commit ids and the technical error live here and nowhere else — the
+        Commit ids and the technical error live here and nowhere else - the
         normal line above says "Synchronized", not a sha.
       */}
       {last && (

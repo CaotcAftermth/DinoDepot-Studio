@@ -26,7 +26,7 @@ import type { LocalProjectState } from "../model/localState";
  *
  * The sequence below is the design, and its order is load-bearing:
  *
- *  1. Flush pending saves — and refuse if any failed. Syncing what is in memory
+ *  1. Flush pending saves - and refuse if any failed. Syncing what is in memory
  *     rather than what is on disk is how an administrator ends up sharing work
  *     they later cannot recover.
  *  2. Check the project is in a state that may be written at all.
@@ -68,7 +68,7 @@ export interface SyncContext {
    * it never exists in this half of the application.
    */
   accountId(): Promise<string>;
-  /** Persists machine-local state — the journal, the synchronized point. */
+  /** Persists machine-local state - the journal, the synchronized point. */
   saveLocal(patch: Partial<LocalProjectState>): Promise<void>;
   /** The project's files as they are on disk, after the flush. */
   readLocalFiles(): Promise<Record<string, string>>;
@@ -194,7 +194,7 @@ export async function syncProject(context: SyncContext): Promise<SyncOutcome> {
   try {
     snapshotPath = await snapshotProject(context.dir, "pre-sync");
   } catch {
-    // A snapshot is a safety net, not a precondition — a project on a full disk
+    // A snapshot is a safety net, not a precondition - a project on a full disk
     // still deserves the chance to get its work off this machine.
   }
   await context.saveLocal({
@@ -230,7 +230,7 @@ export async function syncProject(context: SyncContext): Promise<SyncOutcome> {
       }
 
       // Only they worked. Taking their version wholesale is safe precisely
-      // because there is nothing here to lose — and it is the common case on a
+      // because there is nothing here to lose - and it is the common case on a
       // machine that has been closed for a week.
       if (!localMoved && remoteMoved) {
         phase("integrating");
@@ -361,7 +361,7 @@ export async function syncProject(context: SyncContext): Promise<SyncOutcome> {
     return failed(
       new StudioError(
         "repo.conflict",
-        "The team is saving changes faster than this can keep up. Your work is safe here — try again in a moment.",
+        "The team is saving changes faster than this can keep up. Your work is safe here - try again in a moment.",
         { detail: `gave up after ${MAX_PUSH_ATTEMPTS} attempts` },
       ),
       retries,
@@ -406,7 +406,7 @@ async function finish(
  * What the commit will say.
  *
  * When the working tree changed but the journal is empty, somebody edited the
- * project outside Studio — a hand-edited JSON file, a restored backup. Saying
+ * project outside Studio - a hand-edited JSON file, a restored backup. Saying
  * so is better than a commit that claims nothing happened.
  */
 export function describeWork(

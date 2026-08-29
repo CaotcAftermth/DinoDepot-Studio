@@ -4,7 +4,7 @@
  * Files are relative paths like `creatures/Achatina.png`, `items/Hide.png`,
  * or flat `Achatina.png`. Matching is by display name (and blueprint class
  * name), ignoring case, spaces, and punctuation. Parenthetical suffixes like
- * `Anomalocaris (TSW).png` also match `Anomalocaris` — but a plain-named file
+ * `Anomalocaris (TSW).png` also match `Anomalocaris` - but a plain-named file
  * wins when both exist.
  */
 
@@ -35,7 +35,7 @@ export function buildImageIndex(files: string[]): ImageIndex {
   const missing: ImageIndex["missing"] = { creatures: null, items: null };
 
   // Placeholder detection is tolerant: any folder, double extensions, any
-  // separators — e.g. "creatures/Missing_Item_Icon.png.png" still counts.
+  // separators - e.g. "creatures/Missing_Item_Icon.png.png" still counts.
   for (const relPath of files) {
     const normalized = relPath.replace(/\\/g, "/");
     const file = (normalized.split("/").pop() ?? "").toLowerCase();
@@ -86,7 +86,7 @@ export function buildImageIndex(files: string[]): ImageIndex {
  * an image already there.
  *
  * Icons picked out of a mod's own folder are copied in, and two mods both
- * shipping `Rex.png` is not unusual — silently replacing one with the other
+ * shipping `Rex.png` is not unusual - silently replacing one with the other
  * would change an icon elsewhere in the project without anyone touching it.
  * The owner's name disambiguates, and a counter settles the rest.
  */

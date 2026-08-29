@@ -1,0 +1,26 @@
+{
+  "format": "dinodepot.package",
+  "formatVersion": 4,
+  "kind": "official",
+  "packageId": "official-asa",
+  "version": "2.0.1",
+  "curseforgeId": "",
+  "publishedAt": "2026-08-29",
+  "meta": {
+    "name": "Official ASA Core Content",
+    "updatedAt": "2026-08-29",
+    "author": "DinoDepot Studio",
+    "description": "Data-only defaults for official ARK: Survival Ascended content; artwork resolves separately through the rights registry.",
+    "url": "",
+    "docsUrl": "",
+    "discordUrl": "",
+    "variantTag": ""
+  },
+  "content": {
+    "path": "content.json",
+    "sha256": "5c7bc06c173128eef61e0836d8e459cd2cbc1aa52af3e53d84b399958862032f",
+    "size": 853668,
+    "mediaType": "application/json"
+  },
+  "assets": []
+}

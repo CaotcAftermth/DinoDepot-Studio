@@ -12,7 +12,6 @@ dist
 dist-ssr
 *.local
 /exports/
-/.claude/
 
 # Editor directories and files
 .vscode/*
@@ -25,7 +24,7 @@ dist-ssr
 *.sln
 *.sw?
 
-# Tauri updater signing keys. The private key is never committed — it lives in
+# Tauri updater signing keys. The private key is never committed - it lives in
 # a GitHub Actions secret and, offline, in whatever the maintainer keeps
 # passwords in. A leaked one lets somebody sign an update this app will install.
 *.key
@@ -50,7 +49,7 @@ sidecar-assets/publish/*
 !sidecar-assets/publish/.gitkeep
 
 # Feedback service secrets for `wrangler dev`. The GitHub App private key goes
-# in here locally and in Cloudflare's secret store in production — never in the
+# in here locally and in Cloudflare's secret store in production - never in the
 # repository. See services/feedback-api/.env.example for the shape.
 services/feedback-api/.dev.vars
 .dev.vars

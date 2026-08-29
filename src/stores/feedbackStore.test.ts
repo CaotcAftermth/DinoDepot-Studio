@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 /**
  * The Feedback Center's behaviour, tested where it lives.
  *
- * Everything a person can do — open the launcher, switch report type, start
+ * Everything a person can do - open the launcher, switch report type, start
  * and cancel the picker, review diagnostics, hit a duplicate, submit, fail,
- * retry, save a draft — is a transition on this store, and the components
+ * retry, save a draft - is a transition on this store, and the components
  * above it only render what it holds. So these are the interaction tests, run
  * in Node, with no DOM and no renderer involved.
  */

@@ -1,7 +1,7 @@
 name: Release
 
 # Triggered by a version tag, deliberately. A release is a decision, not
-# something that happens because somebody merged — and the tag is what the
+# something that happens because somebody merged - and the tag is what the
 # updater's version comparison is ultimately against.
 on:
   push:
@@ -62,7 +62,7 @@ jobs:
         run: cargo test --manifest-path src-tauri/Cargo.toml
 
       # Builds the NSIS installer, which under `createUpdaterArtifacts: true` is
-      # itself the updater artifact — there is no separate `.nsis.zip` — and
+      # itself the updater artifact - there is no separate `.nsis.zip` - and
       # generates its detached `.sig`. `latest.json` is then written by this
       # action from that same signature, so the manifest and the file it
       # describes can never disagree.
@@ -72,7 +72,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VITE_FEEDBACK_API_URL: ${{ vars.VITE_FEEDBACK_API_URL }}
           # The private half of the updater key pair. Held only here and in
-          # whatever the maintainer keeps passwords in — never in the repository.
+          # whatever the maintainer keeps passwords in - never in the repository.
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:

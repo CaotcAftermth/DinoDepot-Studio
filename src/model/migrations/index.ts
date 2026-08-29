@@ -12,8 +12,8 @@ export type { MigrationContext, MigrationStep, ProjectFiles } from "./types";
 /**
  * Every migration this build knows, in order.
  *
- * Append only. A step that has shipped is permanent — somebody, somewhere, has
- * a project that still needs it — and its fixture test is permanent with it.
+ * Append only. A step that has shipped is permanent - somebody, somewhere, has
+ * a project that still needs it - and its fixture test is permanent with it.
  */
 export const MIGRATION_STEPS: MigrationStep[] = [v1ToV2, v2ToV3, v3ToV4];
 
@@ -82,8 +82,8 @@ export interface MigrationResult {
  * Runs every step from the project's schema up to the current one, in order.
  *
  * Pure: it takes the project's files and returns new ones. Nothing is written
- * here. Staging, backup and the atomic swap are the caller's job — see
- * `migrate_project` in Rust — precisely so that a step throwing halfway leaves
+ * here. Staging, backup and the atomic swap are the caller's job - see
+ * `migrate_project` in Rust - precisely so that a step throwing halfway leaves
  * the real project untouched by construction rather than by care.
  */
 export function migrateProject(
@@ -121,7 +121,7 @@ export function migrateProject(
     } catch (e) {
       throw new StudioError(
         "migration.failed",
-        "This project could not be updated. Nothing was changed — your original is untouched.",
+        "This project could not be updated. Nothing was changed - your original is untouched.",
         {
           detail: `step ${step.from}→${step.to}: ${e instanceof Error ? e.message : String(e)}`,
           cause: e,
@@ -142,7 +142,7 @@ export function migrateProject(
     if (stepHeader.schemaVersion !== step.to) {
       throw new StudioError(
         "migration.failed",
-        "This project could not be updated. Nothing was changed — your original is untouched.",
+        "This project could not be updated. Nothing was changed - your original is untouched.",
         {
           detail: `step ${step.from}→${step.to} produced schema ${stepHeader.schemaVersion}`,
         },

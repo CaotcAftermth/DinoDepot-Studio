@@ -260,7 +260,7 @@ describe("opening a schema-1 project", () => {
     const written = Object.keys(commit!.args.files as Record<string, string>);
     expect(written).toContain(PROJECT_FILE.settings);
     expect(written).toContain(PROJECT_FILE.players);
-    // Untouched by this migration — rewriting it would churn its backups.
+    // Untouched by this migration - rewriting it would churn its backups.
     expect(written).not.toContain(PROJECT_FILE.production);
   });
 

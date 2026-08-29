@@ -244,7 +244,7 @@ describe("mergeList", () => {
       expect(result.conflicts[0].kind).toBe("delete-vs-edit");
       expect(result.conflicts[0].mine).toBeUndefined();
       expect(result.conflicts[0].theirs).toMatchObject({ interval: 600 });
-      // Kept until answered — a deletion is the irreversible choice.
+      // Kept until answered - a deletion is the irreversible choice.
       expect(result.value.map((r) => r.id)).toContain("b");
     });
 

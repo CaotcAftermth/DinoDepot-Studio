@@ -1,8 +1,8 @@
 /**
  * What two administrators disagreed about, in terms they will recognise.
  *
- * A conflict here is never "both sides changed line 47". It names the thing —
- * a creature, a mod, a player — the field, and the two values, because that is
+ * A conflict here is never "both sides changed line 47". It names the thing -
+ * a creature, a mod, a player - the field, and the two values, because that is
  * the only form a question about it can usefully take: *you set the interval to
  * 300, Sam set it to 600; which is right?*
  */
@@ -14,7 +14,7 @@ export type ConflictKind =
   | "delete-vs-edit"
   /** Both added something with the same id, but not the same content. */
   | "add-vs-add"
-  /** Two different files under one name — a profile backup, say. */
+  /** Two different files under one name - a profile backup, say. */
   | "binary";
 
 export type Resolution =
@@ -33,7 +33,7 @@ export interface Conflict {
    * survives the administrator closing the dialog and coming back.
    */
   id: string;
-  /** "creature", "mod", "player" — what the UI groups by. */
+  /** "creature", "mod", "player" - what the UI groups by. */
   domain: string;
   /** Stable id of the thing, for reference. Not shown. */
   itemId: string;
@@ -66,7 +66,7 @@ export function conflictId(domain: string, itemId: string, field: string): strin
 /**
  * A short line describing what needs deciding.
  *
- * Deliberately free of Git vocabulary — see `leaksGitTerms`, which a test runs
+ * Deliberately free of Git vocabulary - see `leaksGitTerms`, which a test runs
  * over everything this produces.
  */
 export function describeConflict(conflict: Conflict): string {

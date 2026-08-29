@@ -45,7 +45,7 @@ const SAMPLE_PRODUCTION = {
           ],
         },
         {
-          // No name on this cycle — name must stay absent after round-trip.
+          // No name on this cycle - name must stay absent after round-trip.
           intervalSeconds: 3600,
           itemSelectMode: 1,
           items: [

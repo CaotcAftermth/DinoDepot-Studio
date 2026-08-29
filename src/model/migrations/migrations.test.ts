@@ -136,7 +136,7 @@ describe("schema 1 to current, against the released v1 fixture", () => {
   /**
    * The hints have to survive being written to this machine's record. They did
    * not once: the binding schema demanded an id, the record failed to parse,
-   * and `loadLocalState` rebuilt it from nothing — so a migrated project came
+   * and `loadLocalState` rebuilt it from nothing - so a migrated project came
    * back with no repository at all, silently.
    */
   it("produces hints that parse as machine-local state", () => {
@@ -170,7 +170,7 @@ describe("schema 1 to current, against the released v1 fixture", () => {
   it("strips it from clean-slate summaries too, not only the roster", () => {
     const players = JSON.parse(result().files[PROJECT_FILE.players]);
     expect(players.cleanSlates[0].summary.lastKnownIp).toBeUndefined();
-    // The rest of the summary survives — this is a redaction, not a reset.
+    // The rest of the summary survives - this is a redaction, not a reset.
     expect(players.players[0].profile.summary.characterName).toBe("Rex Wrangler");
     expect(players.players[0].profile.summary.level).toBe(105);
   });
@@ -189,7 +189,7 @@ describe("schema 1 to current, against the released v1 fixture", () => {
     expect(report.notes.join("\n")).toContain(CONTEXT.projectId);
   });
 
-  it("is deterministic — the same inputs give the same bytes", () => {
+  it("is deterministic - the same inputs give the same bytes", () => {
     expect(result().files).toEqual(result().files);
   });
 
@@ -335,7 +335,7 @@ describe("migration failure", () => {
 
   /**
    * A step that throws must surface as a migration failure with the original
-   * untouched, never as a half-migrated project — which is why the caller
+   * untouched, never as a half-migrated project - which is why the caller
    * stages the result and only swaps it in after this returns.
    */
   it("reports a step that throws without returning partial files", () => {

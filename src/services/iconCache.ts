@@ -29,7 +29,7 @@ export interface CacheStats {
 /**
  * The cache key for an icon.
  *
- * A Git blob SHA where one is known — the registry publishes them and they are
+ * A Git blob SHA where one is known - the registry publishes them and they are
  * already content hashes. Otherwise the URL is hashed, which is weaker but
  * still changes when the pack version does, because the registry versions its
  * folders.
@@ -62,7 +62,7 @@ export async function lookup(key: string): Promise<CachedIcon> {
   try {
     return await ipc<CachedIcon>("icon_cache_get", { key });
   } catch {
-    // A cache that cannot be read is a cache miss, not a failure — the icon
+    // A cache that cannot be read is a cache miss, not a failure - the icon
     // falls back to its emoji and the app carries on.
     return { path: "", cached: false, etag: "" };
   }
@@ -80,7 +80,7 @@ export interface FetchResult {
  * Returns an icon's local path, fetching it only if it is not already cached.
  *
  * `fetcher` is passed in rather than imported so the network layer stays out of
- * this module — and so the conditional-request behaviour is testable without
+ * this module - and so the conditional-request behaviour is testable without
  * one. It is given the stored ETag, and answering "not modified" refreshes the
  * cached copy's place in the eviction order without transferring bytes.
  */
@@ -89,13 +89,13 @@ export async function resolveIcon(
   fetcher: (etag: string) => Promise<FetchResult>,
 ): Promise<CachedIcon> {
   // Checked before anything is awaited. Looking the cache up first would let
-  // every caller past this point before any of them registered — which is
+  // every caller past this point before any of them registered - which is
   // precisely the case it exists for, a page rendering forty icons at once.
   const pending = inFlight.get(key);
   if (pending) return pending;
 
   const work = (async () => {
-    // Declared out here so the catch below can still fall back to it — the
+    // Declared out here so the catch below can still fall back to it - the
     // whole point of that branch is serving a cached icon when the fetch fails.
     let existing: CachedIcon = { path: "", cached: false, etag: "" };
     try {
@@ -104,7 +104,7 @@ export async function resolveIcon(
 
       const result = await fetcher(existing.etag);
 
-      // Nothing changed — the copy on disk is current, and `lookup` has already
+      // Nothing changed - the copy on disk is current, and `lookup` has already
       // marked it as used.
       if (result.notModified) {
         return existing.cached ? existing : { path: "", cached: false, etag: "" };

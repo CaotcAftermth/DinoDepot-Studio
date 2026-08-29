@@ -5,7 +5,7 @@
 # file and different names for the two optional bindings.
 #
 # Nothing here is a secret. The GitHub App id, key and installation id are set
-# with `wrangler secret put`, never committed — see README.md.
+# with `wrangler secret put`, never committed - see README.md.
 
 name = "dinodepot-feedback"
 main = "src/index.ts"

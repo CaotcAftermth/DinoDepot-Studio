@@ -26,7 +26,7 @@ import { toast } from "../../components/toast";
  * would redirect diagnostics and screenshots. Development and self-hosted
  * builds without a managed address retain the editor.
  *
- * With no address set, everything still works — the report is written, kept,
+ * With no address set, everything still works - the report is written, kept,
  * and opened on GitHub with the text filled in. That is a real route, not a
  * degraded one, and it is what a build with no service behind it uses.
  */
@@ -48,7 +48,7 @@ export function FeedbackSettings() {
    * read as a setup step still waiting to be done, and an open text box around
    * the one value that decides whether reports can be sent at all is an easy
    * thing to break by accident. It stays reachable, because the address is not
-   * a secret and it changes whenever the service is redeployed — asking an
+   * a secret and it changes whenever the service is redeployed - asking an
    * administrator to recompile the app in order to file a bug would be an odd
    * requirement for a bug reporting feature.
    */
@@ -77,7 +77,7 @@ export function FeedbackSettings() {
    * Asks the service what repository it files into.
    *
    * A misconfigured address that answers is more dangerous than one that does
-   * not — reports would go somewhere nobody is reading — so the check compares
+   * not - reports would go somewhere nobody is reading - so the check compares
    * the answer against the repository this build belongs to rather than just
    * reporting that something replied.
    */
@@ -259,7 +259,7 @@ export function FeedbackSettings() {
           </div>
 
           <p className="text-xs text-ink-400">
-            Reports go to <span className="mono">{studioRepoSlug()}</span> — the
+            Reports go to <span className="mono">{studioRepoSlug()}</span> - the
             application's own repository, never your project's. Your GitHub sign
             in is not used and is never sent.
           </p>

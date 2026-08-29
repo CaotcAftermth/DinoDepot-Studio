@@ -10,7 +10,7 @@ import { Badge, Button, cx, Modal } from "./ui";
  * and newer copies and the newest is taken without asking; where they disagree
  * they are different characters, and only the admin knows which one is wanted.
  *
- * The newest is preselected because it is nearly always the answer — but the
+ * The newest is preselected because it is nearly always the answer - but the
  * file's date is on every row so "nearly always" stays visible.
  */
 
@@ -38,7 +38,7 @@ export function ProfileChoiceModal({
     <Modal title="Which profile should be imported?" onClose={onCancel} wide>
       <p className="text-sm text-ink-300 mb-4">
         {groups.length === 1 ? "One account has" : `${groups.length} accounts have`} more
-        than one profile in this batch, and they are not the same character — the Player
+        than one profile in this batch, and they are not the same character - the Player
         IDs differ. The newest of each is selected; change it if the older save is the one
         you want.
       </p>
@@ -52,7 +52,7 @@ export function ProfileChoiceModal({
                 <span className="text-xs font-semibold text-ink-300 uppercase tracking-wide">
                   EOS ID
                 </span>
-                <span className="mono text-xs text-ink-200">{group.eosId || "—"}</span>
+                <span className="mono text-xs text-ink-200">{group.eosId || " - "}</span>
               </div>
               <div className="flex flex-col gap-1.5">
                 {group.candidates.map((candidate, i) => {
@@ -102,7 +102,7 @@ export function ProfileChoiceModal({
       </div>
 
       <p className="text-xs text-ink-400 mt-4">
-        The profiles you don't pick are left alone — nothing is written for them.
+        The profiles you don't pick are left alone - nothing is written for them.
       </p>
 
       <div className="flex justify-end gap-2 mt-4">

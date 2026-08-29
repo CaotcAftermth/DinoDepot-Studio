@@ -26,7 +26,7 @@ interface HistoryState {
   /**
    * Puts an older version's files back.
    *
-   * Writes into the working tree and stops there — the next Sync commits it as
+   * Writes into the working tree and stops there - the next Sync commits it as
    * an ordinary change on top of history. Nothing here resets or rewrites,
    * because the history is shared and somebody may already have pulled it.
    */
@@ -85,7 +85,7 @@ export const useHistoryStore = create<HistoryState>((set, get) => ({
       }
     } catch (e) {
       // A project with no repository behind it has no history, which is the
-      // normal state of a new one — not something to report as a fault. Only a
+      // normal state of a new one - not something to report as a fault. Only a
       // project that *is* connected gets an error message.
       const connected = Boolean(useProjectStore.getState().local?.source?.owner);
       if (generation === loadGeneration) {

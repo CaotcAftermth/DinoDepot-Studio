@@ -12,7 +12,7 @@ import {
  * - Each cycle attempts every `intervalSeconds`; each creature independently
  *   passes the rule-level `chanceToProduce` per attempt.
  * - itemSelectMode: All (0) processes every primary item per attempt;
- *   Random (1) picks one uniformly; Cycle (2) rotates — both average 1/n
+ *   Random (1) picks one uniformly; Cycle (2) rotates - both average 1/n
  *   per item over time.
  * - Per production event (creature × attempt that passed the chance roll):
  *   the primary item produces `quantityPerDino`; with `alternateItemsChance`
@@ -28,7 +28,7 @@ export interface SimConfig {
   /**
    * "hours": every cycle repeats for the whole window.
    * "singleCycle": every cycle runs exactly once (one production attempt),
-   * regardless of its interval — useful for judging a single tick's output.
+   * regardless of its interval - useful for judging a single tick's output.
    */
   mode: "hours" | "singleCycle";
   hours: number;
@@ -113,7 +113,7 @@ export function simulate(draft: ProductionDraft, config: SimConfig): SimResult {
     if (!rule.enabled) continue;
     const count = config.counts[rule.id] ?? config.defaultCount;
     // A rule set to zero creatures still belongs in the breakdown, showing no
-    // output — dropping it makes the row the count was typed into disappear
+    // output - dropping it makes the row the count was typed into disappear
     // under the cursor. Its (all-zero) flows are accumulated into a throwaway
     // so the totals table doesn't fill with empty rows.
     const acc =
@@ -175,7 +175,7 @@ export function simulate(draft: ProductionDraft, config: SimConfig): SimResult {
       }
     }
     // Items that are only ever consumed (Rex eggs, berries…) are supplied by
-    // players, not by passive production — that's a normal setup, not a
+    // players, not by passive production - that's a normal setup, not a
     // balance problem. Only flag a genuine deficit: something the config
     // produces AND consumes, where consumption outpaces production.
     if (total.produced > 0 && total.net < 0) {

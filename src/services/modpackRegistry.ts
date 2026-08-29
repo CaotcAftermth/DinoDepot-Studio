@@ -39,7 +39,7 @@ async function getJson(url: string, what: string): Promise<unknown> {
   try {
     res = await packageHttpGet(url);
   } catch {
-    // Offline, DNS, or a blocked request — all indistinguishable from here.
+    // Offline, DNS, or a blocked request - all indistinguishable from here.
     throw new Error(`Could not reach the registry. Check your connection.`);
   }
   if (res.status === 404) throw new NotFound(what);
@@ -49,7 +49,7 @@ async function getJson(url: string, what: string): Promise<unknown> {
     );
   }
   if (res.status < 200 || res.status >= 300) {
-    throw new Error(`${what} — GitHub returned ${res.status}`);
+    throw new Error(`${what} - GitHub returned ${res.status}`);
   }
   try {
     return JSON.parse(packageHttpText(res)) as unknown;
@@ -70,7 +70,7 @@ export interface RegistryListing {
   packs: RegistryEntry[];
   /**
    * True when the folder had no `index.json` and the listing was assembled by
-   * reading the pack files directly — slower, and capped.
+   * reading the pack files directly - slower, and capped.
    */
   unindexed: boolean;
   /** Set when the cap was hit, so the UI can say the list is partial. */
@@ -80,7 +80,7 @@ export interface RegistryListing {
 /**
  * Everything the registry publishes.
  *
- * Prefers `index.json` — one request, and it carries the search fields. Falls
+ * Prefers `index.json` - one request, and it carries the search fields. Falls
  * back to listing the folder and reading each pack, so the feature works the
  * moment a maintainer drops a file in without regenerating the index.
  */
@@ -110,7 +110,7 @@ export async function fetchRegistry(
     const why = e instanceof Error ? e.message : String(e);
     throw new Error(
       `No index.json in ${registry.owner}/${registry.repo}/${registry.path}, ` +
-        `and its folder could not be listed either — ${why}`,
+        `and its folder could not be listed either - ${why}`,
     );
   }
 }
@@ -179,7 +179,7 @@ export async function fetchPackFile(
   const parsed = ModpackSchema.safeParse(raw);
   if (!parsed.success) {
     throw new Error(
-      `Modpack "${file}" does not match the expected format — ${parsed.error.issues[0]?.message ?? "unknown problem"}`,
+      `Modpack "${file}" does not match the expected format - ${parsed.error.issues[0]?.message ?? "unknown problem"}`,
     );
   }
   return parsed.data;
@@ -188,7 +188,7 @@ export async function fetchPackFile(
 /**
  * Downloads the pack a registry entry points at.
  *
- * Folder layout is preferred — a pack with icons cannot be one file — but the
+ * Folder layout is preferred - a pack with icons cannot be one file - but the
  * flat `<id>.json` form still resolves, so packs published before icons
  * travelled keep working.
  */

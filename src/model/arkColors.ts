@@ -2,7 +2,7 @@
  * ARK's colour palette, as the `-r=` argument wants it: an id per colour
  * region.
  *
- * Ids are not contiguous — the 0–100 block is the creature palette and the
+ * Ids are not contiguous - the 0–100 block is the creature palette and the
  * 128–254 block is the dye/"Coloring" set, with a gap between them. Anything
  * that iterates this list must therefore walk the array, never a range.
  */
@@ -57,7 +57,7 @@ export const ARK_COLORS: ArkColor[] = [
     id: 36,
     name: "Dino Albino",
     hex: "FFFFFF",
-    note: "Cannot be represented in sRGB — in game it is 50% brighter than White, so this swatch is an approximation.",
+    note: "Cannot be represented in sRGB - in game it is 50% brighter than White, so this swatch is an approximation.",
   },
   { id: 37, name: "BigFoot0", hex: "B79683" },
   { id: 38, name: "BigFoot4", hex: "EADAD5" },
@@ -258,10 +258,10 @@ export function colorById(id: number): ArkColor | undefined {
   return BY_ID.get(id);
 }
 
-/** Label as the palette itself writes it, e.g. `177 — Skobeloff Coloring`. */
+/** Label as the palette itself writes it, e.g. `177 - Skobeloff Coloring`. */
 export function colorLabel(id: number): string {
   const color = colorById(id);
-  return color ? `${color.id} — ${color.name}` : `${id} — (unknown id)`;
+  return color ? `${color.id} - ${color.name}` : `${id} - (unknown id)`;
 }
 
 /** Matches on id or any part of the name, so "177" and "skob" both work. */

@@ -15,12 +15,12 @@ the part that is misbehaving. Three kinds of report: a bug, a suggestion, or a
 feature request.
 
 - **Right-click knows what you clicked.** Choosing *Report a problem here* opens
-  the form with the affected area already filled in — "Production Rules ›
+  the form with the affected area already filled in - "Production Rules ›
   Production Cycle Editor › Quantity", not "somewhere in the rules page". Text
   fields and selected text keep their normal menu.
 - **Select affected area** is an element picker. Hovering highlights the part
   of the app under the pointer and names it; clicking picks it. Escape cancels,
-  and the click never reaches the control underneath — picking the Delete
+  and the click never reaches the control underneath - picking the Delete
   button as the affected area does not delete anything.
 - **You can read everything before it is sent.** *Review diagnostics* shows the
   actual values, not a list of categories: your Windows version, the page you
@@ -28,7 +28,7 @@ feature request.
   file paths, credentials and email addresses already stripped out. Every
   category can be switched off.
 - **Nothing about your project is sent unless you switch it on**, and then only
-  counts — twelve rules, six maps — never a cluster name, a creature, or a
+  counts - twelve rules, six maps - never a cluster name, a creature, or a
   player.
 - **Credentials cannot be included.** The app has no way to read one, and text
   that looks like a pasted token, password or private key is blocked before it
@@ -37,7 +37,7 @@ feature request.
   reported it you can say so, and your report follows theirs instead of
   becoming a second one. You can always submit anyway.
 - **My reports** lists everything you have sent, with what the maintainers did
-  about it — Submitted, Confirmed, In progress, Fixed — refreshed when you open
+  about it - Submitted, Confirmed, In progress, Fixed - refreshed when you open
   the page.
 - **Nothing is lost if you are offline.** The report is written to this computer
   before it is sent. A failed submission stays there with Retry, Edit and Open
@@ -45,7 +45,7 @@ feature request.
   draft. If the local write itself fails, nothing is sent and the report stays
   open instead of being described as saved.
 - **A screenshot can be attached**, never automatically. It is re-encoded on the
-  way in, which strips camera and phone metadata — including the GPS position
+  way in, which strips camera and phone metadata - including the GPS position
   screenshots sometimes carry.
 - **A page that crashes now shows an error screen** with Retry and *Report this
   error*, instead of taking the whole window with it. The rest of the app keeps
@@ -60,7 +60,7 @@ everything filled in.
 For maintainers: `docs/architecture/feedback.md`, and
 `services/feedback-api/README.md` for deployment.
 
-## 0.5.0 — 2026-08-19
+## 0.5.0 - 2026-08-19
 
 The mod artwork release. Icons can now come out of the mods themselves, the
 app starts in a fraction of the time, and eggs finally have their fertilized
@@ -73,11 +73,11 @@ creature and item a real icon, taken from the mod's own artwork as installed on
 this machine.
 
 - Every entry in the review list has an icon box beside it. Clicking it opens
-  the mod's textures — searchable, with the plausible icons sorted to the top.
+  the mod's textures - searchable, with the plausible icons sorted to the top.
 - Nothing is guessed. Matching artwork to entries by filename does not work
   (measured across the local mod library: only 5.5% of items have a
   name-matching icon), so you pick, and the app does the rest.
-- **Material maps are filtered out** by default — normals, roughness, base
+- **Material maps are filtered out** by default - normals, roughness, base
   colour and the rest, which outnumber real icons by an order of magnitude.
   The word list is a set of checkboxes you can untick, and you can add your own
   (Enter or *Add*). Your list is remembered between sessions.
@@ -86,14 +86,14 @@ this machine.
 - Whatever you pick is converted to a 160×160 lossless WebP, scaled to fit and
   centred so nothing is stretched.
 
-Reading a large mod takes a few seconds — the biggest on the test library, at
+Reading a large mod takes a few seconds - the biggest on the test library, at
 3,294 assets, scans in about seven.
 
 ### Icons from anywhere else
 
 **Content Sources → Edit → Entry data → Change icon** gained an import panel on
 the right. Drop an image on it or choose a file, and it becomes a project icon
-through exactly the same conversion — 160×160 WebP, optional inversion. WebP,
+through exactly the same conversion - 160×160 WebP, optional inversion. WebP,
 PNG and JPEG accepted.
 
 The same dialog now offers **base game artwork**. Previously a mod's creature
@@ -112,8 +112,8 @@ An entry with no icon anywhere now shows the placeholder artwork
 
 ### Icons are filed by mod
 
-Project icons are now stored one folder deep — `images/AAHelicoprion/Rex.webp`
-— so a project with hundreds of them stays navigable and two mods shipping a
+Project icons are now stored one folder deep - `images/AAHelicoprion/Rex.webp`
+ - so a project with hundreds of them stays navigable and two mods shipping a
 "Rex" cannot overwrite each other. Existing flat files keep working; there is
 nothing to migrate.
 
@@ -127,8 +127,8 @@ These were read from ARK's own game files rather than derived from a naming
 rule, because the rule does not hold: `_Fertilized` is *inserted before* a
 variant qualifier, so the Tek Parasaur egg is
 `PrimalItemConsumable_Egg_Para_Fertilized_Bionic`, not `..._Bionic_Fertilized`.
-Ten eggs — the generic Small/Medium/Large ones, Titanoboa, Pachyrhino and
-others — have no fertilized form at all and were correctly left out.
+Ten eggs - the generic Small/Medium/Large ones, Titanoboa, Pachyrhino and
+others - have no fertilized form at all and were correctly left out.
 
 Each one is filed as a variant of the egg it comes from, so it inherits that
 egg's icon and **item pickers collapse the pair onto a single row**. Variant
@@ -142,7 +142,7 @@ with the same *Show variants* toggle.
   automatically. The same mod linked both ways is also now recognised as one
   page rather than two.
 - **Add manually starts from the project ID.** The mod page link is derived
-  from it, and *Look up name* reads the mod's real name off CurseForge —
+  from it, and *Look up name* reads the mod's real name off CurseForge -
   press Enter in the ID field to run it. The name stays yours to override.
   Pasting a mod page link instead of an ID is understood, and a link that has
   no ID in it says so rather than guessing.
@@ -153,7 +153,7 @@ with the same *Show variants* toggle.
 - Status tags moved to the right-hand side of each row, so a mod's name and
   folder sit together.
 - Entries in the review list now show their class beneath the name, with the
-  full blueprint path on hover — matching the Content Sources lists.
+  full blueprint path on hover - matching the Content Sources lists.
 - **Search modpacks** became **Modpack library**, and Discovery is the tab that
   opens first. Pasting a link or opening a pack file works from any tab now.
 - A mod with an available update can be updated straight from the Discovery
@@ -162,7 +162,7 @@ with the same *Show variants* toggle.
 ### Faster
 
 - **The app starts in a fraction of the time.** Everything used to load before
-  the window could paint anything — every editor, the publisher, the whole
+  the window could paint anything - every editor, the publisher, the whole
   official catalog, as one 1.5 MB script. Sections now load on demand and warm
   themselves in the background, cutting the first script to 544 kB.
 - **Opening Content Sources for the first time is no longer a stall.** The
@@ -181,8 +181,8 @@ with the same *Show variants* toggle.
 - An icon assigned during a review now shows in the row instead of a generic
   symbol.
 - A mod deleted from Content Sources no longer shows as installed in the
-  Discovery list. The package remains in the machine-wide library — as it
-  should, since that is a shared cache — but the list now says
+  Discovery list. The package remains in the machine-wide library - as it
+  should, since that is a shared cache - but the list now says
   "downloaded, not in project" rather than claiming it is here.
 - Updating a mod no longer overwrites a name you set yourself.
 - Base game icons assigned to an entry now survive publishing. They were being
@@ -197,10 +197,7 @@ with the same *Show variants* toggle.
   so it is not committed.
 - `gamelist` mode on that tool lists base-game asset paths in about two
   seconds, index-only. It produced `scripts/data/fertilized-eggs.json`.
-- `scripts/fertilized-eggs.mjs` adds the egg entries; runs inside
-  `build-official-catalog.mjs` and standalone.
-- `.claude/launch.json` gained a `studio-repo-dist` entry for measuring the
-  production build.
+- `scripts/fertilized-eggs.mjs` adds the egg entries and can run standalone.
 
 ## Earlier versions
 

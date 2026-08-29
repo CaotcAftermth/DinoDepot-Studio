@@ -23,8 +23,8 @@ configureIconResolver(
 /**
  * Sections load on demand rather than all at once.
  *
- * Bundled together they were a single 1.5 MB script, and every byte of it —
- * the whole official catalog, every editor, the publisher — had to be parsed
+ * Bundled together they were a single 1.5 MB script, and every byte of it -
+ * the whole official catalog, every editor, the publisher - had to be parsed
  * and evaluated before the window could paint anything at all. The home
  * screen is the only thing needed to show a window, so it is the only thing
  * that stays eager.
@@ -78,7 +78,7 @@ function prefetchSections(): void {
   if (idle) idle(run);
 }
 
-// A data router (rather than <HashRouter>) so pages can block navigation —
+// A data router (rather than <HashRouter>) so pages can block navigation -
 // the Settings page uses it to catch unsaved changes.
 const router = createHashRouter([
   { path: "/", element: <ProjectHomePage /> },

@@ -114,7 +114,7 @@ function post(path: string, body: unknown, headers: Record<string, string> = {})
  * A GitHub stub.
  *
  * Records every call so the tests can assert on what the service asked for,
- * which is where the interesting behaviour is — the order of the marker search
+ * which is where the interesting behaviour is - the order of the marker search
  * and the create, and whether labels were filtered.
  */
 function stubGithub(options: {

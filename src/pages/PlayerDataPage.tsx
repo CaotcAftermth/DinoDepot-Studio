@@ -80,7 +80,7 @@ const ARCHIVED_FILTERS: {
   {
     key: "active",
     label: "Active",
-    hint: "Hide archived saves — the default working view",
+    hint: "Hide archived saves - the default working view",
   },
   {
     key: "all",
@@ -100,7 +100,7 @@ const ARCHIVED_FILTERS: {
  * taken for that player.
  *
  * A saved record reads as plain text with every value click-to-copy, because
- * that is what these fields are for — you look a player up in order to paste
+ * that is what these fields are for - you look a player up in order to paste
  * their id somewhere else. Editing is an explicit mode with its own Save.
  */
 export function PlayerDataPage() {
@@ -123,14 +123,14 @@ export function PlayerDataPage() {
    * it. Purely a view: nothing here changes a profile's archived status.
    */
   const [archivedFilter, setArchivedFilter] = useState<ArchivedFilter>("active");
-  /** Bulk-select mode, and what is ticked. Off by default — removing a player
+  /** Bulk-select mode, and what is ticked. Off by default - removing a player
    *  is destructive, so the checkboxes only appear when asked for. */
   const [selecting, setSelecting] = useState(false);
   const [selection, setSelection] = useState<Set<string>>(new Set());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   /** Player id (or "all") currently talking to GitHub. */
   const [busy, setBusy] = useState<string | null>(null);
-  /** Non-null while editing — the working copy, committed on Save. */
+  /** Non-null while editing - the working copy, committed on Save. */
   const [draft, setDraft] = useState<Player | null>(null);
   /** Non-null once a bulk import has finished, holding its per-file report. */
   const [importReport, setImportReport] = useState<ProfileImportResult[] | null>(null);
@@ -225,7 +225,7 @@ export function PlayerDataPage() {
 
   /**
    * Removes the file a newly stored profile replaced, when the two landed on
-   * different names — otherwise the old one sits in profiles/ with nothing
+   * different names - otherwise the old one sits in profiles/ with nothing
    * pointing at it, and gets backed up to GitHub forever.
    */
   async function deleteSuperseded(previous: string | undefined, current: string) {
@@ -277,7 +277,7 @@ export function PlayerDataPage() {
             archivedAt: null,
           };
 
-      // Profiles are files on disk, not edits — they save immediately.
+      // Profiles are files on disk, not edits - they save immediately.
       const filled = read.summary
         ? applySummaryToPlayer(player, read.summary)
         : { player, filled: [], conflicts: [] };
@@ -285,7 +285,7 @@ export function PlayerDataPage() {
       if (draft?.id === player.id) setDraft({ ...draft, profile });
       toast[read.summary ? "success" : "error"](
         read.summary
-          ? `Profile stored — ${read.summary.characterName || "survivor"}, level ${read.summary.level}`
+          ? `Profile stored - ${read.summary.characterName || "survivor"}, level ${read.summary.level}`
           : `Profile stored, but could not be read: ${read.error}`,
       );
     } catch (e) {
@@ -299,7 +299,7 @@ export function PlayerDataPage() {
    *
    * The roster update and the file write are deliberately separate. Reading a
    * profile tells us the identifiers regardless of whether the file can be
-   * saved, so a failed write costs the file, not the information — and the
+   * saved, so a failed write costs the file, not the information - and the
    * report says which happened.
    */
   async function importProfiles(files: ProfileFile[], rejects: DropRejects) {
@@ -336,7 +336,7 @@ export function PlayerDataPage() {
       let roster = plan.players;
       const results = [...plan.results];
 
-      // planImport emits exactly one result per file it was given, in order —
+      // planImport emits exactly one result per file it was given, in order -
       // which is `chosen`, not the full batch.
       for (let i = 0; i < results.length; i++) {
         const result = results[i];
@@ -366,7 +366,7 @@ export function PlayerDataPage() {
       setPlayers({ ...players, players: roster });
       setImportReport(results);
       if (superseded.length > 0) {
-        // Not necessarily older — the admin may have picked an earlier save.
+        // Not necessarily older - the admin may have picked an earlier save.
         toast.success(
           `Skipped ${superseded.length} other cop${superseded.length === 1 ? "y" : "ies"} of accounts in this batch`,
         );
@@ -515,7 +515,7 @@ export function PlayerDataPage() {
   /**
    * Archives every profile on an outdated save format in one pass.
    *
-   * Archiving only — a pre-Lost-Colony save is still the only copy of that
+   * Archiving only - a pre-Lost-Colony save is still the only copy of that
    * character, and the reason to set it aside is that it needs attention, not
    * that it is disposable.
    */
@@ -525,7 +525,7 @@ export function PlayerDataPage() {
       title: `Archive ${outdatedProfiles.length} outdated save${outdatedProfiles.length === 1 ? "" : "s"}?`,
       message:
         `These were written before the Lost Colony update (save format v${SKILL_TREE_SAVE_VERSION - 2}) and carry no skill tree data. ` +
-        "Archiving moves them out of the default roster view — the files stay on disk and stay backed up.",
+        "Archiving moves them out of the default roster view - the files stay on disk and stay backed up.",
       confirmLabel: "Archive them",
     });
     if (!ok) return;
@@ -540,7 +540,7 @@ export function PlayerDataPage() {
       ),
     });
     toast.success(
-      `${ids.size} outdated save${ids.size === 1 ? "" : "s"} archived — nothing deleted`,
+      `${ids.size} outdated save${ids.size === 1 ? "" : "s"} archived - nothing deleted`,
     );
   }
 
@@ -556,7 +556,7 @@ export function PlayerDataPage() {
   /**
    * Removes every ticked player, and the profile file each one owns.
    *
-   * Names the players in the confirmation rather than just counting them —
+   * Names the players in the confirmation rather than just counting them -
    * this deletes save data, and "remove 12 players" is not something anyone
    * can check before agreeing to it.
    */
@@ -602,7 +602,7 @@ export function PlayerDataPage() {
 
   /**
    * Archives or restores a stored save. Deliberately does nothing to the file
-   * — this is a view state, so that "tidy the roster" and "throw away a
+   * - this is a view state, so that "tidy the roster" and "throw away a
    * character" can never be the same click.
    */
   function toggleArchive(player: Player) {
@@ -615,7 +615,7 @@ export function PlayerDataPage() {
     if (draft?.id === player.id) setDraft(next);
     toast.info(
       archivedAt
-        ? `${playerLabel(player)}'s save archived — the file is untouched`
+        ? `${playerLabel(player)}'s save archived - the file is untouched`
         : `${playerLabel(player)}'s save is back in the roster`,
     );
   }
@@ -703,7 +703,7 @@ export function PlayerDataPage() {
           {health.archived > 0 && (
             <span className="flex items-center gap-1.5">
               <span className="text-ink-500">
-                {health.archived} archived — showing
+                {health.archived} archived - showing
               </span>
               {/* Segmented rather than a cycling toggle: with three states a
                   single button never says what the *other* two are, and this
@@ -743,7 +743,7 @@ export function PlayerDataPage() {
                   : "Drop .arkprofile files here to import them"}
               </p>
               <p className="text-xs text-ink-400 mt-0.5">
-                A whole SavedArks folder at once is fine — each file finds its
+                A whole SavedArks folder at once is fine - each file finds its
                 player by EOS ID, and new ones get a roster entry.
               </p>
             </div>
@@ -756,7 +756,7 @@ export function PlayerDataPage() {
 
       {!isTauri && (
         <p className="text-xs text-amber-400 mb-3">
-          Profile upload and download only work in the desktop app — everything
+          Profile upload and download only work in the desktop app - everything
           else on this page works here.
         </p>
       )}
@@ -847,7 +847,7 @@ export function PlayerDataPage() {
                 >
                   {/* Quiet corner mark: "has a save" is a yes/no fact, and a
                       word-sized badge gave it more weight than it earns. The
-                      save version rides alongside it — which format a profile
+                      save version rides alongside it - which format a profile
                       is in decides what can be read out of it. */}
                   {player.profile && (
                     <span
@@ -857,7 +857,7 @@ export function PlayerDataPage() {
                           ? "Has a stored .arkprofile (archived)"
                           : "Has a stored .arkprofile") +
                         (player.profile.summary
-                          ? ` — save version ${player.profile.summary.saveVersion}`
+                          ? ` - save version ${player.profile.summary.saveVersion}`
                           : "")
                       }
                       aria-label={
@@ -901,7 +901,7 @@ export function PlayerDataPage() {
         <div className="min-w-0">
           {!selected ? (
             <EmptyState title="Select a player to view">
-              Or add one — a record only needs whichever identifier you have.
+              Or add one - a record only needs whichever identifier you have.
             </EmptyState>
           ) : (
             <Card
@@ -1039,7 +1039,7 @@ export function PlayerDataPage() {
 
 /**
  * Policy for this page, kept here rather than on the Settings page because the
- * Player Data module can be switched off — its settings should not outlive it
+ * Player Data module can be switched off - its settings should not outlive it
  * in a list of options that no longer do anything.
  */
 function PlayerDataSettingsModal({
@@ -1089,7 +1089,7 @@ function PlayerDataSettingsModal({
           <p className="text-xs text-ink-300">
             A stored <span className="mono">.arkprofile</span> is often the only
             surviving copy of a player's character. Nothing on this page ever
-            deletes one automatically — age and save format are labels, and the
+            deletes one automatically - age and save format are labels, and the
             strongest thing archiving does is move a save out of the default
             list.
           </p>
@@ -1163,7 +1163,7 @@ function PlayerDataSettingsModal({
               </span>
               <span className="block text-xs text-ink-400">
                 {outdatedCount > 0
-                  ? `${outdatedCount} stored save${outdatedCount === 1 ? " is" : "s are"} on an older save format. Archiving moves ${outdatedCount === 1 ? "it" : "them"} out of the roster — the file${outdatedCount === 1 ? "" : "s"} stay${outdatedCount === 1 ? "s" : ""} on disk.`
+                  ? `${outdatedCount} stored save${outdatedCount === 1 ? " is" : "s are"} on an older save format. Archiving moves ${outdatedCount === 1 ? "it" : "them"} out of the roster - the file${outdatedCount === 1 ? "" : "s"} stay${outdatedCount === 1 ? "s" : ""} on disk.`
                   : "Every stored save is on the current format."}
               </span>
             </div>
@@ -1183,12 +1183,12 @@ function PlayerDataSettingsModal({
 
 // ---------------------------------------------------------------------------
 
-/** Copies its value on click — these fields exist to be pasted elsewhere. */
+/** Copies its value on click - these fields exist to be pasted elsewhere. */
 function CopyValue({
   value,
   mono,
   label,
-  placeholder = "—",
+  placeholder = " - ",
 }: {
   value: string;
   mono?: boolean;
@@ -1204,7 +1204,7 @@ function CopyValue({
         navigator.clipboard.writeText(value);
         toast.success(`${label} copied`);
       }}
-      title={`Click to copy — ${value}`}
+      title={`Click to copy - ${value}`}
       className={cx(
         "text-sm text-ink-100 text-left truncate max-w-full cursor-pointer",
         "hover:text-accent-400",
@@ -1224,7 +1224,7 @@ function PlayerSummary({ player }: { player: Player }) {
   if (!hasPlayerDetails(player)) {
     return (
       <p className="text-sm text-ink-400">
-        Nothing recorded yet — press Edit to fill this in.
+        Nothing recorded yet - press Edit to fill this in.
       </p>
     );
   }
@@ -1252,7 +1252,7 @@ function PlayerSummary({ player }: { player: Player }) {
                   {row.nameKey && ")"}
                 </span>
               ) : (
-                row.nameKey && <span className="text-ink-600 text-sm">(—)</span>
+                row.nameKey && <span className="text-ink-600 text-sm">( - )</span>
               )}
             </span>
           </Fragment>
@@ -1309,7 +1309,7 @@ function PlayerForm({
  * What the stored profile actually says.
  *
  * Read straight out of the save when it was imported, so this is the survivor
- * as the server has them — the thing an admin is usually trying to establish
+ * as the server has them - the thing an admin is usually trying to establish
  * when a player claims they lost levels.
  */
 function ProfileDetails({ summary }: { summary: ProfileSummary }) {
@@ -1346,7 +1346,7 @@ function ProfileDetails({ summary }: { summary: ProfileSummary }) {
           {summary.spentPoints !== summary.extraLevel && (
             <span
               className="text-xs text-amber-400"
-              title="Points allocated do not match one per level — the server may hand out more, or the profile has been edited"
+              title="Points allocated do not match one per level - the server may hand out more, or the profile has been edited"
             >
               {summary.spentPoints} points over {summary.extraLevel} levels
             </span>
@@ -1435,7 +1435,7 @@ function ProfileSection({
           .arkprofile
         </span>
         {profile && broken ? (
-          <Badge tone="error">File reference lost — upload it again</Badge>
+          <Badge tone="error">File reference lost - upload it again</Badge>
         ) : profile ? (
           <>
             {profile.map ? (
@@ -1473,13 +1473,13 @@ function ProfileSection({
             )}
             {profile.archivedAt && (
               <span
-                title={`Archived ${new Date(profile.archivedAt).toLocaleString()} — the file is untouched`}
+                title={`Archived ${new Date(profile.archivedAt).toLocaleString()} - the file is untouched`}
               >
                 <Badge tone="neutral">Archived</Badge>
               </span>
             )}
             {profile.generated && (
-              <Badge tone="warn">Generated — not taken from a server</Badge>
+              <Badge tone="warn">Generated - not taken from a server</Badge>
             )}
             {profile.backedUpAt ? (
               <Badge tone="info">
@@ -1543,7 +1543,7 @@ function ProfileSection({
               title={
                 profile.archivedAt
                   ? "Put this save back in the roster"
-                  : "Move this save out of the default roster view — the file stays put"
+                  : "Move this save out of the default roster view - the file stays put"
               }
             >
               {profile.archivedAt ? "Unarchive" : "Archive"}

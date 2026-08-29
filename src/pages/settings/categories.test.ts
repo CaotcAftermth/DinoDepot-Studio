@@ -94,7 +94,7 @@ describe("dirtyCategories", () => {
 
   /**
    * `capabilities` is not edited by any card here. It still makes the page
-   * dirty — Save writes the whole settings object — but no rail entry should
+   * dirty - Save writes the whole settings object - but no rail entry should
    * claim it, since nothing on that category's screen changed.
    */
   it("marks nothing for a key no category owns", () => {

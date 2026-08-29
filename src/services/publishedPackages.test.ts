@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 /**
  * Verifies the published packages exactly as a checkout produces them.
  *
- * This runs against the working tree, so on CI it runs against a fresh clone —
+ * This runs against the working tree, so on CI it runs against a fresh clone -
  * which is the case that matters. Package integrity is a SHA-256 over literal
  * bytes, so anything that rewrites those bytes in transit breaks it. Git's
  * end-of-line translation did exactly that: with core.autocrlf=true and no

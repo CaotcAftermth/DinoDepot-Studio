@@ -33,7 +33,7 @@ import { feedbackTarget } from "../model/feedback/targets";
 /**
  * The project's command centre.
  *
- * Renders a prepared view model and nothing else — every judgement it shows is
+ * Renders a prepared view model and nothing else - every judgement it shows is
  * made in model/projectOverview and model/outputs, which Publish reads from
  * too, so the two pages cannot disagree about whether something is published.
  */
@@ -58,7 +58,7 @@ export function OverviewPage() {
         title="Overview"
         subtitle={
           overview.projectName
-            ? `${overview.projectName} — ${overview.clusterName}`
+            ? `${overview.projectName} - ${overview.clusterName}`
             : ""
         }
       />
@@ -105,7 +105,7 @@ export function OverviewPage() {
         </Card>
       </div>
 
-      {/* Only takes space when it has something to say — a card reserved for
+      {/* Only takes space when it has something to say - a card reserved for
           "nothing needs attention" was the largest thing on a healthy page. */}
       {attention.length > 0 && (
         <Card
@@ -260,8 +260,8 @@ const OUTPUT_STYLES: Record<
   published: { glyph: "✓", className: "text-accent-400" },
   changed: { glyph: "●", className: "text-sky-400" },
   unpublished: { glyph: "○", className: "text-ink-300" },
-  empty: { glyph: "—", className: "text-ink-500" },
-  disabled: { glyph: "—", className: "text-ink-500" },
+  empty: { glyph: " - ", className: "text-ink-500" },
+  disabled: { glyph: " - ", className: "text-ink-500" },
   blocked: { glyph: "!", className: "text-red-400" },
 };
 
@@ -322,7 +322,7 @@ function GithubTarget({ github }: { github: GithubReadiness }) {
         github.ready
           ? github.verified
             ? "Connection verified this session"
-            : "Ready to publish — connection not verified this session"
+            : "Ready to publish - connection not verified this session"
           : github.blockers.join(" · ")
       }
     >
@@ -393,7 +393,7 @@ function ActionLink({ action }: { action: NextAction }) {
  * was made, and the structured trailers underneath it are what turn the rest
  * into "Changed interval on Rex" rather than a sha.
  *
- * A commit DinoDepot did not write still gets a row — somebody editing through
+ * A commit DinoDepot did not write still gets a row - somebody editing through
  * the GitHub web UI is a real event, and hiding it would make this list
  * disagree with the repository.
  */
@@ -426,7 +426,7 @@ function RecentActivity() {
   async function handleRestore(entry: HistoryEntry) {
     const ok = await confirmDialog({
       title: "Go back to this version?",
-      message: `${restoreSubject(entry)}. Your current version stays in the history — this adds a new change on top rather than undoing anything.`,
+      message: `${restoreSubject(entry)}. Your current version stays in the history - this adds a new change on top rather than undoing anything.`,
       confirmLabel: "Go back to it",
     });
     if (!ok) return;

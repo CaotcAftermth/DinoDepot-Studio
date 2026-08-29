@@ -18,11 +18,11 @@ function shortDropName(bpPath: string): string {
 }
 
 /**
- * Wiki import staging.
+ * Legacy external import staging.
  *
  * Nothing the importer produces is ever live. It writes *proposals* that a
  * human compares against the current record and accepts section by section.
- * The original wiki text is kept alongside so a reviewer can check the mapping
+ * Original source text stays alongside the proposal for reviewer comparison,
  * rather than trusting it, and the revision id is what makes a later reimport
  * a diff rather than a blind overwrite.
  */
@@ -47,12 +47,12 @@ export const IMPORT_GAMES = ["ASA", "ASE", "both", "unknown"] as const;
 export type ImportGame = (typeof IMPORT_GAMES)[number];
 
 export const ImportSourceSchema = z.object({
-  /** Wiki page title, e.g. "Gigantoraptor" or "Mod:Additions Ascended/Edmontonia". */
+  /** Legacy source page title. */
   page: z.string(),
   /** Section the text came from, for the reviewer's orientation. */
   section: z.string().default("Taming"),
   url: z.string().default(""),
-  /** Anchor for reimport comparison — a newer revision means a re-review. */
+  /** Anchor for reimport comparison - a newer revision means a re-review. */
   revisionId: z.number().int().default(0),
   revisionTimestamp: z.string().default(""),
   importedAt: z.string(),
@@ -65,7 +65,7 @@ export type ImportSource = z.infer<typeof ImportSourceSchema>;
 /** A name the importer could not resolve to a catalog entry. */
 export const UnresolvedRefSchema = z.object({
   kind: z.enum(["item", "creature"]),
-  /** The name as written on the wiki. */
+  /** Name as written in the source. */
   name: z.string(),
   /** Where it appeared, so the reviewer can find it. */
   where: z.string().default(""),
@@ -76,11 +76,11 @@ export const ImportRecordSchema = z.object({
   id: z.string(),
   /** Target creature. Empty when the name matched nothing in the catalog. */
   bpPath: z.string().default(""),
-  /** Creature name as written on the wiki. */
+  /** Creature name as written in the source. */
   creatureName: z.string(),
   status: z.enum(IMPORT_STATUSES).default("pending"),
   source: ImportSourceSchema,
-  /** Original wiki text, keyed by section, for reviewer comparison. */
+  /** Original source text, keyed by section, for reviewer comparison. */
   rawText: z.record(z.string(), z.string()).default({}),
   /** What the importer proposes, in the live schema. */
   proposed: CreatureInfoSchema,
@@ -94,7 +94,7 @@ export const ImportRecordSchema = z.object({
   confidence: z.enum(["high", "needs-review"]).default("needs-review"),
   /**
    * True when this creature inherits from a parent and the proposal would be
-   * a duplicate of it — the reviewer is told to skip rather than duplicate.
+   * a duplicate of it - the reviewer is told to skip rather than duplicate.
    */
   duplicatesParent: z.boolean().default(false),
   /** Free-text note from the reviewer. */
@@ -128,7 +128,7 @@ export interface ImportDecision {
   keepLocalStrategy: boolean;
 }
 
-/** Nothing accepted — the reviewer opts in per section. */
+/** Nothing accepted - the reviewer opts in per section. */
 export function defaultDecision(): ImportDecision {
   return {
     sections: {
@@ -207,7 +207,7 @@ export interface SectionDiff {
 
 function describeAcquisition(info: CreatureInfo): { field: string; value: string }[] {
   const out = [
-    { field: "Availability", value: info.availability || "—" },
+    { field: "Availability", value: info.availability || " - " },
   ];
   for (const m of info.methods) {
     out.push({
@@ -234,13 +234,13 @@ function sectionFields(
       return [
         {
           field: "Spawns on",
-          value: info.spawnMaps.length ? info.spawnMaps.join(", ") : "—",
+          value: info.spawnMaps.length ? info.spawnMaps.join(", ") : " - ",
         },
       ];
     case "abilities":
       return info.abilities.map((a) => ({
         field: `${ABILITY_KIND_LABELS[a.kind]}: ${a.label}`,
-        value: a.detail || "—",
+        value: a.detail || " - ",
       }));
     case "drops":
       return DROP_LISTS.flatMap((list) =>
@@ -249,7 +249,7 @@ function sectionFields(
           value:
             [d.qty, list.hasChance ? d.chance : "", d.note]
               .filter((part) => part.trim())
-              .join(" · ") || "—",
+              .join(" · ") || " - ",
         })),
       );
     case "technical":
@@ -258,12 +258,12 @@ function sectionFields(
           field: "Drag weight",
           value:
             info.technical.dragWeight === null
-              ? "—"
+              ? " - "
               : String(info.technical.dragWeight),
         },
       ];
     case "notes":
-      return [{ field: "Notes", value: info.notes.trim() || "—" }];
+      return [{ field: "Notes", value: info.notes.trim() || " - " }];
   }
 }
 
@@ -283,12 +283,12 @@ export function diffImport(
     const lines = fields
       .map((field) => ({
         field,
-        before: before.find((f) => f.field === field)?.value ?? "—",
-        after: after.find((f) => f.field === field)?.value ?? "—",
+        before: before.find((f) => f.field === field)?.value ?? " - ",
+        after: after.find((f) => f.field === field)?.value ?? " - ",
       }))
       .filter((l) => l.before !== l.after);
 
-    const hadAnything = before.some((f) => f.value !== "—");
+    const hadAnything = before.some((f) => f.value !== " - ");
     return {
       section,
       label: SECTION_LABELS[section],
@@ -311,14 +311,14 @@ export interface ReimportResult {
   records: ImportRecord[];
   /** Ids of records that were superseded by the incoming batch. */
   superseded: string[];
-  /** Names skipped because the wiki revision hasn't moved. */
+  /** Names skipped because the source revision has not moved. */
   unchanged: string[];
 }
 
 /**
  * Merges freshly fetched proposals into the staging list.
  *
- * A record for the same creature at the same revision is left alone — that is
+ * A record for the same creature at the same revision is left alone - that is
  * what stops a reimport from resetting a reviewer's decisions. A newer
  * revision supersedes the old proposal rather than replacing it silently, so
  * the previous review stays visible.

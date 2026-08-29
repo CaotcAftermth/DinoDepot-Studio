@@ -253,7 +253,7 @@ describe("findCatalogDuplicates", () => {
     expect(findCatalogDuplicates([odd])).toEqual([]);
   });
 
-  it("is non-destructive — it only describes", () => {
+  it("is non-destructive - it only describes", () => {
     const before = structuredClone(modA);
     findCatalogDuplicates([modA, modA]);
     expect(modA).toEqual(before);
@@ -292,7 +292,7 @@ describe("CurseForge project IDs", () => {
     );
   });
 
-  it("allows empty IDs — URL-only mods are legal", () => {
+  it("allows empty IDs - URL-only mods are legal", () => {
     expect(findSourceByCurseforgeId([urlOnly, one], "")).toBeNull();
     expect(findSourceByCurseforgeId([urlOnly, one], "   ")).toBeNull();
   });

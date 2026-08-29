@@ -4,8 +4,8 @@ import { base64ToBytes, isProfileFileName, type ProfileFile } from "./profileImp
 /**
  * Reading `.arkprofile` files that live outside the project folder.
  *
- * Three places need this — the drop zone, the import picker, and the template
- * picker — and each one previously repeated the same read-and-decode dance.
+ * Three places need this - the drop zone, the import picker, and the template
+ * picker - and each one previously repeated the same read-and-decode dance.
  */
 
 /** What `read_profile_file_b64` returns. Field names must match the Rust struct. */

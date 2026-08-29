@@ -42,7 +42,7 @@ export interface RecentProject {
    * The project's own id, when this machine has a record for it.
    *
    * Empty for an entry written by a build that only remembered paths. Forget
-   * needs it — dropping the row without the machine-local record would leave
+   * needs it - dropping the row without the machine-local record would leave
    * the project to reappear the next time the list is rebuilt from disk.
    */
   projectId: string;
@@ -83,7 +83,7 @@ function saveRecents(recents: RecentProject[]) {
 
 /**
  * Flushes the drafts store's debounced writes. Imported lazily because
- * draftsStore depends on this module — a static import would be a cycle.
+ * draftsStore depends on this module - a static import would be a cycle.
  */
 async function flushDrafts(): Promise<void> {
   if (!useProjectStore.getState().dir) return;
@@ -166,7 +166,7 @@ interface ProjectState {
    * Serialized read-modify-write of project settings.
    *
    * Prefer this over `saveSettings` whenever the new value depends on the old
-   * one — it reads the current settings at commit time rather than from a
+   * one - it reads the current settings at commit time rather than from a
    * closure captured before some other operation wrote.
    */
   updateSettings(
@@ -186,7 +186,7 @@ interface ProjectState {
   loadRecentProjects(): Promise<void>;
   /**
    * Removes a project from this machine entirely: the recents row and the
-   * machine-local record behind it. Touches nothing in the project folder —
+   * machine-local record behind it. Touches nothing in the project folder -
    * forgetting a project is not deleting it.
    */
   forgetProject(dir: string): Promise<void>;
@@ -216,7 +216,7 @@ function assertWritable(state: ProjectState): void {
  * It has to survive a crash, so it cannot live only in memory; it is also
  * appended to at every commit boundary, so it cannot hit the disk on each one.
  * Two seconds is short enough that a crash loses at most the description of the
- * last thing done — never the change itself, which the drafts store has already
+ * last thing done - never the change itself, which the drafts store has already
  * persisted.
  */
 const JOURNAL_DEBOUNCE_MS = 2000;
@@ -242,7 +242,7 @@ export async function flushJournal(): Promise<void> {
     await saveLocalState(local);
   } catch (e) {
     // Losing the journal costs a commit its description, not an admin their
-    // work — so this is reported rather than raised.
+    // work - so this is reported rather than raised.
     console.error("Could not record what changed:", e);
   }
 }
@@ -254,7 +254,7 @@ function startHeartbeat(dir: string) {
   if (typeof setInterval !== "function") return;
   heartbeat = setInterval(() => {
     void refreshLock(dir).then((status) => {
-      // Somebody took the lock. Stopping the heartbeat is not enough — but it
+      // Somebody took the lock. Stopping the heartbeat is not enough - but it
       // is the part this module owns; the UI reads `saveHealth` for the rest.
       if (status.held && !status.owned) stopHeartbeat();
     });
@@ -508,7 +508,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
  * Records one change for the next Sync's commit, from outside a component.
  *
  * A free function so a service or an event handler can describe what it did
- * without threading the store through — the store action is the single
+ * without threading the store through - the store action is the single
  * implementation, exactly as `recordActivity` works.
  */
 export function recordChange(action: StructuredAction): void {

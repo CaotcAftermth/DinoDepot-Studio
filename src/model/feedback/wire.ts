@@ -30,7 +30,7 @@ export const FEEDBACK_ROUTES = {
    *
    * There is deliberately no "list everything this installation reported"
    * endpoint. Answering that would mean the service keeping a record of who
-   * filed what — a database of report-to-installation mappings that does not
+   * filed what - a database of report-to-installation mappings that does not
    * otherwise need to exist. The app already knows its own issue numbers, so
    * it asks about those, and the service stores nothing.
    */
@@ -51,7 +51,7 @@ export type SubmitRequest = z.infer<typeof SubmitRequestSchema>;
  * `POST /api/feedback/search-duplicates`.
  *
  * Only what the search needs. Sending the whole report to look for duplicates
- * would mean the diagnostics — and any attachment — travelling for a query the
+ * would mean the diagnostics - and any attachment - travelling for a query the
  * reporter has not yet decided to submit.
  */
 export const DuplicateRequestSchema = z.object({
@@ -102,7 +102,7 @@ export type SubmitResponse = z.infer<typeof SubmitResponseSchema>;
 export const DuplicateCandidateSchema = z.object({
   number: z.number().int().positive(),
   title: z.string().max(300).default(""),
-  /** Opening of the body only — enough to score against, not the whole issue. */
+  /** Opening of the body only - enough to score against, not the whole issue. */
   body: z.string().max(2000).default(""),
   state: z.enum(["open", "closed"]).default("open"),
   labels: z.array(z.string().max(60)).max(30).default([]),

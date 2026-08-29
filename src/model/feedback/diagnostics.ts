@@ -11,7 +11,7 @@ import {
  * What a report is allowed to say about the machine it came from.
  *
  * This module is an allowlist, and the distinction matters more than it looks.
- * The other way round — gather everything, then try to redact it — fails the
+ * The other way round - gather everything, then try to redact it - fails the
  * first time somebody adds a field, because the redactor does not know about
  * the field that was added yesterday. Here, a fact that nobody wrote a line
  * for simply is not collected, and adding one is a deliberate edit to a file
@@ -26,7 +26,7 @@ import {
  * The raw facts a diagnostics bundle may be built from.
  *
  * Every field is optional because the app can be asked for feedback before it
- * knows most of them — from the welcome screen, there is no project, no route
+ * knows most of them - from the welcome screen, there is no project, no route
  * inside the shell, and no component.
  */
 export interface DiagnosticsInput {
@@ -165,7 +165,7 @@ export function includedRows(diagnostics: FeedbackDiagnostics): DiagnosticRow[] 
     rows.push({
       key: "logs",
       label: `Recent application events (${diagnostics.logs.length})`,
-      detail: "Sanitized — file paths, credentials and email addresses removed",
+      detail: "Sanitized - file paths, credentials and email addresses removed",
     });
   }
   return rows;
@@ -184,7 +184,7 @@ export const EXCLUDED_ROWS: readonly DiagnosticRow[] = [
   {
     key: "no-credentials",
     label: "GitHub token or any other credential",
-    detail: "The app has no way to read one — there is no command that returns a secret",
+    detail: "The app has no way to read one - there is no command that returns a secret",
   },
   {
     key: "no-project-data",

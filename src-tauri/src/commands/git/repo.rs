@@ -65,7 +65,7 @@ pub struct GitCapabilities {
 /// What the linked libgit2 can actually do.
 ///
 /// Asserted at runtime rather than assumed, because the feature set is decided
-/// when the crate is compiled — a build configured without HTTPS would fail on
+/// when the crate is compiled - a build configured without HTTPS would fail on
 /// the first fetch with a message about an unsupported URL, which is a long way
 /// from the actual cause.
 #[tauri::command]
@@ -112,7 +112,7 @@ fn signature<'a>() -> Outcome<Signature<'a>> {
 /// Fetches the credential for an account, here rather than from the caller.
 ///
 /// The frontend names the *account*; it never sees the token. Taking the token
-/// as a command argument — which an earlier cut of this module did — would have
+/// as a command argument - which an earlier cut of this module did - would have
 /// required the webview to be able to read it, undoing the whole point of
 /// removing `secret_get`.
 fn credential(account_id: &str) -> Result<String, String> {
@@ -188,7 +188,7 @@ fn is_dirty(repo: &Repository) -> Outcome<bool> {
 /// Reads every file in a commit's tree, as text, keyed by repository path.
 ///
 /// Used to get at the other administrator's version of the project for the
-/// semantic merge — which needs the *content*, not a diff, because the merge
+/// semantic merge - which needs the *content*, not a diff, because the merge
 /// happens over parsed domain objects rather than over lines.
 #[tauri::command]
 pub fn git_read_tree(
@@ -256,7 +256,7 @@ pub struct CommitRequest {
 /// Stages and commits, returning the new commit id.
 ///
 /// One commit per operation, by construction: the caller assembles the whole
-/// message — subject plus structured `DinoDepot-Action` trailers — and this
+/// message - subject plus structured `DinoDepot-Action` trailers - and this
 /// writes it once.
 #[tauri::command]
 pub fn git_commit(request: CommitRequest) -> Result<String, String> {
@@ -490,7 +490,7 @@ fn fetch_inner(dir: &str, branch: &str, token: String) -> Outcome<String> {
 #[serde(rename_all = "camelCase")]
 pub struct PushOutcome {
     pub pushed: bool,
-    /// True when the remote moved on. The caller refetches and reconciles —
+    /// True when the remote moved on. The caller refetches and reconciles -
     /// it never retries the same push.
     pub rejected: bool,
     pub commit: String,
@@ -591,7 +591,7 @@ pub struct FastForwardOutcome {
 ///
 /// The narrow case, and deliberately so: local is either unborn or already an
 /// ancestor of the remote, so adopting the remote loses nothing. Anything else
-/// is a divergence, which is reconciled semantically a layer up — never here,
+/// is a divergence, which is reconciled semantically a layer up - never here,
 /// because a Git-level merge would write conflict markers into JSON files the
 /// administrator then has to read.
 ///
@@ -682,7 +682,7 @@ pub struct StagedTree {
 /// Publishing is a *replacement*, not an update: a creature removed from the
 /// project has to disappear from the site, and merging generated output would
 /// leave last week's page behind forever. So the directory is emptied and
-/// rewritten, and the single commit that follows carries the difference —
+/// rewritten, and the single commit that follows carries the difference -
 /// additions, changes and deletions together.
 ///
 /// Never merged for the same reason. Generated files have no authorship to
@@ -779,7 +779,7 @@ pub struct CommitSummary {
     /// Author time, epoch milliseconds.
     pub at: i64,
     pub author: String,
-    /// True when this commit is an ancestor of nothing else — the current tip.
+    /// True when this commit is an ancestor of nothing else - the current tip.
     pub is_head: bool,
 }
 
@@ -787,7 +787,7 @@ pub struct CommitSummary {
 ///
 /// This is what Recent Activity reads. The previous version kept its own
 /// `activity.json` in the project and synchronized it as a shared append-only
-/// array — which two administrators fight over forever, and which lies the
+/// array - which two administrators fight over forever, and which lies the
 /// moment anybody edits a file outside Studio. Git already records exactly what
 /// happened, signed with who did it and when.
 #[tauri::command]
@@ -832,7 +832,7 @@ fn log_inner(dir: &str, branch: &str, limit: u32) -> Outcome<Vec<CommitSummary>>
 
 /// Writes an older version's files back into the working tree.
 ///
-/// Restoring produces a *new commit* on top of history — it never resets or
+/// Restoring produces a *new commit* on top of history - it never resets or
 /// rewrites, because the history is shared and somebody else may already have
 /// pulled it. The result is "we went back to how it was on Tuesday", which is
 /// true, rather than Tuesday's commit pretending the intervening week never
@@ -870,7 +870,7 @@ fn restore_inner(dir: &str, commit: &str, paths: Vec<String>) -> Outcome<usize> 
         }
         let entry = match tree.get_path(Path::new(path)) {
             Ok(entry) => entry,
-            // A file that did not exist in that version is not an error — it
+            // A file that did not exist in that version is not an error - it
             // simply was not there, and restoring means putting back what was.
             Err(_) => continue,
         };
@@ -963,7 +963,7 @@ mod tests {
     ///
     /// A plain filesystem path rather than a `file://` URL: libgit2 on Windows
     /// will not resolve `file://C:/…`, and the local transport takes the path
-    /// directly. Test-only — `git_set_remote` still requires HTTPS.
+    /// directly. Test-only - `git_set_remote` still requires HTTPS.
     fn connect(work: &Path, remote: &Path) {
         let repo = Repository::open(work).unwrap();
         let _ = repo.remote_delete(REMOTE);
@@ -977,7 +977,7 @@ mod tests {
     // -----------------------------------------------------------------------
 
     /// Without HTTPS compiled in, every remote operation fails on a URL it
-    /// claims not to understand — a long way from the real cause.
+    /// claims not to understand - a long way from the real cause.
     #[test]
     fn the_linked_libgit2_can_speak_https() {
         let caps = git_capabilities();
@@ -1299,7 +1299,7 @@ mod tests {
         assert!(fs::read_to_string(second.path().join("notes.json")).is_ok());
     }
 
-    /// A divergence is not a fast-forward, and must not be resolved here — the
+    /// A divergence is not a fast-forward, and must not be resolved here - the
     /// semantic merge is a layer up.
     #[test]
     fn fast_forward_refuses_a_divergence() {
@@ -1526,7 +1526,7 @@ mod tests {
 
         assert_eq!(restored, 1);
         assert_eq!(read(dir.path(), "project.json"), "{\"v\":1}");
-        // History is untouched — the tip is still the newer commit.
+        // History is untouched - the tip is still the newer commit.
         let repo = Repository::open(dir.path()).unwrap();
         assert_eq!(
             repo.find_reference("refs/heads/main").unwrap().target().unwrap().to_string(),

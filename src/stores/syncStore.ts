@@ -71,7 +71,7 @@ export const useSyncStore = create<SyncState>((set, get) => ({
     set({
       phase: restingPhase({
         // Anything in the journal is unshared work. A file changed outside
-        // Studio is too, but only a fetch can tell — so this is the cheap,
+        // Studio is too, but only a fetch can tell - so this is the cheap,
         // always-available half, and Sync itself does the thorough version.
         hasLocalChanges: (project.local?.pendingActions ?? []).length > 0,
         canSync: canSync(project.local) && project.mode === "editable",
@@ -139,7 +139,7 @@ async function run(
       local: currentLocal,
       async flush() {
         // The journal describes what the commit will say, so it has to be on
-        // disk before the commit is built — a crash between the two would
+        // disk before the commit is built - a crash between the two would
         // otherwise produce a commit that cannot explain itself.
         await flushJournal();
         return flushPendingSaves();

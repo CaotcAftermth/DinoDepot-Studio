@@ -168,7 +168,7 @@ describe("validateProduction", () => {
     );
     const warning = issues.find((i) => /A disabled rule/.test(i.message));
     expect(warning?.level).toBe("warning");
-    // Still not an error — a disabled rule publishes nothing.
+    // Still not an error - a disabled rule publishes nothing.
     expect(issues.some((i) => i.level === "error")).toBe(false);
   });
 

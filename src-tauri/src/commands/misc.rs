@@ -1,68 +1,6 @@
 use std::fs;
 use std::path::Path;
 
-/// One wiki page's source, with the revision it was read at.
-#[derive(serde::Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WikiPage {
-    pub page: String,
-    pub wikitext: String,
-    pub revision_id: u64,
-    pub url: String,
-}
-
-/// Fetches a page's wikitext from a MediaWiki site via the stable API.
-///
-/// Goes through Rust rather than the webview so there is no CORS dependency,
-/// and so the importer reads the documented `action=parse` endpoint instead of
-/// scraping rendered HTML, which would break on any theme change.
-#[tauri::command]
-pub async fn wiki_fetch_page(host: String, page: String) -> Result<WikiPage, String> {
-    // Only the wikis the importer is designed against.
-    const ALLOWED_HOSTS: &[&str] = &["ark.wiki.gg"];
-    if !ALLOWED_HOSTS.contains(&host.as_str()) {
-        return Err(format!("'{host}' is not an allowed wiki host"));
-    }
-
-    let client = reqwest::Client::builder()
-        .user_agent("DinoDepotStudio/0.1 (creature acquisition importer)")
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    let encoded = page.replace(' ', "_");
-    let url = format!(
-        "https://{host}/api.php?action=parse&page={encoded}&prop=wikitext%7Crevid&format=json&formatversion=2"
-    );
-    let res = client.get(&url).send().await.map_err(|e| e.to_string())?;
-    if !res.status().is_success() {
-        return Err(format!("{host} returned {}", res.status()));
-    }
-    let body: serde_json::Value = res.json().await.map_err(|e| e.to_string())?;
-    if let Some(err) = body.get("error") {
-        return Err(format!(
-            "{host}: {}",
-            err.get("info")
-                .and_then(|v| v.as_str())
-                .unwrap_or("page not found")
-        ));
-    }
-    let parse = body.get("parse").ok_or("Unexpected API response")?;
-    Ok(WikiPage {
-        page: parse
-            .get("title")
-            .and_then(|v| v.as_str())
-            .unwrap_or(&page)
-            .to_string(),
-        wikitext: parse
-            .get("wikitext")
-            .and_then(|v| v.as_str())
-            .unwrap_or_default()
-            .to_string(),
-        revision_id: parse.get("revid").and_then(|v| v.as_u64()).unwrap_or(0),
-        url: format!("https://{host}/wiki/{encoded}"),
-    })
-}
-
 const IMAGE_EXTENSIONS: &[&str] = &["webp", "png"];
 const MAX_DEPTH: usize = 3;
 
@@ -136,7 +74,7 @@ pub async fn discord_post(project_id: String, segments: Vec<String>) -> Result<(
         Some(url) => url,
         None => {
             return Err(
-                "No Discord webhook stored for this project — add one in Settings".to_string(),
+                "No Discord webhook stored for this project - add one in Settings".to_string(),
             )
         }
     };

@@ -40,7 +40,7 @@ vi.mock("./ipc", () => ({
 /**
  * A project name becomes a folder name without the administrator seeing the
  * conversion, so anything this gets wrong shows up as a project that cannot be
- * created — or worse, one created somewhere other than where the card said.
+ * created - or worse, one created somewhere other than where the card said.
  */
 
 describe("joinPath", () => {
@@ -176,7 +176,7 @@ describe("name suggestions", () => {
 });
 
 /**
- * The location survives a restart or it is not a preference at all — an
+ * The location survives a restart or it is not a preference at all - an
  * administrator who is asked again on every launch ends up with a second
  * projects folder beside the real one. It lived in `localStorage` and was
  * cleared out from under the app, so the store itself is worth pinning down.

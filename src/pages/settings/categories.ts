@@ -4,7 +4,7 @@ import type { ProjectSettings } from "../../model/project";
  * The Settings page split by subject.
  *
  * Nine cards in one grid had become a scroll, and the two links to this page
- * from Overview both concern GitHub — which sat halfway down it. Categories are
+ * from Overview both concern GitHub - which sat halfway down it. Categories are
  * routed (`/settings/publishing`) so a link can name one.
  *
  * `keys` is what makes hiding a card safe. The page keeps a single draft and a
@@ -21,7 +21,7 @@ export interface SettingsCategory {
   /**
    * How many card columns the category gets.
    *
-   * The rail costs 208px, so two columns leave about 370px each — enough for a
+   * The rail costs 208px, so two columns leave about 370px each - enough for a
    * card of short fields, not for one holding repository paths or a post
    * template beside its preview. Those take the full width instead of being
    * squeezed into half of it.
@@ -47,8 +47,8 @@ export const SETTINGS_CATEGORIES: readonly SettingsCategory[] = [
     label: "GitHub",
     blurb: "Account and repository",
     columns: 1,
-    // Nothing here is project data — it is all machine-local and saves as it
-    // is set — so this category never carries an unsaved marker.
+    // Nothing here is project data - it is all machine-local and saves as it
+    // is set - so this category never carries an unsaved marker.
     keys: [],
   },
   {
@@ -110,8 +110,8 @@ export function categoryFor(slug: string | undefined): SettingsCategory {
  * dirty check, so the rail and the header can never disagree about whether
  * something is pending.
  *
- * A key no category claims — `packageDependencies`, written by Content
- * Sources — deliberately marks nothing. It still counts as dirty for the
+ * A key no category claims - `packageDependencies`, written by Content
+ * Sources - deliberately marks nothing. It still counts as dirty for the
  * header, which is what the Save button acts on.
  */
 export function dirtyCategories(

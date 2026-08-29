@@ -162,7 +162,7 @@ describe("simulate", () => {
     // 10 events/cycle × 2 = 20/cycle × 24 = 480 consumed
     expect(berry.consumed).toBe(480);
     expect(berry.net).toBe(-480);
-    // Berries are supplied by players, never produced here — not a warning.
+    // Berries are supplied by players, never produced here - not a warning.
     expect(
       result.warnings.some((w) => /outpaces production/.test(w.message)),
     ).toBe(false);

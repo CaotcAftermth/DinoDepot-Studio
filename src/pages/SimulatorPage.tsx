@@ -119,7 +119,7 @@ export function SimulatorPage() {
           );
         });
     // Same order as the Production Rules list, so a creature sits in the same
-    // place whichever page you are reading — these two are used side by side
+    // place whichever page you are reading - these two are used side by side
     // while balancing, and file order matched neither expectation.
     return [...matching].sort((a, b) => {
       if (!a.dinoType || !b.dinoType) return a.dinoType ? -1 : b.dinoType ? 1 : 0;
@@ -161,7 +161,7 @@ export function SimulatorPage() {
     <div {...feedbackTarget("passive-production-simulator")}>
       <PageHeader
         title="Simulator"
-        subtitle="Expected-value estimates — chance-based results are statistical averages, not guarantees"
+        subtitle="Expected-value estimates - chance-based results are statistical averages, not guarantees"
       />
 
       {/* Controls bar */}
@@ -178,7 +178,7 @@ export function SimulatorPage() {
                   onClick={() => setPresetLabel(p.label)}
                   title={
                     p.isDefault
-                      ? "Default window — set in Settings › Simulator defaults"
+                      ? "Default window - set in Settings › Simulator defaults"
                       : undefined
                   }
                   className={cx(
@@ -221,7 +221,7 @@ export function SimulatorPage() {
         {preset.mode === "singleCycle" && (
           <p className="text-xs text-sky-400 mt-3">
             1 Cycle mode: every production cycle fires exactly once, regardless
-            of its interval — a snapshot of a single tick.
+            of its interval - a snapshot of a single tick.
           </p>
         )}
       </Card>
@@ -279,7 +279,7 @@ export function SimulatorPage() {
                         {fmt(total.produced)}
                       </td>
                       <td className="text-right text-ink-200">
-                        {total.consumed > 0 ? fmt(total.consumed) : "—"}
+                        {total.consumed > 0 ? fmt(total.consumed) : " - "}
                       </td>
                       <td
                         className={cx(
@@ -298,7 +298,7 @@ export function SimulatorPage() {
                         {total.terminalCapped && (
                           <span
                             className="text-amber-400 cursor-help"
-                            title="Terminal cap reached within the window — total is clamped at maxQuantityInTerminal"
+                            title="Terminal cap reached within the window - total is clamped at maxQuantityInTerminal"
                           >
                             ⏶
                           </span>
@@ -419,7 +419,7 @@ function RuleBreakdown({
           {ruleResult.cycles.map((cycle) => (
             <div key={cycle.cycleId}>
               <div className="text-xs text-ink-400 mb-1">
-                {cycle.name || "Cycle"} — every {cycle.intervalSeconds}s ·{" "}
+                {cycle.name || "Cycle"} - every {cycle.intervalSeconds}s ·{" "}
                 {cycle.attempts} attempt{cycle.attempts === 1 ? "" : "s"} in
                 window
               </div>

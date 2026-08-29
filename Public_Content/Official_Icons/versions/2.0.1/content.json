@@ -1,42 +1,13 @@
 {
-  "source": "official-ark-taming-guides.xlsx",
-  "provenance": {
-    "availability, spawn maps, drag weight, drops": "Legacy source workbook with revision recorded per row in the Field Provenance column",
-    "acquisition methods and steps": "Legacy imported guide text. Guides that describe a different creature than the row they were filed under are dropped, not repaired."
-  },
-  "droppedGuides": {
-    "/game//game/genesis2/dinos/biomevariants/direbear_character_bp_rockwell.direbear_character_bp_rockwell": "shares R-Dilophosaur's guide",
-    "/game//game/genesis2/dinos/biomevariants/owl_character_bp_eden.owl_character_bp_eden": "shares R-Reaper Queen's guide",
-    "/game//game/genesis2/dinos/exosuit/exosuit_character_bp.exosuit_character_bp": "shares Eurypterid's guide",
-    "/game/aberration/dinos/lightbug/lightbug_character_basebp.lightbug_character_basebp": "shares Gloon's guide",
-    "/game/abyss/dinos/fractalis/fractalis_character_bp.fractalis_character_bp": "shares Forest Wyvern's guide",
-    "/game/abyss/dinos/malleocephalus/malleocephalus_character_bp.malleocephalus_character_bp": "shares Malfunctioned Tek Triceratops's guide",
-    "/game/abyss/dinos/stereolepis/stereolepis_character_bp.stereolepis_character_bp": "shares Stegosaurus's guide",
-    "/game/abyss/dinos/thunnus/thunnus_character_bp.thunnus_character_bp": "shares Thorny Dragon's guide",
-    "/game/abyss/dinos/tridacna/tridacna_character_bp.tridacna_character_bp": "shares Triceratops's guide",
-    "/game/asa/dinos/cat/cat_character_bp.cat_character_bp": "guide is about carcharodontosaurus",
-    "/game/extinction/dinos/enforcer/enforcer_character_bp.enforcer_character_bp": "shares Ember Crystal Wyvern's guide",
-    "/game/extinction/dinos/gacha/gacha_claus_character_bp.gacha_claus_character_bp": "shares Gacha's guide",
-    "/game/extinction/dinos/mek/mek_character_bp.mek_character_bp": "shares Megatherium's guide",
-    "/game/fjordur/dinos/fjordhawk/fjordhawk_character_bp.fjordhawk_character_bp": "shares Fire Wyvern's guide",
-    "/game/genesis/dinos/biomevariants/volcano_ankylosaurus/volcano_ankylo_character_bp.volcano_ankylo_character_bp": "shares X-Allosaurus's guide",
-    "/game/genesis/dinos/biomevariants/volcano_rex/volcano_rex_character_bp.volcano_rex_character_bp": "shares X-Raptor's guide",
-    "/game/genesis/dinos/giantturtle/giantturtle_character_bp.giantturtle_character_bp": "shares Mega Mek's guide",
-    "/game/lostcolony/dinos/angelfox/angelfox_character_bp.angelfox_character_bp": "shares Snow Owl Ghost's guide",
-    "/game/primalearth/dinos/bee/bee_character_bp.bee_character_bp": "shares Gasbags's guide",
-    "/game/primalearth/dinos/equus/equus_character_bp.equus_character_bp": "shares Enraged Triceratops's guide",
-    "/game/primalearth/dinos/griffin/griffin_character_bp.griffin_character_bp": "shares Golden Striped Megalodon's guide",
-    "/game/primalearth/dinos/lystrosaurus/lystro_character_bp.lystro_character_bp": "shares Lymantria's guide",
-    "/game/primalearth/dinos/pegomastax/pegomastax_character_bp.pegomastax_character_bp": "shares Parrot's guide",
-    "/game/primalearth/dinos/quetzalcoatlus/bionicquetz_character_bp_malfunctioned.bionicquetz_character_bp_malfunctioned": "shares Malfunctioned Tek Parasaur's guide",
-    "/game/primalearth/dinos/rex/bionicrex_character_bp.bionicrex_character_bp": "shares Tek Raptor's guide",
-    "/game/primalearth/dinos/rhyniognatha/rhynio_character_bp.rhynio_character_bp": "shares Rex Ghost's guide",
-    "/game/primalearth/dinos/sarco/sarco_character_bp.sarco_character_bp": "shares Sabertooth Salmon's guide",
-    "/game/primalearth/dinos/trike/trike_character_bp_aberrant.trike_character_bp_aberrant": "guide is about trike",
-    "/game/scorchedearth/dinos/jerboa/bone_jerboa_character_bp.bone_jerboa_character_bp": "shares Skeletal Giganotosaurus's guide",
-    "/game/scorchedearth/dinos/rockgolem/rubblegolem_character_bp.rubblegolem_character_bp": "shares Roll Rat's guide",
-    "/game/scorchedearth/dinos/wyvern/wyvern_character_bp_lightning.wyvern_character_bp_lightning": "shares Leedsichthys's guide"
-  },
+  "format": "dinodepot.package-content",
+  "schemaVersion": 2,
+  "iniNotes": "",
+  "iniSettings": [],
+  "creatures": [],
+  "items": [],
+  "icons": {},
+  "notes": {},
+  "maps": {},
   "variantParents": {
     "/game//game/genesis2/dinos/biomevariants/allo_character_bp_rockwell.allo_character_bp_rockwell": "/game/primalearth/dinos/allosaurus/allo_character_bp.allo_character_bp",
     "/game//game/genesis2/dinos/biomevariants/carno_character_bp_rockwell.carno_character_bp_rockwell": "/game/primalearth/dinos/carno/carno_character_bp.carno_character_bp",
@@ -256,6 +227,7 @@
     "/game/scorchedearth/dinos/wyvern/wyvern_character_bp_zombielightning.wyvern_character_bp_zombielightning": "/game/scorchedearth/dinos/wyvern/wyvern_character_bp_lightning.wyvern_character_bp_lightning",
     "/game/scorchedearth/dinos/wyvern/wyvern_character_bp_zombiepoison.wyvern_character_bp_zombiepoison": "/game/scorchedearth/dinos/wyvern/wyvern_character_bp_poison.wyvern_character_bp_poison"
   },
+  "itemInfo": {},
   "creatureInfo": {
     "/game//abyss/dinos/riftwalker/riftwalker_bp.riftwalker_bp": {
       "availability": "unavailable",
@@ -609,16 +581,6 @@
         "spawns"
       ]
     },
-    "/game/aberration/boss/rockwell/rockwell_character_bp.rockwell_character_bp": {
-      "availability": "unavailable",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "acquisition",
-        "spawns"
-      ]
-    },
     "/game/aberration/boss/rockwell/rockwell_character_bp_easy.rockwell_character_bp_easy": {
       "availability": "",
       "drops": {
@@ -709,7 +671,7 @@
         "drops"
       ]
     },
-    "/game/aberration/boss/rockwelltentacle/rockwelltentacle_character_bp.rockwelltentacle_character_bp": {
+    "/game/aberration/boss/rockwell/rockwell_character_bp.rockwell_character_bp": {
       "availability": "unavailable",
       "spawnMaps": [
         "Aberration"
@@ -807,6 +769,16 @@
       },
       "overrides": [
         "drops"
+      ]
+    },
+    "/game/aberration/boss/rockwelltentacle/rockwelltentacle_character_bp.rockwelltentacle_character_bp": {
+      "availability": "unavailable",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "acquisition",
+        "spawns"
       ]
     },
     "/game/aberration/dinos/basilisk/basilisk_character_bp.basilisk_character_bp": {
@@ -1926,42 +1898,6 @@
         "technical"
       ]
     },
-    "/game/aberration/dinos/nameless/xenomorph_character_bp_male.xenomorph_character_bp_male": {
-      "availability": "unavailable",
-      "spawnMaps": [
-        "Aberration",
-        "Extinction",
-        "Genesis: Part 1",
-        "Genesis: Part 2",
-        "Aquatica",
-        "Lost Colony"
-      ],
-      "drops": {
-        "harvest": [
-          {
-            "id": "dh1",
-            "label": "Hide"
-          },
-          {
-            "id": "dh2",
-            "label": "Raw Meat"
-          },
-          {
-            "id": "dh3",
-            "label": "Reaper Pheromone Gland"
-          }
-        ]
-      },
-      "technical": {
-        "dragWeight": 525
-      },
-      "overrides": [
-        "acquisition",
-        "spawns",
-        "drops",
-        "technical"
-      ]
-    },
     "/game/aberration/dinos/nameless/xenomorph_character_bp_male_initialburyonly_adolescent.xenomorph_character_bp_male_initialburyonly_adolescent": {
       "availability": "unavailable",
       "spawnMaps": [
@@ -2000,6 +1936,42 @@
         "Extinction",
         "Genesis: Part 1",
         "Genesis: Part 2"
+      ],
+      "drops": {
+        "harvest": [
+          {
+            "id": "dh1",
+            "label": "Hide"
+          },
+          {
+            "id": "dh2",
+            "label": "Raw Meat"
+          },
+          {
+            "id": "dh3",
+            "label": "Reaper Pheromone Gland"
+          }
+        ]
+      },
+      "technical": {
+        "dragWeight": 525
+      },
+      "overrides": [
+        "acquisition",
+        "spawns",
+        "drops",
+        "technical"
+      ]
+    },
+    "/game/aberration/dinos/nameless/xenomorph_character_bp_male.xenomorph_character_bp_male": {
+      "availability": "unavailable",
+      "spawnMaps": [
+        "Aberration",
+        "Extinction",
+        "Genesis: Part 1",
+        "Genesis: Part 2",
+        "Aquatica",
+        "Lost Colony"
       ],
       "drops": {
         "harvest": [
@@ -5369,6 +5341,15 @@
         "technical"
       ]
     },
+    "/game/asa/dinos/fasolasuchus/fasola_character_bp_aberrant.fasola_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/asa/dinos/fasolasuchus/fasola_character_bp.fasola_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -5467,15 +5448,6 @@
         "technical"
       ]
     },
-    "/game/asa/dinos/fasolasuchus/fasola_character_bp_aberrant.fasola_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
-      ]
-    },
     "/game/asa/dinos/firelion/firelion_character_bp.firelion_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -5551,6 +5523,16 @@
         "acquisition",
         "spawns",
         "technical"
+      ]
+    },
+    "/game/asa/dinos/gigantoraptor/gigantoraptor_character_bp_aberrant.gigantoraptor_character_bp_aberrant": {
+      "availability": "unavailable",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "acquisition",
+        "spawns"
       ]
     },
     "/game/asa/dinos/gigantoraptor/gigantoraptor_character_bp.gigantoraptor_character_bp": {
@@ -5642,16 +5624,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/asa/dinos/gigantoraptor/gigantoraptor_character_bp_aberrant.gigantoraptor_character_bp_aberrant": {
-      "availability": "unavailable",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "acquisition",
-        "spawns"
       ]
     },
     "/game/asa/dinos/grandtortugar/grandtortugar_character_bp.grandtortugar_character_bp": {
@@ -7872,20 +7844,6 @@
         "technical"
       ]
     },
-    "/game/extinction/dinos/kingkaiju/kingkaiju_character_bp.kingkaiju_character_bp": {
-      "availability": "unavailable",
-      "spawnMaps": [
-        "Extinction"
-      ],
-      "technical": {
-        "dragWeight": 35
-      },
-      "overrides": [
-        "acquisition",
-        "spawns",
-        "technical"
-      ]
-    },
     "/game/extinction/dinos/kingkaiju/kingkaiju_character_bp_alpha.kingkaiju_character_bp_alpha": {
       "availability": "unavailable",
       "spawnMaps": [
@@ -7901,6 +7859,20 @@
       ]
     },
     "/game/extinction/dinos/kingkaiju/kingkaiju_character_bp_beta.kingkaiju_character_bp_beta": {
+      "availability": "unavailable",
+      "spawnMaps": [
+        "Extinction"
+      ],
+      "technical": {
+        "dragWeight": 35
+      },
+      "overrides": [
+        "acquisition",
+        "spawns",
+        "technical"
+      ]
+    },
+    "/game/extinction/dinos/kingkaiju/kingkaiju_character_bp.kingkaiju_character_bp": {
       "availability": "unavailable",
       "spawnMaps": [
         "Extinction"
@@ -9422,20 +9394,6 @@
         "technical"
       ]
     },
-    "/game/genesis/dinos/missionvariants/retrieve/ocean/ocean_megalodon_character_bp_retrieve.ocean_megalodon_character_bp_retrieve": {
-      "availability": "unavailable",
-      "spawnMaps": [
-        "Genesis: Part 1"
-      ],
-      "technical": {
-        "dragWeight": 250
-      },
-      "overrides": [
-        "acquisition",
-        "spawns",
-        "technical"
-      ]
-    },
     "/game/genesis/dinos/missionvariants/retrieve/ocean/ocean_megalodon_character_bp_retrieve_brute.ocean_megalodon_character_bp_retrieve_brute": {
       "availability": "unavailable",
       "spawnMaps": [
@@ -9443,6 +9401,20 @@
       ],
       "technical": {
         "dragWeight": 500
+      },
+      "overrides": [
+        "acquisition",
+        "spawns",
+        "technical"
+      ]
+    },
+    "/game/genesis/dinos/missionvariants/retrieve/ocean/ocean_megalodon_character_bp_retrieve.ocean_megalodon_character_bp_retrieve": {
+      "availability": "unavailable",
+      "spawnMaps": [
+        "Genesis: Part 1"
+      ],
+      "technical": {
+        "dragWeight": 250
       },
       "overrides": [
         "acquisition",
@@ -11743,6 +11715,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/achatina/achatina_character_bp_aberrant.achatina_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/achatina/achatina_character_bp.achatina_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -11844,15 +11825,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/achatina/achatina_character_bp_aberrant.achatina_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/allosaurus/allo_character_bp.allo_character_bp": {
@@ -12026,6 +11998,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/anglerfish/angler_character_bp_aberrant.angler_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/anglerfish/angler_character_bp.angler_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -12130,7 +12111,7 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/anglerfish/angler_character_bp_aberrant.angler_character_bp_aberrant": {
+    "/game/primalearth/dinos/ankylo/ankylo_character_bp_aberrant.ankylo_character_bp_aberrant": {
       "availability": "",
       "spawnMaps": [
         "Aberration"
@@ -12247,15 +12228,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/ankylo/ankylo_character_bp_aberrant.ankylo_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/ant/ant_character_bp.ant_character_bp": {
@@ -12527,33 +12499,6 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/arthropluera/arthro_character_bp.arthro_character_bp": {
-      "availability": "unavailable",
-      "spawnMaps": [
-        "Genesis: Part 2"
-      ],
-      "drops": {
-        "harvest": [
-          {
-            "id": "dh1",
-            "label": "Chitin"
-          },
-          {
-            "id": "dh2",
-            "label": "Raw Meat"
-          }
-        ]
-      },
-      "technical": {
-        "dragWeight": 110
-      },
-      "overrides": [
-        "acquisition",
-        "spawns",
-        "drops",
-        "technical"
-      ]
-    },
     "/game/primalearth/dinos/arthropluera/arthro_character_bp_aberrant.arthro_character_bp_aberrant": {
       "availability": "acquirable",
       "methods": [
@@ -12625,6 +12570,42 @@
       ],
       "overrides": [
         "acquisition",
+        "spawns"
+      ]
+    },
+    "/game/primalearth/dinos/arthropluera/arthro_character_bp.arthro_character_bp": {
+      "availability": "unavailable",
+      "spawnMaps": [
+        "Genesis: Part 2"
+      ],
+      "drops": {
+        "harvest": [
+          {
+            "id": "dh1",
+            "label": "Chitin"
+          },
+          {
+            "id": "dh2",
+            "label": "Raw Meat"
+          }
+        ]
+      },
+      "technical": {
+        "dragWeight": 110
+      },
+      "overrides": [
+        "acquisition",
+        "spawns",
+        "drops",
+        "technical"
+      ]
+    },
+    "/game/primalearth/dinos/baryonyx/baryonyx_character_bp_aberrant.baryonyx_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
         "spawns"
       ]
     },
@@ -12727,15 +12708,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/baryonyx/baryonyx_character_bp_aberrant.baryonyx_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/basilosaurus/basilosaurus_character_bp.basilosaurus_character_bp": {
@@ -13078,6 +13050,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/bigfoot/bigfoot_character_bp_aberrant.bigfoot_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/bigfoot/bigfoot_character_bp.bigfoot_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -13177,15 +13158,6 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/bigfoot/bigfoot_character_bp_aberrant.bigfoot_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
-      ]
-    },
     "/game/primalearth/dinos/bigfoot/yeti_character_bp.yeti_character_bp": {
       "availability": "unavailable",
       "drops": {
@@ -13207,6 +13179,15 @@
         "acquisition",
         "drops",
         "technical"
+      ]
+    },
+    "/game/primalearth/dinos/boafrill/boafrill_character_bp_aberrant.boafrill_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
       ]
     },
     "/game/primalearth/dinos/boafrill/boafrill_character_bp.boafrill_character_bp": {
@@ -13305,15 +13286,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/boafrill/boafrill_character_bp_aberrant.boafrill_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/carcharodontosaurus/carcha_character_bp.carcha_character_bp": {
@@ -13431,6 +13403,15 @@
         "acquisition"
       ]
     },
+    "/game/primalearth/dinos/carno/carno_character_bp_aberrant.carno_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/carno/carno_character_bp.carno_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -13543,15 +13524,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/carno/carno_character_bp_aberrant.carno_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/carno/megacarno_character_bp.megacarno_character_bp": {
@@ -13677,6 +13649,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/cnidaria/cnidaria_character_bp_aberrant.cnidaria_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/cnidaria/cnidaria_character_bp.cnidaria_character_bp": {
       "availability": "unavailable",
       "spawnMaps": [
@@ -13709,7 +13690,7 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/cnidaria/cnidaria_character_bp_aberrant.cnidaria_character_bp_aberrant": {
+    "/game/primalearth/dinos/coelacanth/coel_character_bp_aberrant.coel_character_bp_aberrant": {
       "availability": "",
       "spawnMaps": [
         "Aberration"
@@ -13806,15 +13787,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/coelacanth/coel_character_bp_aberrant.coel_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/compy/compy_character_bp.compy_character_bp": {
@@ -14449,6 +14421,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/dimetrodon/dimetro_character_bp_aberrant.dimetro_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/dimetrodon/dimetro_character_bp.dimetro_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -14554,7 +14535,7 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/dimetrodon/dimetro_character_bp_aberrant.dimetro_character_bp_aberrant": {
+    "/game/primalearth/dinos/dimorphodon/dimorph_character_bp_aberrant.dimorph_character_bp_aberrant": {
       "availability": "",
       "spawnMaps": [
         "Aberration"
@@ -14668,7 +14649,7 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/dimorphodon/dimorph_character_bp_aberrant.dimorph_character_bp_aberrant": {
+    "/game/primalearth/dinos/diplocaulus/diplocaulus_character_bp_aberrant.diplocaulus_character_bp_aberrant": {
       "availability": "",
       "spawnMaps": [
         "Aberration"
@@ -14770,7 +14751,7 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/diplocaulus/diplocaulus_character_bp_aberrant.diplocaulus_character_bp_aberrant": {
+    "/game/primalearth/dinos/diplodocus/diplodocus_character_bp_aberrant.diplodocus_character_bp_aberrant": {
       "availability": "",
       "spawnMaps": [
         "Aberration"
@@ -14889,7 +14870,7 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/diplodocus/diplodocus_character_bp_aberrant.diplodocus_character_bp_aberrant": {
+    "/game/primalearth/dinos/direbear/direbear_character_bp_aberrant.direbear_character_bp_aberrant": {
       "availability": "",
       "spawnMaps": [
         "Aberration"
@@ -15007,15 +14988,6 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/direbear/direbear_character_bp_aberrant.direbear_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
-      ]
-    },
     "/game/primalearth/dinos/direwolf/direwolf_character_bp.direwolf_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -15117,6 +15089,46 @@
       "availability": "unavailable",
       "overrides": [
         "acquisition"
+      ]
+    },
+    "/game/primalearth/dinos/dodo/dodo_character_bp_aberrant.dodo_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
+    "/game/primalearth/dinos/dodo/dodo_character_bp_bunny.dodo_character_bp_bunny": {
+      "availability": "unavailable",
+      "drops": {
+        "harvest": [
+          {
+            "id": "dh1",
+            "label": "Hide"
+          },
+          {
+            "id": "dh2",
+            "label": "Raw Meat"
+          },
+          {
+            "id": "dh3",
+            "label": "Feathers (Primitive Plus)"
+          },
+          {
+            "id": "dh4",
+            "label": "Fresh Poultry (Primitive Plus)"
+          }
+        ]
+      },
+      "technical": {
+        "dragWeight": 25
+      },
+      "overrides": [
+        "acquisition",
+        "drops",
+        "technical"
       ]
     },
     "/game/primalearth/dinos/dodo/dodo_character_bp.dodo_character_bp": {
@@ -15228,46 +15240,6 @@
       "overrides": [
         "acquisition",
         "spawns",
-        "drops",
-        "technical"
-      ]
-    },
-    "/game/primalearth/dinos/dodo/dodo_character_bp_aberrant.dodo_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
-      ]
-    },
-    "/game/primalearth/dinos/dodo/dodo_character_bp_bunny.dodo_character_bp_bunny": {
-      "availability": "unavailable",
-      "drops": {
-        "harvest": [
-          {
-            "id": "dh1",
-            "label": "Hide"
-          },
-          {
-            "id": "dh2",
-            "label": "Raw Meat"
-          },
-          {
-            "id": "dh3",
-            "label": "Feathers (Primitive Plus)"
-          },
-          {
-            "id": "dh4",
-            "label": "Fresh Poultry (Primitive Plus)"
-          }
-        ]
-      },
-      "technical": {
-        "dragWeight": 25
-      },
-      "overrides": [
-        "acquisition",
         "drops",
         "technical"
       ]
@@ -15546,6 +15518,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/doedicurus/doed_character_bp_aberrant.doed_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/doedicurus/doed_character_bp.doed_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -15654,15 +15635,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/doedicurus/doed_character_bp_aberrant.doed_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/dolphin/dolphin_character_bp.dolphin_character_bp": {
@@ -15798,6 +15770,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/dragonfly/dragonfly_character_bp_aberrant.dragonfly_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/dragonfly/dragonfly_character_bp.dragonfly_character_bp": {
       "availability": "unavailable",
       "spawnMaps": [
@@ -15835,7 +15816,7 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/dragonfly/dragonfly_character_bp_aberrant.dragonfly_character_bp_aberrant": {
+    "/game/primalearth/dinos/dungbeetle/dungbeetle_character_bp_aberrant.dungbeetle_character_bp_aberrant": {
       "availability": "",
       "spawnMaps": [
         "Aberration"
@@ -15964,15 +15945,6 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/dungbeetle/dungbeetle_character_bp_aberrant.dungbeetle_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
-      ]
-    },
     "/game/primalearth/dinos/dunkleosteus/dunkle_character_bp.dunkle_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -16076,6 +16048,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/eel/eel_character_bp_aberrant.eel_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/eel/eel_character_bp.eel_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -16176,57 +16157,6 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/eel/eel_character_bp_aberrant.eel_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
-      ]
-    },
-    "/game/primalearth/dinos/equus/equus_character_bp.equus_character_bp": {
-      "availability": "acquirable",
-      "spawnMaps": [
-        "The Island",
-        "The Center",
-        "Scorched Earth",
-        "Ragnarok",
-        "Aberration",
-        "Extinction",
-        "Valguero",
-        "Genesis: Part 1",
-        "Crystal Isles",
-        "Genesis: Part 2",
-        "Lost Island",
-        "Fjordur"
-      ],
-      "drops": {
-        "harvest": [
-          {
-            "id": "dh1",
-            "label": "Hide"
-          },
-          {
-            "id": "dh2",
-            "label": "Pelt"
-          },
-          {
-            "id": "dh3",
-            "label": "Raw Meat"
-          }
-        ]
-      },
-      "technical": {
-        "dragWeight": 125
-      },
-      "overrides": [
-        "acquisition",
-        "spawns",
-        "drops",
-        "technical"
-      ]
-    },
     "/game/primalearth/dinos/equus/equus_character_bp_aberrant.equus_character_bp_aberrant": {
       "availability": "",
       "spawnMaps": [
@@ -16308,6 +16238,48 @@
       "overrides": [
         "acquisition",
         "spawns",
+        "technical"
+      ]
+    },
+    "/game/primalearth/dinos/equus/equus_character_bp.equus_character_bp": {
+      "availability": "acquirable",
+      "spawnMaps": [
+        "The Island",
+        "The Center",
+        "Scorched Earth",
+        "Ragnarok",
+        "Aberration",
+        "Extinction",
+        "Valguero",
+        "Genesis: Part 1",
+        "Crystal Isles",
+        "Genesis: Part 2",
+        "Lost Island",
+        "Fjordur"
+      ],
+      "drops": {
+        "harvest": [
+          {
+            "id": "dh1",
+            "label": "Hide"
+          },
+          {
+            "id": "dh2",
+            "label": "Pelt"
+          },
+          {
+            "id": "dh3",
+            "label": "Raw Meat"
+          }
+        ]
+      },
+      "technical": {
+        "dragWeight": 125
+      },
+      "overrides": [
+        "acquisition",
+        "spawns",
+        "drops",
         "technical"
       ]
     },
@@ -16463,11 +16435,9 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/giganotosaurus/bionicgigant_character_bp.bionicgigant_character_bp": {
+    "/game/primalearth/dinos/giganotosaurus/bionicgigant_character_bp_malfunctioned.bionicgigant_character_bp_malfunctioned": {
       "availability": "unavailable",
       "spawnMaps": [
-        "Extinction",
-        "Astraeos",
         "Genesis: Part 1"
       ],
       "overrides": [
@@ -16475,9 +16445,11 @@
         "spawns"
       ]
     },
-    "/game/primalearth/dinos/giganotosaurus/bionicgigant_character_bp_malfunctioned.bionicgigant_character_bp_malfunctioned": {
+    "/game/primalearth/dinos/giganotosaurus/bionicgigant_character_bp.bionicgigant_character_bp": {
       "availability": "unavailable",
       "spawnMaps": [
+        "Extinction",
+        "Astraeos",
         "Genesis: Part 1"
       ],
       "overrides": [
@@ -17056,6 +17028,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/iguanodon/iguanodon_character_bp_aberrant.iguanodon_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/iguanodon/iguanodon_character_bp.iguanodon_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -17160,15 +17141,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/iguanodon/iguanodon_character_bp_aberrant.iguanodon_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/kairuku/kairuku_character_bp.kairuku_character_bp": {
@@ -17484,6 +17456,97 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/leech/leech_character_diseased.leech_character_diseased": {
+      "availability": "acquirable",
+      "methods": [
+        {
+          "id": "m1",
+          "name": "Taming",
+          "outcome": "direct-tame",
+          "requirements": "None required; do not attack or tranquilize the Diseased Leech.; Fish Basket. Place it on the ground underwater directly beside the Diseased Leech and allow the basket several seconds to initialize. Bug Repellant is strongly recommended to prevent the leech from targeting and attaching to you.",
+          "inputs": [
+            {
+              "id": "m1i1",
+              "label": "None; Diseased Leeches are captured and tamed directly with a Fish Basket"
+            }
+          ],
+          "phases": [
+            {
+              "id": "m1p1",
+              "name": "Position the Fish Basket",
+              "steps": [
+                {
+                  "id": "m1p1s1",
+                  "text": "Approach the Diseased Leech without attacking it and place a Fish Basket on the ground as close to it as possible. Wait several seconds for the basket to finish initializing before attempting the capture."
+                }
+              ]
+            },
+            {
+              "id": "m1p2",
+              "name": "Lure It into Capture Range",
+              "steps": [
+                {
+                  "id": "m1p2s1",
+                  "text": "Keep the Diseased Leech close to the initialized Fish Basket until the capture interaction becomes available. Use Bug Repellant to prevent it from recognizing you as a target while you maneuver around it."
+                }
+              ]
+            },
+            {
+              "id": "m1p3",
+              "name": "Avoid the Latch",
+              "steps": [
+                {
+                  "id": "m1p3s1",
+                  "text": "Do not allow the Diseased Leech to attach to you or another creature before capture; once a tamed leech later latches onto a target, it is permanently lost from your tame count. A wild Diseased Leech can also transmit Swamp Fever if it successfully attaches."
+                }
+              ]
+            },
+            {
+              "id": "m1p4",
+              "name": "Capture and Release",
+              "steps": [
+                {
+                  "id": "m1p4s1",
+                  "text": "Look directly at the initialized Fish Basket and press the interaction key as soon as the Diseased Leech is within range. This converts it into a Filled Fish Basket; place the filled basket back down in water to release the Diseased Leech as your tame - no food, torpor, or additional feeding cycle is required."
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "drops": {
+        "harvest": [
+          {
+            "id": "dh1",
+            "label": "Chitin"
+          },
+          {
+            "id": "dh2",
+            "label": "Leech Blood"
+          },
+          {
+            "id": "dh3",
+            "label": "Oil"
+          },
+          {
+            "id": "dh4",
+            "label": "Raw Meat"
+          },
+          {
+            "id": "dh5",
+            "label": "Silica Pearls"
+          }
+        ]
+      },
+      "technical": {
+        "dragWeight": 30
+      },
+      "overrides": [
+        "acquisition",
+        "drops",
+        "technical"
+      ]
+    },
     "/game/primalearth/dinos/leech/leech_character.leech_character": {
       "availability": "acquirable",
       "methods": [
@@ -17595,97 +17658,6 @@
       "overrides": [
         "acquisition",
         "spawns",
-        "drops",
-        "technical"
-      ]
-    },
-    "/game/primalearth/dinos/leech/leech_character_diseased.leech_character_diseased": {
-      "availability": "acquirable",
-      "methods": [
-        {
-          "id": "m1",
-          "name": "Taming",
-          "outcome": "direct-tame",
-          "requirements": "None required; do not attack or tranquilize the Diseased Leech.; Fish Basket. Place it on the ground underwater directly beside the Diseased Leech and allow the basket several seconds to initialize. Bug Repellant is strongly recommended to prevent the leech from targeting and attaching to you.",
-          "inputs": [
-            {
-              "id": "m1i1",
-              "label": "None; Diseased Leeches are captured and tamed directly with a Fish Basket"
-            }
-          ],
-          "phases": [
-            {
-              "id": "m1p1",
-              "name": "Position the Fish Basket",
-              "steps": [
-                {
-                  "id": "m1p1s1",
-                  "text": "Approach the Diseased Leech without attacking it and place a Fish Basket on the ground as close to it as possible. Wait several seconds for the basket to finish initializing before attempting the capture."
-                }
-              ]
-            },
-            {
-              "id": "m1p2",
-              "name": "Lure It into Capture Range",
-              "steps": [
-                {
-                  "id": "m1p2s1",
-                  "text": "Keep the Diseased Leech close to the initialized Fish Basket until the capture interaction becomes available. Use Bug Repellant to prevent it from recognizing you as a target while you maneuver around it."
-                }
-              ]
-            },
-            {
-              "id": "m1p3",
-              "name": "Avoid the Latch",
-              "steps": [
-                {
-                  "id": "m1p3s1",
-                  "text": "Do not allow the Diseased Leech to attach to you or another creature before capture; once a tamed leech later latches onto a target, it is permanently lost from your tame count. A wild Diseased Leech can also transmit Swamp Fever if it successfully attaches."
-                }
-              ]
-            },
-            {
-              "id": "m1p4",
-              "name": "Capture and Release",
-              "steps": [
-                {
-                  "id": "m1p4s1",
-                  "text": "Look directly at the initialized Fish Basket and press the interaction key as soon as the Diseased Leech is within range. This converts it into a Filled Fish Basket; place the filled basket back down in water to release the Diseased Leech as your tame - no food, torpor, or additional feeding cycle is required."
-                }
-              ]
-            }
-          ]
-        }
-      ],
-      "drops": {
-        "harvest": [
-          {
-            "id": "dh1",
-            "label": "Chitin"
-          },
-          {
-            "id": "dh2",
-            "label": "Leech Blood"
-          },
-          {
-            "id": "dh3",
-            "label": "Oil"
-          },
-          {
-            "id": "dh4",
-            "label": "Raw Meat"
-          },
-          {
-            "id": "dh5",
-            "label": "Silica Pearls"
-          }
-        ]
-      },
-      "technical": {
-        "dragWeight": 30
-      },
-      "overrides": [
-        "acquisition",
         "drops",
         "technical"
       ]
@@ -17860,6 +17832,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/lystrosaurus/lystro_character_bp_aberrant.lystro_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/lystrosaurus/lystro_character_bp.lystro_character_bp": {
       "availability": "acquirable",
       "spawnMaps": [
@@ -17896,15 +17877,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/lystrosaurus/lystro_character_bp_aberrant.lystro_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/mammoth/mammoth_character_bp.mammoth_character_bp": {
@@ -18019,6 +17991,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/manta/manta_character_bp_aberrant.manta_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/manta/manta_character_bp.manta_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -18107,7 +18088,7 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/manta/manta_character_bp_aberrant.manta_character_bp_aberrant": {
+    "/game/primalearth/dinos/megalania/megalania_character_bp_aberrant.megalania_character_bp_aberrant": {
       "availability": "",
       "spawnMaps": [
         "Aberration"
@@ -18231,15 +18212,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/megalania/megalania_character_bp_aberrant.megalania_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/megalodon/megalodon_character_bp.megalodon_character_bp": {
@@ -18375,6 +18347,15 @@
         "drops"
       ]
     },
+    "/game/primalearth/dinos/megalosaurus/megalosaurus_character_bp_aberrant.megalosaurus_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/megalosaurus/megalosaurus_character_bp.megalosaurus_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -18480,15 +18461,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/megalosaurus/megalosaurus_character_bp_aberrant.megalosaurus_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/megatherium/megatherium_character_bp.megatherium_character_bp": {
@@ -18797,6 +18769,44 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/mosasaurus/mosa_character_bp_mega.mosa_character_bp_mega": {
+      "availability": "unavailable",
+      "spawnMaps": [
+        "The Island",
+        "The Center",
+        "Ragnarok",
+        "Valguero",
+        "Crystal Isles",
+        "Genesis: Part 2",
+        "Lost Island",
+        "Fjordur"
+      ],
+      "drops": {
+        "harvest": [
+          {
+            "id": "dh1",
+            "label": "Fishing Rod"
+          },
+          {
+            "id": "dh2",
+            "label": "Raw Prime Fish Meat"
+          },
+          {
+            "id": "dh3",
+            "label": "Raw Prime Meat"
+          }
+        ]
+      },
+      "technical": {
+        "dragWeight": 899
+      },
+      "overrides": [
+        "acquisition",
+        "spawns",
+        "drops",
+        "technical"
+      ]
+    },
     "/game/primalearth/dinos/mosasaurus/mosa_character_bp.mosa_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -18892,42 +18902,13 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/mosasaurus/mosa_character_bp_mega.mosa_character_bp_mega": {
-      "availability": "unavailable",
+    "/game/primalearth/dinos/moschops/moschops_character_bp_aberrant.moschops_character_bp_aberrant": {
+      "availability": "",
       "spawnMaps": [
-        "The Island",
-        "The Center",
-        "Ragnarok",
-        "Valguero",
-        "Crystal Isles",
-        "Genesis: Part 2",
-        "Lost Island",
-        "Fjordur"
+        "Aberration"
       ],
-      "drops": {
-        "harvest": [
-          {
-            "id": "dh1",
-            "label": "Fishing Rod"
-          },
-          {
-            "id": "dh2",
-            "label": "Raw Prime Fish Meat"
-          },
-          {
-            "id": "dh3",
-            "label": "Raw Prime Meat"
-          }
-        ]
-      },
-      "technical": {
-        "dragWeight": 899
-      },
       "overrides": [
-        "acquisition",
-        "spawns",
-        "drops",
-        "technical"
+        "spawns"
       ]
     },
     "/game/primalearth/dinos/moschops/moschops_character_bp.moschops_character_bp": {
@@ -19064,7 +19045,7 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/moschops/moschops_character_bp_aberrant.moschops_character_bp_aberrant": {
+    "/game/primalearth/dinos/otter/otter_character_bp_aberrant.otter_character_bp_aberrant": {
       "availability": "",
       "spawnMaps": [
         "Aberration"
@@ -19174,15 +19155,6 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/otter/otter_character_bp_aberrant.otter_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
-      ]
-    },
     "/game/primalearth/dinos/oviraptor/bunnyoviraptor_character_bp.bunnyoviraptor_character_bp": {
       "availability": "unavailable",
       "spawnMaps": [
@@ -19216,6 +19188,15 @@
         "spawns",
         "drops",
         "technical"
+      ]
+    },
+    "/game/primalearth/dinos/oviraptor/oviraptor_character_bp_aberrant.oviraptor_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
       ]
     },
     "/game/primalearth/dinos/oviraptor/oviraptor_character_bp.oviraptor_character_bp": {
@@ -19312,15 +19293,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/oviraptor/oviraptor_character_bp_aberrant.oviraptor_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/pachy/pachy_character_bp.pachy_character_bp": {
@@ -19518,32 +19490,6 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/para/bionicpara_character_bp.bionicpara_character_bp": {
-      "availability": "",
-      "drops": {
-        "harvest": [
-          {
-            "id": "dh1",
-            "label": "Electronics"
-          },
-          {
-            "id": "dh2",
-            "label": "Element Dust"
-          },
-          {
-            "id": "dh3",
-            "label": "Oil"
-          },
-          {
-            "id": "dh4",
-            "label": "Scrap Metal"
-          }
-        ]
-      },
-      "overrides": [
-        "drops"
-      ]
-    },
     "/game/primalearth/dinos/para/bionicpara_character_bp_malfunctioned.bionicpara_character_bp_malfunctioned": {
       "availability": "unavailable",
       "spawnMaps": [
@@ -19573,6 +19519,41 @@
         "acquisition",
         "spawns",
         "drops"
+      ]
+    },
+    "/game/primalearth/dinos/para/bionicpara_character_bp.bionicpara_character_bp": {
+      "availability": "",
+      "drops": {
+        "harvest": [
+          {
+            "id": "dh1",
+            "label": "Electronics"
+          },
+          {
+            "id": "dh2",
+            "label": "Element Dust"
+          },
+          {
+            "id": "dh3",
+            "label": "Oil"
+          },
+          {
+            "id": "dh4",
+            "label": "Scrap Metal"
+          }
+        ]
+      },
+      "overrides": [
+        "drops"
+      ]
+    },
+    "/game/primalearth/dinos/para/para_character_bp_aberrant.para_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
       ]
     },
     "/game/primalearth/dinos/para/para_character_bp.para_character_bp": {
@@ -19681,7 +19662,7 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/para/para_character_bp_aberrant.para_character_bp_aberrant": {
+    "/game/primalearth/dinos/paraceratherium/paracer_character_bp_aberrant.paracer_character_bp_aberrant": {
       "availability": "",
       "spawnMaps": [
         "Aberration"
@@ -19798,15 +19779,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/paraceratherium/paracer_character_bp_aberrant.paracer_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/pegomastax/pegomastax_character_bp.pegomastax_character_bp": {
@@ -20059,6 +20031,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/piranha/piranha_character_bp_aberrant.piranha_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/piranha/piranha_character_bp.piranha_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -20146,15 +20127,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/piranha/piranha_character_bp_aberrant.piranha_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/plesiosaur/plesiosaur_character_bp.plesiosaur_character_bp": {
@@ -20453,6 +20425,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/purlovia/purlovia_character_bp_aberrant.purlovia_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/purlovia/purlovia_character_bp.purlovia_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -20563,12 +20544,13 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/purlovia/purlovia_character_bp_aberrant.purlovia_character_bp_aberrant": {
-      "availability": "",
+    "/game/primalearth/dinos/quetzalcoatlus/bionicquetz_character_bp_malfunctioned.bionicquetz_character_bp_malfunctioned": {
+      "availability": "unavailable",
       "spawnMaps": [
-        "Aberration"
+        "Genesis: Part 1"
       ],
       "overrides": [
+        "acquisition",
         "spawns"
       ]
     },
@@ -20596,16 +20578,6 @@
       },
       "overrides": [
         "drops"
-      ]
-    },
-    "/game/primalearth/dinos/quetzalcoatlus/bionicquetz_character_bp_malfunctioned.bionicquetz_character_bp_malfunctioned": {
-      "availability": "unavailable",
-      "spawnMaps": [
-        "Genesis: Part 1"
-      ],
-      "overrides": [
-        "acquisition",
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/quetzalcoatlus/bone_quetz_character_bp.bone_quetz_character_bp": {
@@ -20713,32 +20685,6 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/raptor/bionicraptor_character_bp.bionicraptor_character_bp": {
-      "availability": "",
-      "drops": {
-        "harvest": [
-          {
-            "id": "dh1",
-            "label": "Electronics"
-          },
-          {
-            "id": "dh2",
-            "label": "Element Dust"
-          },
-          {
-            "id": "dh3",
-            "label": "Oil"
-          },
-          {
-            "id": "dh4",
-            "label": "Scrap Metal"
-          }
-        ]
-      },
-      "overrides": [
-        "drops"
-      ]
-    },
     "/game/primalearth/dinos/raptor/bionicraptor_character_bp_malfunctioned.bionicraptor_character_bp_malfunctioned": {
       "availability": "unavailable",
       "spawnMaps": [
@@ -20768,6 +20714,32 @@
       "overrides": [
         "acquisition",
         "spawns",
+        "drops"
+      ]
+    },
+    "/game/primalearth/dinos/raptor/bionicraptor_character_bp.bionicraptor_character_bp": {
+      "availability": "",
+      "drops": {
+        "harvest": [
+          {
+            "id": "dh1",
+            "label": "Electronics"
+          },
+          {
+            "id": "dh2",
+            "label": "Element Dust"
+          },
+          {
+            "id": "dh3",
+            "label": "Oil"
+          },
+          {
+            "id": "dh4",
+            "label": "Scrap Metal"
+          }
+        ]
+      },
+      "overrides": [
         "drops"
       ]
     },
@@ -20847,6 +20819,15 @@
         "spawns",
         "drops",
         "technical"
+      ]
+    },
+    "/game/primalearth/dinos/raptor/raptor_character_bp_aberrant.raptor_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
       ]
     },
     "/game/primalearth/dinos/raptor/raptor_character_bp.raptor_character_bp": {
@@ -20947,15 +20928,6 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/raptor/raptor_character_bp_aberrant.raptor_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
-      ]
-    },
     "/game/primalearth/dinos/raptor/uberraptor/deinonychus_character_bp.deinonychus_character_bp": {
       "availability": "unavailable",
       "spawnMaps": [
@@ -20983,6 +20955,16 @@
         "spawns",
         "drops",
         "technical"
+      ]
+    },
+    "/game/primalearth/dinos/rex/bionicrex_character_bp_malfunctioned.bionicrex_character_bp_malfunctioned": {
+      "availability": "unavailable",
+      "spawnMaps": [
+        "Genesis: Part 1"
+      ],
+      "overrides": [
+        "acquisition",
+        "spawns"
       ]
     },
     "/game/primalearth/dinos/rex/bionicrex_character_bp.bionicrex_character_bp": {
@@ -21015,16 +20997,6 @@
       },
       "overrides": [
         "drops"
-      ]
-    },
-    "/game/primalearth/dinos/rex/bionicrex_character_bp_malfunctioned.bionicrex_character_bp_malfunctioned": {
-      "availability": "unavailable",
-      "spawnMaps": [
-        "Genesis: Part 1"
-      ],
-      "overrides": [
-        "acquisition",
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/rex/bone_megarex_character_bp.bone_megarex_character_bp": {
@@ -21466,6 +21438,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/sarco/sarco_character_bp_aberrant.sarco_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/sarco/sarco_character_bp.sarco_character_bp": {
       "availability": "acquirable",
       "spawnMaps": [
@@ -21511,15 +21492,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/sarco/sarco_character_bp_aberrant.sarco_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/sauropod/bone_sauropod_character_bp.bone_sauropod_character_bp": {
@@ -21669,6 +21641,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/scorpion/scorpion_character_bp_aberrant.scorpion_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/scorpion/scorpion_character_bp.scorpion_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -21767,7 +21748,7 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/scorpion/scorpion_character_bp_aberrant.scorpion_character_bp_aberrant": {
+    "/game/primalearth/dinos/sheep/sheep_character_bp_aberrant.sheep_character_bp_aberrant": {
       "availability": "",
       "spawnMaps": [
         "Aberration"
@@ -21866,15 +21847,6 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/sheep/sheep_character_bp_aberrant.sheep_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
-      ]
-    },
     "/game/primalearth/dinos/spider-large/spiderl_character_bp.spiderl_character_bp": {
       "availability": "unavailable",
       "drops": {
@@ -21918,6 +21890,15 @@
         "acquisition",
         "drops",
         "technical"
+      ]
+    },
+    "/game/primalearth/dinos/spider-small/spiders_character_bp_aberrant.spiders_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
       ]
     },
     "/game/primalearth/dinos/spider-small/spiders_character_bp.spiders_character_bp": {
@@ -22022,7 +22003,7 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/spider-small/spiders_character_bp_aberrant.spiders_character_bp_aberrant": {
+    "/game/primalearth/dinos/spino/spino_character_bp_aberrant.spino_character_bp_aberrant": {
       "availability": "",
       "spawnMaps": [
         "Aberration"
@@ -22122,15 +22103,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/spino/spino_character_bp_aberrant.spino_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/stag/stag_character_bp.stag_character_bp": {
@@ -22245,32 +22217,6 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/stego/bionicstego_character_bp.bionicstego_character_bp": {
-      "availability": "",
-      "drops": {
-        "harvest": [
-          {
-            "id": "dh1",
-            "label": "Electronics"
-          },
-          {
-            "id": "dh2",
-            "label": "Element Dust"
-          },
-          {
-            "id": "dh3",
-            "label": "Oil"
-          },
-          {
-            "id": "dh4",
-            "label": "Scrap Metal"
-          }
-        ]
-      },
-      "overrides": [
-        "drops"
-      ]
-    },
     "/game/primalearth/dinos/stego/bionicstego_character_bp_malfunctioned.bionicstego_character_bp_malfunctioned": {
       "availability": "unavailable",
       "spawnMaps": [
@@ -22303,6 +22249,32 @@
         "drops"
       ]
     },
+    "/game/primalearth/dinos/stego/bionicstego_character_bp.bionicstego_character_bp": {
+      "availability": "",
+      "drops": {
+        "harvest": [
+          {
+            "id": "dh1",
+            "label": "Electronics"
+          },
+          {
+            "id": "dh2",
+            "label": "Element Dust"
+          },
+          {
+            "id": "dh3",
+            "label": "Oil"
+          },
+          {
+            "id": "dh4",
+            "label": "Scrap Metal"
+          }
+        ]
+      },
+      "overrides": [
+        "drops"
+      ]
+    },
     "/game/primalearth/dinos/stego/bone_stego_character_bp.bone_stego_character_bp": {
       "availability": "unavailable",
       "technical": {
@@ -22311,6 +22283,15 @@
       "overrides": [
         "acquisition",
         "technical"
+      ]
+    },
+    "/game/primalearth/dinos/stego/stego_character_bp_aberrant.stego_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
       ]
     },
     "/game/primalearth/dinos/stego/stego_character_bp.stego_character_bp": {
@@ -22412,15 +22393,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/stego/stego_character_bp_aberrant.stego_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/tapejara/tapejara_character_bp.tapejara_character_bp": {
@@ -22951,6 +22923,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/toad/toad_character_bp_aberrant.toad_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/toad/toad_character_bp.toad_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -23056,12 +23037,14 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/toad/toad_character_bp_aberrant.toad_character_bp_aberrant": {
-      "availability": "",
+    "/game/primalearth/dinos/trike/bionictrike_character_bp_malfunctioned.bionictrike_character_bp_malfunctioned": {
+      "availability": "unavailable",
       "spawnMaps": [
-        "Aberration"
+        "Genesis: Part 1",
+        "Genesis: Part 2"
       ],
       "overrides": [
+        "acquisition",
         "spawns"
       ]
     },
@@ -23074,17 +23057,6 @@
         "spawns"
       ]
     },
-    "/game/primalearth/dinos/trike/bionictrike_character_bp_malfunctioned.bionictrike_character_bp_malfunctioned": {
-      "availability": "unavailable",
-      "spawnMaps": [
-        "Genesis: Part 1",
-        "Genesis: Part 2"
-      ],
-      "overrides": [
-        "acquisition",
-        "spawns"
-      ]
-    },
     "/game/primalearth/dinos/trike/bone_trike_character_bp.bone_trike_character_bp": {
       "availability": "unavailable",
       "technical": {
@@ -23093,6 +23065,15 @@
       "overrides": [
         "acquisition",
         "technical"
+      ]
+    },
+    "/game/primalearth/dinos/trike/trike_character_bp_aberrant.trike_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
       ]
     },
     "/game/primalearth/dinos/trike/trike_character_bp.trike_character_bp": {
@@ -23204,7 +23185,7 @@
         "technical"
       ]
     },
-    "/game/primalearth/dinos/trike/trike_character_bp_aberrant.trike_character_bp_aberrant": {
+    "/game/primalearth/dinos/trilobite/trilobite_character_aberrant.trilobite_character_aberrant": {
       "availability": "",
       "spawnMaps": [
         "Aberration"
@@ -23315,15 +23296,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/trilobite/trilobite_character_aberrant.trilobite_character_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/troodon/troodon_character_bp.troodon_character_bp": {
@@ -23511,6 +23483,15 @@
         "technical"
       ]
     },
+    "/game/primalearth/dinos/turtle/turtle_character_bp_aberrant.turtle_character_bp_aberrant": {
+      "availability": "",
+      "spawnMaps": [
+        "Aberration"
+      ],
+      "overrides": [
+        "spawns"
+      ]
+    },
     "/game/primalearth/dinos/turtle/turtle_character_bp.turtle_character_bp": {
       "availability": "acquirable",
       "methods": [
@@ -23614,15 +23595,6 @@
         "spawns",
         "drops",
         "technical"
-      ]
-    },
-    "/game/primalearth/dinos/turtle/turtle_character_bp_aberrant.turtle_character_bp_aberrant": {
-      "availability": "",
-      "spawnMaps": [
-        "Aberration"
-      ],
-      "overrides": [
-        "spawns"
       ]
     },
     "/game/primalearth/dinos/tusoteuthis/mega_tusoteuthis_character_bp.mega_tusoteuthis_character_bp": {

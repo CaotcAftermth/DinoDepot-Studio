@@ -83,7 +83,7 @@ describe("playersToPublished", () => {
 
   // The Publish page's "unpublished changes" flag hashes the output. Because
   // `generatedAt` moves on every call, that flag can only mean anything if it
-  // hashes the roster at a fixed timestamp — which is what the page does.
+  // hashes the roster at a fixed timestamp - which is what the page does.
   // These two pin the property the page depends on.
   it("produces different text on every call, thanks to generatedAt", () => {
     const roster = file({ gameName: "Rockwell" });

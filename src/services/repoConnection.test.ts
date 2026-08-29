@@ -128,7 +128,7 @@ describe("connecting a repository", () => {
     expect(result.connected).toBe(false);
   });
 
-  /** A warning is not a refusal — an existing repository may be the right one. */
+  /** A warning is not a refusal - an existing repository may be the right one. */
   it("connects despite a warning", async () => {
     bySlug["ggfizz/cluster-source"] = identity({ isEmpty: false });
     const result = await connectRepository(state(), "source", "ggfizz", "cluster-source");

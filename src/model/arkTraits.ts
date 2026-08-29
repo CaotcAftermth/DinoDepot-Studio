@@ -1,12 +1,10 @@
 /**
  * ASA creature traits, for the Dino Depot `-g=` argument.
  *
- * Provenance, because it matters when a wrong token produces a silently
- * broken command: the names come from the official wiki's creature-traits
- * table (ark.wiki.gg/wiki/Traits). The `token` — what actually goes into the
- * command — is only *confirmed* for the three in Dino Depot's own example
- * (`aggressive`, `angry`, `swimmer`); the rest are the wiki name lowercased
- * with punctuation stripped, which is the pattern those three follow.
+ * Provenance matters because a wrong token silently breaks the command. The
+ * `token` written into the command is confirmed for the three in Dino Depot's
+ * own example (`aggressive`, `angry`, `swimmer`); remaining tokens normalize
+ * their display names using the same pattern.
  *
  * So the editor never forces a choice from this list: an unknown trait can be
  * typed in directly, and the token that will be emitted is always shown. Fix
@@ -16,11 +14,11 @@
 export interface ArkTrait {
   /** Exactly what is written into `-g=`. */
   token: string;
-  /** Human name, as the wiki lists it. */
+  /** Human-readable trait name. */
   name: string;
   category: TraitCategory;
   /**
-   * Tiers this trait actually has, as 1/2/3. Absent means "unknown" — the
+   * Tiers this trait actually has, as 1/2/3. Absent means "unknown" - the
    * editor then offers all three rather than pretending to know better.
    * Narrow this per trait as tier limits are confirmed.
    */
@@ -104,7 +102,7 @@ export function traitByToken(token: string): ArkTrait | undefined {
 
 /**
  * Tiers the editor may offer for a token. Unknown traits, and known ones with
- * no recorded tier limit, get all three — guessing narrower would block a
+ * no recorded tier limit, get all three - guessing narrower would block a
  * legitimate command.
  */
 export function tiersFor(token: string): readonly (1 | 2 | 3)[] {

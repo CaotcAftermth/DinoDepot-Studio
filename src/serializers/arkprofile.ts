@@ -1,5 +1,5 @@
 /**
- * `.arkprofile` codec — ARK: Survival Ascended player profile save files.
+ * `.arkprofile` codec - ARK: Survival Ascended player profile save files.
  *
  * These are Unreal property-tree saves with an ARK-specific container. Nothing
  * about the format is documented, so this was derived by disassembling real
@@ -10,13 +10,13 @@
  * the exact bytes it occupied on disk rather than being decoded into a number
  * or a string, so anything this codec does not understand still survives a
  * rewrite untouched. Callers reach values through the typed accessors at the
- * bottom of this file, and edits only ever replace one leaf's bytes — sizes
+ * bottom of this file, and edits only ever replace one leaf's bytes - sizes
  * and file offsets are recomputed on write.
  *
  * Two save versions are in the wild and both are supported. Version 5 is the
  * original ASA layout; version 7 arrived with the Unreal 5.5 upgrade (Lost
  * Colony / Gen 1) and rewrites how every property is tagged. A profile is
- * always written back in the version it was read as — the game will not read a
+ * always written back in the version it was read as - the game will not read a
  * v5 file on a v7 map or the reverse.
  *
  * Container layout:
@@ -51,7 +51,7 @@
  * The type-name tree is Unreal's `FPropertyTypeName`: an FString followed by an
  * int32 parameter count and that many nested trees. `StructProperty` carries
  * its struct type and that type's package; `ArrayProperty` carries its element
- * type. This is why v7 needs no guessing about which structs are binary — the
+ * type. This is why v7 needs no guessing about which structs are binary - the
  * tag says so outright.
  */
 
@@ -77,7 +77,7 @@ const DERIVED_FLAGS = TAG_FLAG.hasIndex | TAG_FLAG.boolTrue;
 
 /**
  * Version 5 only: struct types whose payload is packed binary rather than a
- * nested property list. Anything not named here is read as nested properties —
+ * nested property list. Anything not named here is read as nested properties -
  * the safe default, because a wrong guess produces a parse error rather than
  * silent corruption. Version 7 tags say so explicitly and ignore this list.
  */
@@ -114,7 +114,7 @@ export interface ArkProperty {
   type: string;
   /**
    * Repeat index. ARK stores fixed-size game arrays as repeated properties
-   * carrying an index, and omits entries that are still at their default — so
+   * carrying an index, and omits entries that are still at their default - so
    * indices are sparse and must never be treated as positions in a list.
    */
   index: number;
@@ -193,7 +193,7 @@ class Reader {
   private need(n: number, what: string) {
     if (this.offset + n > this.bytes.length) {
       throw new ArkProfileError(
-        `File ended while reading ${what} at byte ${this.offset} — this does not look like a complete .arkprofile`,
+        `File ended while reading ${what} at byte ${this.offset} - this does not look like a complete .arkprofile`,
       );
     }
   }
@@ -331,7 +331,7 @@ function readTypeName(r: Reader): ArkTypeName {
   const count = r.int32();
   if (count < 0 || count > 32) {
     throw new ArkProfileError(
-      `Type '${name}' declares ${count} parameters at byte ${r.offset} — the property list is not aligned`,
+      `Type '${name}' declares ${count} parameters at byte ${r.offset} - the property list is not aligned`,
     );
   }
   const params: ArkTypeName[] = [];
@@ -353,7 +353,7 @@ function readTaggedProperties(r: Reader): ArkProperty[] {
     if (name === "None") return props;
     if (name === "") {
       throw new ArkProfileError(
-        `Empty property name at byte ${r.offset} — the property list is not aligned`,
+        `Empty property name at byte ${r.offset} - the property list is not aligned`,
       );
     }
     const type = readTypeName(r);
@@ -380,7 +380,7 @@ function readTaggedProperties(r: Reader): ArkProperty[] {
 
     switch (type.name) {
       case "BoolProperty":
-        // The value is a tag flag, not payload — the payload is empty.
+        // The value is a tag flag, not payload - the payload is empty.
         prop.boolValue = Boolean(flags & TAG_FLAG.boolTrue);
         break;
       case "StructProperty":
@@ -454,7 +454,7 @@ function readProperties(r: Reader): ArkProperty[] {
     if (name === "None") return props;
     if (name === "") {
       throw new ArkProfileError(
-        `Empty property name at byte ${r.offset} — the property list is not aligned`,
+        `Empty property name at byte ${r.offset} - the property list is not aligned`,
       );
     }
     const type = r.string();
@@ -515,7 +515,7 @@ function readProperties(r: Reader): ArkProperty[] {
           for (let i = 0; i < count; i++) prop.items.push(readProperties(r));
           expectEnd(r, end, `array ${name}`);
         } else {
-          // Count and payload stay packed together — callers that care use the
+          // Count and payload stay packed together - callers that care use the
           // array accessors rather than touching these bytes.
           prop.data = r.raw(end - r.offset);
         }
@@ -534,7 +534,7 @@ function readProperties(r: Reader): ArkProperty[] {
 function expectEnd(r: Reader, end: number, what: string) {
   if (r.offset !== end) {
     throw new ArkProfileError(
-      `${what} ended at byte ${r.offset} but its size said ${end} — the file is not laid out the way this reader expects`,
+      `${what} ended at byte ${r.offset} but its size said ${end} - the file is not laid out the way this reader expects`,
     );
   }
 }
@@ -620,7 +620,7 @@ export function parseArkProfile(bytes: Uint8Array): ArkProfile {
   const saveVersion = r.int32();
   if (saveVersion < 1 || saveVersion > 64) {
     throw new ArkProfileError(
-      `Save version ${saveVersion} is not believable — this is probably not an .arkprofile`,
+      `Save version ${saveVersion} is not believable - this is probably not an .arkprofile`,
     );
   }
   const tagged = saveVersion >= TAGGED_SAVE_VERSION;
@@ -633,7 +633,7 @@ export function parseArkProfile(bytes: Uint8Array): ArkProfile {
   // "successfully" into nothing.
   if (objectCount < 1 || objectCount > 10000) {
     throw new ArkProfileError(
-      `Object count of ${objectCount} is not believable — this is probably not an .arkprofile`,
+      `Object count of ${objectCount} is not believable - this is probably not an .arkprofile`,
     );
   }
 
@@ -850,7 +850,7 @@ export function readArrayCount(prop: ArkProperty | undefined): number {
   return viewOf(prop, 4)?.getInt32(0, true) ?? 0;
 }
 
-/** The uint32 words of a `UInt32Property` array — used for the note bitmasks. */
+/** The uint32 words of a `UInt32Property` array - used for the note bitmasks. */
 export function readUint32Array(prop: ArkProperty | undefined): number[] {
   const view = viewOf(prop, 4);
   if (!view) return [];

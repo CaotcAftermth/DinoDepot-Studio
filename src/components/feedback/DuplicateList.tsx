@@ -43,7 +43,7 @@ export function DuplicateList() {
       <p className="text-sm text-ink-300 mb-4">
         These look similar to what you described. If one of them is your
         problem, saying so keeps it on your list without filing a second
-        report — otherwise submit yours.
+        report - otherwise submit yours.
       </p>
 
       <ul className="flex flex-col gap-2">

@@ -4,7 +4,7 @@
 //! webview must not be able to reach the network, read arbitrary files, or
 //! hold a credential. The application's content security policy has no
 //! external `connect-src` at all, so a report cannot be posted from
-//! JavaScript even in principle — it is posted from here, by a client that
+//! JavaScript even in principle - it is posted from here, by a client that
 //! carries no authentication of any kind.
 //!
 //! That last part is deliberate. The feedback service authenticates to GitHub
@@ -86,7 +86,7 @@ fn state_path(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 /// Reads the stored reports. `None` before anything has ever been written.
 ///
 /// A read failure is reported rather than swallowed, but the caller treats it
-/// as "no history" — the Feedback Center is not allowed to stop the app, and
+/// as "no history" - the Feedback Center is not allowed to stop the app, and
 /// nothing in this file is the administrator's project work.
 #[tauri::command]
 pub fn feedback_state_get(app: tauri::AppHandle) -> Result<Option<String>, String> {
@@ -128,7 +128,7 @@ pub struct FeedbackApiResponse {
 /// The service address, checked before anything is sent to it.
 ///
 /// HTTPS, no credentials, no query, no fragment. The address is configurable
-/// by the administrator, which makes it untrusted input — a base URL carrying
+/// by the administrator, which makes it untrusted input - a base URL carrying
 /// a password would put that password in every request this makes.
 fn validate_base(raw: &str) -> Result<Url, String> {
     let parsed = Url::parse(raw.trim_end_matches('/'))
@@ -149,7 +149,7 @@ fn validate_base(raw: &str) -> Result<Url, String> {
 ///
 /// The path comes from this application's own code rather than from an
 /// administrator, but it carries an issue number that came back from a
-/// service — so it is checked anyway. `join` on a URL would happily accept an
+/// service - so it is checked anyway. `join` on a URL would happily accept an
 /// absolute URL and send the request somewhere else entirely.
 fn build_url(base: &Url, path: &str) -> Result<Url, String> {
     // Checked before the leading slashes come off, not after. `//host/path` is
@@ -216,7 +216,7 @@ fn classify(status: u16, detail: &str) -> Failure {
 /// Sends one request to the configured feedback service.
 ///
 /// Carries no credential, no cookie and no identifying header beyond a user
-/// agent naming the product and version — which the service needs in order to
+/// agent naming the product and version - which the service needs in order to
 /// know which build a report came from when the payload itself is malformed.
 #[tauri::command]
 pub async fn feedback_api_request(
@@ -316,7 +316,7 @@ fn display_name(path: &Path) -> String {
     let trimmed = cleaned.trim();
     let base: String = trimmed.chars().take(100).collect();
     // The extension is replaced rather than kept, because the bytes are
-    // re-encoded — a file called `shot.png` that is now a WebP would be a
+    // re-encoded - a file called `shot.png` that is now a WebP would be a
     // small lie in the one place somebody checks what they attached.
     let stem = match base.rsplit_once('.') {
         Some((name, _)) => name,
@@ -358,8 +358,8 @@ fn encode_lossless(image: &RgbaImage) -> Result<Vec<u8>, String> {
 /// Reads a picked image and re-encodes it as a lossless WebP.
 ///
 /// Re-encoding is the point, not a convenience. It proves the file really is
-/// an image — an executable renamed to `.png` fails to decode and is refused
-/// here rather than at the service — and it drops every scrap of metadata the
+/// an image - an executable renamed to `.png` fails to decode and is refused
+/// here rather than at the service - and it drops every scrap of metadata the
 /// original carried. Camera and phone screenshots routinely carry EXIF with a
 /// GPS position in it, and a bug report is not a place to publish where
 /// somebody lives.
@@ -392,7 +392,7 @@ pub fn feedback_read_image(path: String) -> Result<FeedbackImage, String> {
         bytes = encode_lossless(&scaled)?;
     }
     if bytes.len() > MAX_ATTACHMENT_BYTES {
-        return Err("That image is too detailed to attach — try cropping it".into());
+        return Err("That image is too detailed to attach - try cropping it".into());
     }
 
     Ok(FeedbackImage {

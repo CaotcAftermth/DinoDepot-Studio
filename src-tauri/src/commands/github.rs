@@ -9,7 +9,7 @@ const API: &str = "https://api.github.com";
 /// revision cannot quietly alter what a publish does. Sent on every request.
 const API_VERSION: &str = "2022-11-28";
 
-/// Nothing here should ever sit waiting on a socket forever — a Sync that
+/// Nothing here should ever sit waiting on a socket forever - a Sync that
 /// hangs looks identical to a Sync that is working.
 const REQUEST_TIMEOUT_SECS: u64 = 30;
 
@@ -59,7 +59,7 @@ pub async fn github_test(
     if status.is_success() {
         Ok(GithubStatus {
             ok: true,
-            message: format!("Connected — {owner}/{repo}@{branch} is reachable"),
+            message: format!("Connected - {owner}/{repo}@{branch} is reachable"),
         })
     } else {
         let body = res.text().await.unwrap_or_default();
@@ -172,7 +172,7 @@ pub async fn github_put_file(
     put_encoded(account_id, owner, repo, branch, path, encoded, message).await
 }
 
-/// Uploads already-base64 content — used for binary files such as .arkprofile
+/// Uploads already-base64 content - used for binary files such as .arkprofile
 /// saves, which have no meaningful text representation.
 #[tauri::command]
 pub async fn github_put_file_b64(
@@ -268,7 +268,7 @@ async fn put_encoded(
     if !res.status().is_success() {
         let status = res.status();
         let text = res.text().await.unwrap_or_default();
-        return Err(format!("Publish failed — GitHub returned {status}: {}", truncate(&text, 300)));
+        return Err(format!("Publish failed - GitHub returned {status}: {}", truncate(&text, 300)));
     }
 
     let parsed: PutResponse = res.json().await.map_err(|e| e.to_string())?;
@@ -356,7 +356,7 @@ pub async fn github_me(account_id: String) -> Result<String, String> {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct RepoInfo {
-    /// Whether this token can push directly — decides fork or no fork.
+    /// Whether this token can push directly - decides fork or no fork.
     pub can_push: bool,
     pub default_branch: String,
 }
@@ -391,7 +391,7 @@ pub struct ForkResult {
 
 /// Forks a repository, waiting for GitHub to finish creating it.
 ///
-/// A fresh fork is not immediately usable — the API returns 202 and the repo
+/// A fresh fork is not immediately usable - the API returns 202 and the repo
 /// materialises a moment later, so committing straight away fails. Polling
 /// here keeps that detail out of the frontend.
 #[tauri::command]
@@ -428,7 +428,7 @@ pub async fn github_fork(
         }
         tokio::time::sleep(std::time::Duration::from_millis(600 + attempt * 300)).await;
     }
-    Err("The fork was requested but is still not ready — try again shortly".to_string())
+    Err("The fork was requested but is still not ready - try again shortly".to_string())
 }
 
 /// Creates `branch` pointing at the tip of `from_branch`.

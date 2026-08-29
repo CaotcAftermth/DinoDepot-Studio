@@ -9,7 +9,7 @@ import { describeConflict, displayValue } from "../model/merge/conflicts";
  * Reconciliation end to end: three versions of a project in, one merged project
  * plus a list of questions out.
  *
- * The Git layer is faked at the tree-reading boundary — what matters here is
+ * The Git layer is faked at the tree-reading boundary - what matters here is
  * what happens to the *contents*, and the real tree reading has its own tests
  * against a bare repository in Rust.
  */
@@ -156,7 +156,7 @@ describe("reconciling a project", () => {
 describe("files that are not merged", () => {
   /**
    * These are this install's record of what it did. The shared record is the
-   * Git history — two administrators appending to the same array would fight
+   * Git history - two administrators appending to the same array would fight
    * over it forever.
    */
   it("leaves history and activity exactly as this computer has them", async () => {

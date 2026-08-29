@@ -47,7 +47,7 @@ const LOCAL_STATUS: Record<string, FriendlyStatus> = {
   submission_failed: {
     label: "Not sent",
     tone: "error",
-    detail: "Saved on this computer — retry when you are ready",
+    detail: "Saved on this computer - retry when you are ready",
   },
 };
 
@@ -166,7 +166,7 @@ export function matchesFilter(
  * The order My Reports lists them in.
  *
  * Newest first by the time the record last changed, so a report that just came
- * back from GitHub with a status rises to the top — which is the one somebody
+ * back from GitHub with a status rises to the top - which is the one somebody
  * opened the page to see.
  */
 export function sortRecords(records: LocalFeedbackRecord[]): LocalFeedbackRecord[] {

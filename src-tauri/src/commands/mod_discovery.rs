@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 ///
 /// An installed mod ships a plain-text listing of everything it cooked, so the
 /// whole feature is directory walking and reading two text files per mod. No
-/// pak parsing, no decryption, no mappings file — see `src/model/modDiscovery.ts`
+/// pak parsing, no decryption, no mappings file - see `src/model/modDiscovery.ts`
 /// for what is then made of them.
 ///
 /// This is deliberately split in two. Listing is cheap (a `.uplugin` is about a
@@ -71,7 +71,7 @@ fn holds_installed_mods(dir: &Path) -> bool {
 /// Finds the mods folder from whatever path the admin supplied.
 ///
 /// The real location is six levels deep, and the path people have to hand is
-/// the one they gave FModel — the game's install root. Accepting either (and
+/// the one they gave FModel - the game's install root. Accepting either (and
 /// the intermediate `Mods` folder, since ASA groups by game id beneath it)
 /// avoids making anyone hand-navigate to a folder called `83374`.
 #[tauri::command]
@@ -166,7 +166,7 @@ pub fn list_installed_mods(root: String) -> Result<Vec<InstalledMod>, String> {
 
 /// Reads the manifests for the mods an admin selected.
 ///
-/// A mod that cannot be read is skipped rather than failing the batch — one
+/// A mod that cannot be read is skipped rather than failing the batch - one
 /// broken install should not stop the other forty from being catalogued.
 #[tauri::command]
 pub fn read_installed_mods(

@@ -4,14 +4,14 @@ import type { FeedbackTargetSnapshot, FeedbackType } from "./types";
 /**
  * Finding the issue somebody has already filed.
  *
- * Deliberately deterministic — no model, no embedding service, nothing that
+ * Deliberately deterministic - no model, no embedding service, nothing that
  * has to be running for a report to be submitted. Two facts do most of the
  * work: reports filed from the app carry the component id in the issue body,
  * and two people hitting the same bug describe it with overlapping words. The
  * first is close to an exact key; the second is a decent tiebreak.
  *
  * Nothing here can block a submission. The candidates are shown, the reporter
- * decides, and "Submit anyway" is always available — a duplicate costs a
+ * decides, and "Submit anyway" is always available - a duplicate costs a
  * maintainer thirty seconds, and a suppressed report costs them the bug.
  */
 
@@ -46,7 +46,7 @@ export interface ScoredCandidate extends IssueCandidate {
 /**
  * Words that appear in every bug report and distinguish none of them.
  *
- * Includes the domain's own filler — "dino", "ark", "studio" — because a
+ * Includes the domain's own filler - "dino", "ark", "studio" - because a
  * search inside the DinoDepot Studio repository for the word "studio" returns
  * the repository.
  */
@@ -100,7 +100,7 @@ export function keywordsOf(text: string, limit = 6): string[] {
  * "has anyone reported this exact control before", which is nearly an
  * identity match and is worth running on its own so a broad word search cannot
  * crowd it out. The second is the ordinary keyword search, and it deliberately
- * does not filter by area label — a repository that has not had the labels
+ * does not filter by area label - a repository that has not had the labels
  * created yet would otherwise return nothing at all.
  *
  * Closed issues are included. "This was fixed in 1.3.9" is one of the more
@@ -122,7 +122,7 @@ export function duplicateQueries(
     queries.push(`${scope} in:title,body ${words.join(" ")}`);
   }
 
-  // Nothing usable to search for — a two-word report with no target. Falling
+  // Nothing usable to search for - a two-word report with no target. Falling
   // back to the area alone would return the whole area, so it returns nothing
   // and the reporter is not shown a list of unrelated issues.
   return queries;

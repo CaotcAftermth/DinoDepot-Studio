@@ -57,7 +57,7 @@ describe("isWatched", () => {
   });
 
   it("keeps watching a mod that is being removed but still enabled", () => {
-    // "Being removed" is a plan, not a state — the mod is still on the server
+    // "Being removed" is a plan, not a state - the mod is still on the server
     // until it isn't, and an update to it still matters while it runs.
     expect(isWatched(source({ removed: true }))).toBe(true);
   });

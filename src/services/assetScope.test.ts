@@ -7,7 +7,7 @@ import { resolveAsset } from "./assetResolver";
  * Installed package icons live under the app-data content root, and the only
  * way a renderer may read them is the asset protocol. A resolver that returns
  * a correct path the protocol then refuses is indistinguishable, on screen,
- * from having no icon at all — which is how the whole official icon set
+ * from having no icon at all - which is how the whole official icon set
  * silently fell back to emoji.
  */
 
@@ -15,7 +15,7 @@ const scope = tauriConfig.app.security.assetProtocol.scope;
 
 /**
  * Small glob check matching the semantics Tauri's scope uses: `**` spans
- * separators, `*` does not, and `**\/` also matches zero segments — so
+ * separators, `*` does not, and `**\/` also matches zero segments - so
  * `a/**\/*.x` denies `a/leak.x` as well as `a/b/leak.x`.
  */
 function matches(pattern: string, path: string): boolean {
@@ -92,7 +92,7 @@ describe("asset protocol scope", () => {
 describe("bundled official package", () => {
   it("ships the official package folder as a Tauri resource", () => {
     // Without this, a first launch with no network has no Core Content art at
-    // all — which is the state the app was actually shipping in.
+    // all - which is the state the app was actually shipping in.
     expect(tauriConfig.bundle.resources).toMatchObject({
       "resources/official-package": "official-package",
     });

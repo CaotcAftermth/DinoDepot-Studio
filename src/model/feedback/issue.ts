@@ -13,7 +13,7 @@ import type {
  *
  * This module is shared by the desktop app and the feedback service on
  * purpose. The service is what actually files the issue, but the app has to be
- * able to produce the same thing when the service cannot be reached — and two
+ * able to produce the same thing when the service cannot be reached - and two
  * separate formatters would drift apart within a release, leaving reports that
  * look different depending on whether the network was up.
  *
@@ -46,7 +46,7 @@ export const MAX_TITLE = 160;
 /**
  * The issue title.
  *
- * A prefix and the reporter's own words — never an id. An id in a title makes
+ * A prefix and the reporter's own words - never an id. An id in a title makes
  * the issue list unreadable and tells a human nothing they cannot get by
  * opening it, and the id is a label and a body field already.
  */
@@ -96,7 +96,7 @@ const MARKER_PREFIX = "dinodepot-report-id:";
  * client generated once is the idempotency key whether or not any storage
  * survived in between.
  *
- * Written by the service, never by the client — and any marker-shaped text in
+ * Written by the service, never by the client - and any marker-shaped text in
  * the reporter's own words is neutralized by {@link escapeUserText} before it
  * gets near the body, so a report cannot claim to be one that already exists.
  */
@@ -127,7 +127,7 @@ export const MAX_SECTION = 8000;
 /**
  * Makes a block of reporter-written text safe to drop into generated Markdown.
  *
- * The reporter may absolutely use Markdown — lists, emphasis, code spans are
+ * The reporter may absolutely use Markdown - lists, emphasis, code spans are
  * all how somebody explains a bug. What they may not do, even by accident, is
  * change the *structure* around their text. Three things can:
  *
@@ -356,14 +356,14 @@ export const MAX_PREFILL_BODY = 6000;
  * A reduced body for the "open a prepared issue" fallback.
  *
  * The diagnostics block is left out entirely. It is the largest part and the
- * one part that would be travelling through a URL — through the browser's
- * history, and through whatever sits between here and GitHub — which is not
+ * one part that would be travelling through a URL - through the browser's
+ * history, and through whatever sits between here and GitHub - which is not
  * where a machine description belongs when nobody has to put it there.
  */
 export function fallbackIssueBody(report: FeedbackReport): string {
   const body = issueBody(report, { omitDiagnostics: true });
   if (body.length <= MAX_PREFILL_BODY) return body;
-  return `${body.slice(0, MAX_PREFILL_BODY - 80).trimEnd()}\n\n_(shortened — the rest was too long to carry in a link)_`;
+  return `${body.slice(0, MAX_PREFILL_BODY - 80).trimEnd()}\n\n_(shortened - the rest was too long to carry in a link)_`;
 }
 
 /**
@@ -371,7 +371,7 @@ export function fallbackIssueBody(report: FeedbackReport): string {
  *
  * Labels are passed as a hint. GitHub applies them only when the person
  * following the link may label issues, so the service remains the only thing
- * that can be relied on to get them right — which is exactly what makes this
+ * that can be relied on to get them right - which is exactly what makes this
  * a fallback rather than an alternative.
  */
 export function prefilledIssueUrl(

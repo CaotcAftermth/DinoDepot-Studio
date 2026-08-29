@@ -6,8 +6,8 @@ import { toast } from "./toast";
  *
  * Publish and CurseForge both open this. They used to be able to disagree
  * about what "the output" looks like; keeping one component means a change to
- * the preview — the copy control, the empty-output wording, the styling of the
- * text block — happens once and reaches both.
+ * the preview - the copy control, the empty-output wording, the styling of the
+ * text block - happens once and reaches both.
  */
 export function OutputPreviewModal({
   label,
@@ -21,8 +21,8 @@ export function OutputPreviewModal({
   onClose: () => void;
 }) {
   /**
-   * The webview's clipboard API is the only route — there is no Tauri
-   * clipboard plugin in this build — and it can be refused, so the failure
+   * The webview's clipboard API is the only route - there is no Tauri
+   * clipboard plugin in this build - and it can be refused, so the failure
    * says what happened rather than nothing at all.
    */
   async function copy() {
@@ -38,7 +38,7 @@ export function OutputPreviewModal({
 
   return (
     <Modal
-      title={`${label} — output preview`}
+      title={`${label} - output preview`}
       onClose={onClose}
       wide
       footer={

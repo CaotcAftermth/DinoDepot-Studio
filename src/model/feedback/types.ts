@@ -126,7 +126,7 @@ export type SanitizedLogEntry = z.infer<typeof SanitizedLogEntrySchema>;
 /**
  * Facts about the project that carry no project content.
  *
- * Counts and schema numbers only — never a project name, a cluster name, a
+ * Counts and schema numbers only - never a project name, a cluster name, a
  * repository slug, a path, or anything an administrator typed. A cluster's
  * name is not ours to publish, and a count is enough to know whether a bug
  * needs a large project to reproduce.
@@ -154,7 +154,7 @@ export const FeedbackDiagnosticsSchema = z.object({
     os: z.string().max(60).default(""),
     osVersion: z.string().max(60).default(""),
     architecture: z.string().max(30).default(""),
-    /** Webview engine and version — the usual suspect for a rendering bug. */
+    /** Webview engine and version - the usual suspect for a rendering bug. */
     webview: z.string().max(80).default(""),
     /** Window size, which layout bugs almost always depend on. */
     viewport: z.string().max(20).default(""),
@@ -200,7 +200,7 @@ export type AttachmentType = (typeof ATTACHMENT_TYPES)[number];
 
 export const FeedbackAttachmentSchema = z.object({
   id: z.string().min(1).max(80),
-  /** Display name only. Never a path — a path names the reporter's machine. */
+  /** Display name only. Never a path - a path names the reporter's machine. */
   fileName: z.string().min(1).max(120),
   contentType: AttachmentTypeSchema,
   sizeBytes: z.number().int().positive().max(MAX_FEEDBACK_ATTACHMENT_BYTES),
@@ -243,7 +243,7 @@ export const FeedbackDraftSchema = z.object({
    * Optional GitHub username, for a maintainer who needs to ask something.
    *
    * A username and nothing else. There is no private metadata store behind
-   * this, so whatever goes in here is published in the issue — and an email
+   * this, so whatever goes in here is published in the issue - and an email
    * address in a public issue is a mailing list subscription the reporter
    * never asked for.
    */
@@ -336,7 +336,7 @@ export const LocalFeedbackRecordSchema = z.object({
    * The project that was open when the report was written, or "" for one
    * written with no project open.
    *
-   * The file itself stays machine-local — a bug report is about the
+   * The file itself stays machine-local - a bug report is about the
    * application, and filing it into the project would synchronize one
    * administrator's complaints to everybody else on the cluster. This is only
    * about what My Reports *lists*: a report written while working on one
@@ -351,7 +351,7 @@ export const LocalFeedbackRecordSchema = z.object({
    * Everything the reporter entered, kept so a failed submission can be
    * retried or edited rather than retyped.
    *
-   * Attachment bytes are dropped once a submission succeeds — there is no
+   * Attachment bytes are dropped once a submission succeeds - there is no
    * reason to keep a copy of a screenshot that is already on the issue.
    */
   draft: FeedbackDraftSchema.nullable().default(null),

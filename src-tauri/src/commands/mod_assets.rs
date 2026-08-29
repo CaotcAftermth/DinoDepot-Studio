@@ -1,6 +1,6 @@
 //! Reading artwork out of a mod installed on this machine.
 //!
-//! Discovery already catalogues a mod's creatures and items from plain text —
+//! Discovery already catalogues a mod's creatures and items from plain text -
 //! its manifest lists every cooked asset path. What it cannot do is say which
 //! of those assets is a picture, because on disk every one of them is a
 //! `.uasset`, and matching icons to entries by name does not work: measured

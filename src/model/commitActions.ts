@@ -21,8 +21,8 @@ import { z } from "zod";
  * ```
  *
  * Trailers rather than a JSON blob in the body because they survive everything
- * that handles commit messages — `git log --format`, the GitHub UI, a cherry-pick
- * — and because a reader who has never heard of DinoDepot can still tell what
+ * that handles commit messages - `git log --format`, the GitHub UI, a cherry-pick
+ * - and because a reader who has never heard of DinoDepot can still tell what
  * the commit did.
  */
 
@@ -68,7 +68,7 @@ export const StructuredActionSchema = z.object({
 export type StructuredAction = z.infer<typeof StructuredActionSchema>;
 
 /**
- * Recorded when the project files changed but Studio did not do it — someone
+ * Recorded when the project files changed but Studio did not do it - someone
  * edited JSON by hand, or restored a file from a backup.
  *
  * Without this, such a sync would produce a commit that claims nothing
@@ -191,7 +191,7 @@ export interface DecodedCommit {
   operationId: string;
   /** GitHub username recorded by Studio, when known. */
   actor: string;
-  /** Null when the commit carries no version — i.e. it is not one of ours. */
+  /** Null when the commit carries no version - i.e. it is not one of ours. */
   actionsVersion: number | null;
   actions: StructuredAction[];
   /**
@@ -202,7 +202,7 @@ export interface DecodedCommit {
   unreadableActions: number;
   /** True when the commit was written by a newer action vocabulary. */
   fromNewerStudio: boolean;
-  /** False for a commit DinoDepot did not write — a web edit, say. */
+  /** False for a commit DinoDepot did not write - a web edit, say. */
   isDinoDepot: boolean;
 }
 
@@ -210,7 +210,7 @@ export interface DecodedCommit {
  * Reads a commit message back.
  *
  * Tolerant throughout: this runs against commits written by versions that do
- * not exist yet, and against commits DinoDepot did not write at all — somebody
+ * not exist yet, and against commits DinoDepot did not write at all - somebody
  * editing a file through the GitHub web UI produces a perfectly ordinary commit
  * that this still has to describe.
  */
@@ -288,7 +288,7 @@ function parseAction(value: string): StructuredAction | null {
  *
  * Editing one creature's name twenty times is one line of history, not twenty:
  * repeated updates to the same thing merge, and their changed fields union.
- * A create followed by updates stays a create — the thing is new, and saying so
+ * A create followed by updates stays a create - the thing is new, and saying so
  * is more useful than listing what it was adjusted to on the way in.
  * A create followed by a delete disappears entirely, because between one sync
  * and the next it never existed as far as anyone else is concerned.

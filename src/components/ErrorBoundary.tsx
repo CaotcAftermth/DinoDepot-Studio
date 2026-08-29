@@ -14,7 +14,7 @@ import { Button } from "./ui";
  * Two things matter here. The rest of the app keeps working, because the
  * boundary is around the routed page rather than around everything. And the
  * error is reportable in one click, with the message and a few stack frames
- * already filled in — that is the report that would otherwise never be written,
+ * already filled in - that is the report that would otherwise never be written,
  * because "it went white and I closed it" is not a report anybody can act on.
  */
 
@@ -75,7 +75,7 @@ export class ErrorBoundary extends Component<Props, State> {
         </h2>
         <p className="mt-2 text-sm text-ink-300">
           {this.props.name ? `${this.props.name} could not be shown.` : "This page could not be shown."}{" "}
-          Nothing you have saved is affected — the rest of the app is still
+          Nothing you have saved is affected - the rest of the app is still
           working, and your project files were not touched.
         </p>
         <p className="mt-3 text-xs text-ink-500 mono break-words">

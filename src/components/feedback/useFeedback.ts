@@ -53,8 +53,8 @@ export function useFeedback(): FeedbackApi {
 /**
  * The same operations without a React subscription.
  *
- * For call sites that are not components — an error handler, a keyboard
- * binding — where subscribing would be meaningless.
+ * For call sites that are not components - an error handler, a keyboard
+ * binding - where subscribing would be meaningless.
  */
 export const feedback = {
   open: () => useFeedbackStore.getState().openLauncher(),

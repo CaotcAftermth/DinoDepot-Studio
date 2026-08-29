@@ -8,7 +8,7 @@ import { feedbackTarget } from "../../model/feedback/targets";
  *
  * A rail rather than a tab strip: it has room for a line of description per
  * category, and it grows downwards, so adding a sixth category later costs
- * nothing. Styled to echo the application sidebar without competing with it —
+ * nothing. Styled to echo the application sidebar without competing with it -
  * the accent bar sits on the left here, on the right there.
  */
 export function SettingsNav({

@@ -10,9 +10,9 @@ import { useDraftsStore } from "../stores/draftsStore";
  * Bringing an icon in from a file the administrator already has.
  *
  * The texture picker covers artwork that ships inside a mod; this covers
- * everything else — something drawn, downloaded, or exported by hand. Whatever
+ * everything else - something drawn, downloaded, or exported by hand. Whatever
  * arrives goes through the same conversion as every other icon, so a 512x512
- * PNG from a wiki and a texture pulled out of a pak both land as a 160x160
+ * PNG from a documentation site and a texture pulled from a pak both become a 160x160
  * lossless WebP in the project's own images folder.
  */
 export function IconImportPanel({
@@ -68,7 +68,7 @@ export function IconImportPanel({
         if (cancelled) stop();
         else unlisten = stop;
       } catch {
-        // No drag-drop channel — the file button still works.
+        // No drag-drop channel - the file button still works.
       }
     })();
     return () => {
@@ -166,7 +166,7 @@ export function IconImportPanel({
               backgroundImage:
                 "repeating-conic-gradient(#3a3a3a 0% 25%, #2a2a2a 0% 50%)",
               backgroundSize: "16px 16px",
-              // Shows what saving will write — the backend runs the same
+              // Shows what saving will write - the backend runs the same
               // inversion on the real pixels.
               filter: invert ? "invert(1)" : undefined,
             }}
@@ -185,7 +185,7 @@ export function IconImportPanel({
       )}
 
       {/*
-        The native dialog exists only in the desktop app — in the browser
+        The native dialog exists only in the desktop app - in the browser
         preview `pickFile` falls back to a prompt the webview refuses, so the
         plain file input below is what covers that case.
       */}

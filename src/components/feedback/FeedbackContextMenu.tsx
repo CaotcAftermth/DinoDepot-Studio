@@ -13,7 +13,7 @@ import { cx } from "../ui";
  * "Report a problem here" opens the form with the affected area filled in, so
  * the common case takes one right-click and a sentence.
  *
- * The decision about *whether* to show it is not here — it is in
+ * The decision about *whether* to show it is not here - it is in
  * `FeedbackHost`, which owns the document listener and refuses to take over
  * the menu in a text field. This component only draws what that decision
  * produced.
@@ -169,8 +169,8 @@ export function FeedbackContextMenu() {
 /**
  * Puts the debug summary on the clipboard.
  *
- * The webview's clipboard API is the only route — there is no Tauri clipboard
- * plugin in this build — and it can be refused, so the failure says what
+ * The webview's clipboard API is the only route - there is no Tauri clipboard
+ * plugin in this build - and it can be refused, so the failure says what
  * happened rather than nothing at all.
  */
 async function copyDebugInfo(
