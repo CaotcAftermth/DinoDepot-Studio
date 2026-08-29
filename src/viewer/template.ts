@@ -391,7 +391,7 @@ button.drop:hover{border-color:var(--cyan)}
 var CFG = {
   dataUrl: ${JSON.stringify(config.dataUrl)},
   imagesUrl: ${JSON.stringify(config.imagesUrl.replace(/\/+$/, ""))},
-  assetOrigin: "https://assets.dinodepot.app"
+  assetOrigin: "https://assets.dinodepot-studio.app"
 };
 var DATA = null;
 var byC = new Map(), byI = new Map();

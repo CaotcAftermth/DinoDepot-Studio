@@ -9,7 +9,7 @@ use tauri::Manager;
 
 const ASSET_CACHE_DIR: &str = "asset-cache";
 const REGISTRY_CACHE_DIR: &str = "registry-cache";
-const ASSET_ORIGIN: &str = "https://assets.dinodepot.app";
+const ASSET_ORIGIN: &str = "https://assets.dinodepot-studio.app";
 const MAX_ASSET_BYTES: u64 = 1_048_576;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

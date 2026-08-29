@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://assets.dinodepot-studio.app/metadata/schema/private-official-reference-policy-v1.json",
+  "title": "DDS private official reference policy v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "policyId",
+    "source",
+    "terms",
+    "reviewedAt",
+    "reviewState",
+    "distributionEligible",
+    "status"
+  ],
+  "properties": {
+    "policyId": { "type": "string", "pattern": "^[A-Z0-9][A-Z0-9._-]*$" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["displayName", "referenceUrl"],
+      "properties": {
+        "displayName": { "type": "string", "minLength": 1 },
+        "referenceUrl": { "type": "string", "format": "uri", "pattern": "^https://" }
+      }
+    },
+    "terms": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "sha256",
+        "scope",
+        "desktopApp",
+        "webViewer",
+        "maxResolution",
+        "formatConversion"
+      ],
+      "properties": {
+        "version": { "type": "string", "pattern": "^DDS-OFFICIAL-REFERENCE-POLICY-v[0-9]+\\.[0-9]+$" },
+        "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+        "scope": {
+          "type": "array",
+          "items": { "enum": ["creature-icons", "item-icons", "map-icons"] },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "desktopApp": { "const": true },
+        "webViewer": { "const": true },
+        "maxResolution": { "const": "160x160" },
+        "formatConversion": { "type": "array", "contains": { "const": "webp" } }
+      }
+    },
+    "reviewedAt": { "type": "string", "format": "date" },
+    "reviewState": { "const": "approved" },
+    "distributionEligible": { "const": true },
+    "status": { "const": "active" }
+  }
+}

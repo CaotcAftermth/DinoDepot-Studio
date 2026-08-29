@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import { prepareRevocation } from "./rights-assets-tooling.mjs";
 
 if (process.argv.length !== 4) {
-  console.error("usage: npm run prepare:rights-revocation -- <approved-mod-manifest.json> <output-dir>");
+  console.error("usage: npm run prepare:rights-revocation -- <approved-public-manifest.json> <output-dir>");
   process.exit(2);
 }
 

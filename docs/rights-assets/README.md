@@ -22,37 +22,55 @@ Real permission records and immutable permission terms are private inputs mainta
 
 ## Deployment status
 
-On 2026-08-27, maintainers created `dinodepot-assets`, applied `r2-cors.json`, and uploaded only the disabled registry manifests with the index last. No artwork was uploaded. `assets.dinodepot.app` remains unavailable because the authenticated Cloudflare account does not contain the `dinodepot.app` zone; custom-domain attachment and CDN purge therefore remain blocked.
+On 2026-08-27, maintainers created `dinodepot-assets`, applied `r2-cors.json`, attached the active `assets.dinodepot-studio.app` custom domain, disabled `r2.dev`, and uploaded only the disabled registry manifests with the index last. No artwork was uploaded. Public GET/HEAD, CORS, ETag/304, and CDN cache behavior were verified against the custom domain.
 
-## Maintainer preparation
+## Maintainer CLI
 
-Store the exact external terms file as `DDS-ICON-PERMISSION-vN.N.md`. Its filename must equal the permission record's `terms.version` plus `.md`, and its SHA-256 must equal `terms.sha256`.
+`npm run rights:assets` is the supported entry point. Private records and exact immutable terms files remain outside this repository. Preparation performs rights validation before image processing, creates a transparently padded lossless 160×160 WebP, merges the sanitized fragment into a complete staging registry, increments registry versions, and validates asset→manifest→index ordering. It does not upload.
 
-```text
-cargo run --bin rights_asset_publisher -- prepare <record.json> <terms.md> <source-image> <creature|item> <asset-id> <asset-version> <output-dir>
-```
-
-Preparation default-denies before image processing. It checks permission lifecycle, authority, desktop and web scope, asset type, terms identifier/hash, format conversion, and 160×160 limit. Success writes a transparently padded lossless WebP, a redacted registry fragment, and an asset→manifest→index publish plan. The command does not upload and does not accept credentials.
-
-Merge `metadata/sanitized-fragment.json` into a fully reviewed staged manifest at `registry/mods/<ModID>.json`, and stage the updated public index at `registry/index.json`. Then validate the complete staging tree with a dry run:
+Prepare a mod creature or item:
 
 ```text
-npm ci
-npm run publish:rights-assets -- <output-dir>/publish-plan.json
+npm run rights:assets -- mod prepare <record.json> <DDS-ICON-PERMISSION-vN.N.md> <source-image> <creature|item> <asset-id> <asset-version> <output-dir> --rights-status <author-approved|license-approved>
 ```
 
-The dry run rechecks the bucket/domain, approval and scope, public-field redaction, active state, version/hash-qualified path, file SHA-256, Cache-Control, and asset-to-manifest-to-index ordering. In a separately authorized maintainer/CI environment, upload with:
+Prepare an official creature, item, or map under a separately reviewed official reference policy:
 
 ```text
-CLOUDFLARE_API_TOKEN=<secret> CLOUDFLARE_ACCOUNT_ID=<account> npm run publish:rights-assets -- <output-dir>/publish-plan.json --execute
+npm run rights:assets -- official prepare <policy.json> <DDS-OFFICIAL-REFERENCE-POLICY-vN.N.md> <source-image> <creature|item|map> <asset-id> <asset-version> <output-dir>
 ```
 
-The execute path uses the repository-pinned Wrangler and explicit remote R2 operations. It refuses absent credentials; neither credential is compiled into the desktop or viewer.
+The private input schemas are `schemas/private-permission-record.schema.json` and `schemas/private-official-reference-policy.schema.json`. Their redacted examples are intentionally unusable as evidence.
+For mod preparation, `--rights-status` must exactly match the private record's `approvalBasis`; the CLI will not relabel author evidence as license evidence or vice versa. Official `policyId` values must identify an immutable reviewed policy version.
+
+Prepare fail-closed metadata changes without manufacturing approval:
+
+```text
+npm run rights:assets -- mod status <ModID> <output-dir> --rights-status <state> --asset <creature:slug=state>
+npm run rights:assets -- official status <output-dir> --review-state <state> --distribution-eligible <true|false> --asset <creature:slug=state>
+```
+
+Status commands may preserve or reduce existing approval. Elevation to approved/eligible must come from a validated `prepare` command using private evidence. Denied rights automatically demote active assets to `disabled` or `withdrawn`.
+
+Dry-run any generated plan:
+
+```text
+npm run rights:assets -- publish <output-dir>/publish-plan.json
+```
+
+In a separately authorized maintainer/CI environment, upload with:
+
+```text
+CLOUDFLARE_API_TOKEN=<secret> CLOUDFLARE_ACCOUNT_ID=<account> npm run rights:assets -- publish <output-dir>/publish-plan.json --execute
+```
+
+The execute path uses the repository-pinned Wrangler and explicit remote R2 operations. It refuses absent credentials; neither credential is compiled into the desktop or viewer. Existing `publish:rights-assets` and the legacy Rust `prepare` form remain compatible.
 
 To prepare—but not execute—a metadata-first revocation:
 
 ```text
-npm run prepare:rights-revocation -- <approved-mod-manifest.json> <output-dir>
+npm run rights:assets -- mod revoke <ModID> <output-dir>
+npm run rights:assets -- official revoke <output-dir>
 ```
 
 This emits a revoked/withdrawn manifest and an ordered denied-metadata-to-delete-to-purge-to-placeholder-verification plan. Remote deletion and CDN purge still require separate explicit authorization.
@@ -62,7 +80,7 @@ This emits a revoked/withdrawn manifest and an ordered denied-metadata-to-delete
 These are maintainer/CI steps; they are not performed by the desktop app.
 
 - Bucket: `dinodepot-assets`.
-- Direct R2 custom domain: `assets.dinodepot.app`. Keep `r2.dev` development-only.
+- Direct R2 custom domain: `assets.dinodepot-studio.app`. Keep `r2.dev` disabled.
 - Object prefixes: `registry/`, `official/`, `mods/<ModID>/`, and `metadata/schema/`.
 - Public CORS: origins needed by official viewers (or `*` for credential-free public reads), methods `GET` and `HEAD`, no credentials, allow request header `If-None-Match`, and expose `ETag` and `Cache-Control`.
 - Apply the committed policy with `npx wrangler r2 bucket cors set dinodepot-assets --file docs/rights-assets/r2-cors.json --force`.

@@ -5,11 +5,14 @@ use std::fs;
 use std::path::{Path, PathBuf};
 
 const TERMS_PREFIX: &str = "DDS-ICON-PERMISSION-v";
+const OFFICIAL_TERMS_PREFIX: &str = "DDS-OFFICIAL-REFERENCE-POLICY-v";
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct PermissionRecord {
     permission_id: String,
+    #[serde(default = "default_approval_basis")]
+    approval_basis: String,
     #[serde(rename = "mod")]
     mod_info: ModInfo,
     grantor: Grantor,
@@ -18,6 +21,25 @@ struct PermissionRecord {
     approved_at: String,
     authority_confirmed: bool,
     status: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct OfficialPolicyRecord {
+    policy_id: String,
+    source: OfficialSource,
+    terms: Terms,
+    reviewed_at: String,
+    review_state: String,
+    distribution_eligible: bool,
+    status: String,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+struct OfficialSource {
+    display_name: String,
+    reference_url: String,
 }
 
 #[derive(Deserialize)]
@@ -59,12 +81,23 @@ struct PublicAsset {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 struct PublicRights {
-    status: &'static str,
+    status: String,
     permission_id: String,
     permission_version: String,
     approved_at: String,
     scope: Vec<String>,
     attribution: Attribution,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct PublicOfficialRights {
+    status: &'static str,
+    policy_id: String,
+    reviewed_at: String,
+    review_state: &'static str,
+    distribution_eligible: bool,
+    scope: Vec<String>,
 }
 
 #[derive(Serialize)]
@@ -81,6 +114,15 @@ struct SanitizedFragment {
     mod_id: u64,
     mod_name: String,
     rights: PublicRights,
+    asset_key: String,
+    asset: PublicAsset,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct OfficialSanitizedFragment {
+    schema_version: u64,
+    rights: PublicOfficialRights,
     asset_key: String,
     asset: PublicAsset,
 }
@@ -115,18 +157,35 @@ fn main() {
 
 fn run() -> Result<(), String> {
     let args: Vec<String> = std::env::args().collect();
-    if args.len() != 9 || args[1] != "prepare" {
-        return Err("usage: rights_asset_publisher prepare <record.json> <terms.md> <source-image> <creature|item> <asset-id> <asset-version> <output-dir>".into());
+    match args.get(1).map(String::as_str) {
+        Some("prepare") => prepare_mod(&args[2..]),
+        Some("mod") if args.get(2).map(String::as_str) == Some("prepare") => {
+            prepare_mod(&args[3..])
+        }
+        Some("official") if args.get(2).map(String::as_str) == Some("prepare") => {
+            prepare_official(&args[3..])
+        }
+        _ => Err(
+            "usage: rights_asset_publisher <mod|official> prepare <record.json> <terms.md> <source-image> <creature|item|map> <asset-id> <asset-version> <output-dir> [author-approved|license-approved]"
+                .into(),
+        ),
     }
-    let record_path = Path::new(&args[2]);
-    let terms_path = Path::new(&args[3]);
-    let source_path = Path::new(&args[4]);
-    let asset_type = args[5].as_str();
-    let asset_id = &args[6];
-    let asset_version = args[7]
+}
+
+fn prepare_mod(args: &[String]) -> Result<(), String> {
+    if args.len() != 7 && args.len() != 8 {
+        return Err("usage: rights_asset_publisher mod prepare <record.json> <terms.md> <source-image> <creature|item> <asset-id> <asset-version> <output-dir> [author-approved|license-approved]".into());
+    }
+    let record_path = Path::new(&args[0]);
+    let terms_path = Path::new(&args[1]);
+    let source_path = Path::new(&args[2]);
+    let asset_type = args[3].as_str();
+    let asset_id = &args[4];
+    let asset_version = args[5]
         .parse::<u64>()
         .map_err(|_| "asset version must be a positive integer")?;
-    let output = PathBuf::from(&args[8]);
+    let output = PathBuf::from(&args[6]);
+    let requested_approval = args.get(7).map(String::as_str);
     if !matches!(asset_type, "creature" | "item") {
         return Err("asset type must be creature or item".into());
     }
@@ -141,6 +200,11 @@ fn run() -> Result<(), String> {
         serde_json::from_slice(&fs::read(record_path).map_err(|error| error.to_string())?)
             .map_err(|error| format!("permission record schema: {error}"))?;
     validate_permission(&record, terms_path, asset_type)?;
+    if requested_approval.is_some_and(|value| value != record.approval_basis) {
+        return Err(
+            "requested approval status does not match the private permission record".into(),
+        );
+    }
 
     let normalized = normalize_webp(source_path)?;
     let hash = format!("{:x}", Sha256::digest(&normalized));
@@ -163,7 +227,7 @@ fn run() -> Result<(), String> {
         mod_id: record.mod_info.id,
         mod_name: record.mod_info.name.clone(),
         rights: PublicRights {
-            status: "author-approved",
+            status: record.approval_basis.clone(),
             permission_id: record.permission_id.clone(),
             permission_version: record.terms.version.clone(),
             approved_at: record.approved_at.chars().take(10).collect(),
@@ -189,7 +253,7 @@ fn run() -> Result<(), String> {
     let plan = PublishPlan {
         schema_version: 1,
         bucket: "dinodepot-assets",
-        public_origin: "https://assets.dinodepot.app",
+        public_origin: "https://assets.dinodepot-studio.app",
         default_deny_validated: true,
         operations: vec![
             UploadOperation { order: 1, kind: "asset", local_file: relative(&output, &asset_file), object_key: object_key.clone(), cache_control: "public, max-age=604800" },
@@ -207,18 +271,114 @@ fn run() -> Result<(), String> {
     Ok(())
 }
 
+fn prepare_official(args: &[String]) -> Result<(), String> {
+    if args.len() != 7 {
+        return Err("usage: rights_asset_publisher official prepare <policy.json> <terms.md> <source-image> <creature|item|map> <asset-id> <asset-version> <output-dir>".into());
+    }
+    let policy_path = Path::new(&args[0]);
+    let terms_path = Path::new(&args[1]);
+    let source_path = Path::new(&args[2]);
+    let asset_type = args[3].as_str();
+    let asset_id = &args[4];
+    let asset_version = args[5]
+        .parse::<u64>()
+        .map_err(|_| "asset version must be a positive integer")?;
+    let output = PathBuf::from(&args[6]);
+    if !matches!(asset_type, "creature" | "item" | "map") {
+        return Err("official asset type must be creature, item, or map".into());
+    }
+    if asset_version == 0 {
+        return Err("asset version must be positive".into());
+    }
+    if !valid_slug(asset_id) {
+        return Err("asset id must be a lowercase slug".into());
+    }
+
+    let policy: OfficialPolicyRecord =
+        serde_json::from_slice(&fs::read(policy_path).map_err(|error| error.to_string())?)
+            .map_err(|error| format!("official policy record schema: {error}"))?;
+    validate_official_policy(&policy, terms_path, asset_type)?;
+
+    let normalized = normalize_webp(source_path)?;
+    let hash = format!("{:x}", Sha256::digest(&normalized));
+    let folder = asset_folder(asset_type)?;
+    let object_key = format!("official/{folder}/{asset_id}.v{asset_version}.{hash}.webp");
+    let asset_file = output.join(&object_key);
+    fs::create_dir_all(asset_file.parent().ok_or("invalid output path")?)
+        .map_err(|error| error.to_string())?;
+    fs::write(&asset_file, &normalized).map_err(|error| error.to_string())?;
+
+    let fragment = OfficialSanitizedFragment {
+        schema_version: 1,
+        rights: PublicOfficialRights {
+            status: "official-reference-policy",
+            policy_id: policy.policy_id.clone(),
+            reviewed_at: policy.reviewed_at.chars().take(10).collect(),
+            review_state: "approved",
+            distribution_eligible: true,
+            scope: policy.terms.scope.clone(),
+        },
+        asset_key: format!("{asset_type}:{asset_id}"),
+        asset: PublicAsset {
+            status: "active",
+            path: format!("/{object_key}"),
+            version: asset_version,
+            sha256: hash,
+        },
+    };
+    let metadata_dir = output.join("metadata");
+    fs::create_dir_all(&metadata_dir).map_err(|error| error.to_string())?;
+    fs::write(
+        metadata_dir.join("sanitized-fragment.json"),
+        pretty(&fragment)?,
+    )
+    .map_err(|error| error.to_string())?;
+
+    let plan = PublishPlan {
+        schema_version: 1,
+        bucket: "dinodepot-assets",
+        public_origin: "https://assets.dinodepot-studio.app",
+        default_deny_validated: true,
+        operations: vec![
+            UploadOperation { order: 1, kind: "asset", local_file: relative(&output, &asset_file), object_key: object_key.clone(), cache_control: "public, max-age=604800" },
+            UploadOperation { order: 2, kind: "manifest", local_file: "registry/official.json".into(), object_key: "registry/official.json".into(), cache_control: "public, max-age=300" },
+            UploadOperation { order: 3, kind: "index", local_file: "registry/index.json".into(), object_key: "registry/index.json".into(), cache_control: "public, max-age=300" },
+        ],
+        note: "Merge the sanitized fragment into reviewed registry files. Upload the index last. Credentials are read only by the execution environment.",
+    };
+    fs::write(output.join("publish-plan.json"), pretty(&plan)?)
+        .map_err(|error| error.to_string())?;
+    println!(
+        "Prepared verified 160x160 official WebP and registry-last publish plan at {}",
+        output.display()
+    );
+    Ok(())
+}
+
 fn validate_permission(
     record: &PermissionRecord,
     terms_path: &Path,
     asset_type: &str,
 ) -> Result<(), String> {
+    if !matches!(
+        record.approval_basis.as_str(),
+        "author-approved" | "license-approved"
+    ) {
+        return Err("private permission record approval basis is invalid".into());
+    }
     if record.status != "active" {
         return Err("permission lifecycle is not active".into());
     }
     if !record.authority_confirmed {
         return Err("grantor authority is not confirmed".into());
     }
-    if record.permission_id.trim().is_empty()
+    if record.mod_info.id == 0
+        || record.mod_info.name.trim().is_empty()
+        || !valid_https_url(&record.mod_info.project_url)
+    {
+        return Err("mod identity and HTTPS project URL are required".into());
+    }
+    if !valid_public_id(&record.permission_id)
         || record.requested_at.trim().is_empty()
         || record.approved_at.trim().is_empty()
     {
@@ -227,8 +387,11 @@ fn validate_permission(
     if record.grantor.display_name.trim().is_empty() || record.grantor.platform.trim().is_empty() {
         return Err("public attribution is incomplete".into());
     }
-    if !record.terms.version.starts_with(TERMS_PREFIX) {
+    if !valid_terms_version(&record.terms.version, TERMS_PREFIX) {
         return Err("unsupported permission terms identifier".into());
+    }
+    if !valid_date_prefix(&record.approved_at) {
+        return Err("permission approval date must begin with YYYY-MM-DD".into());
     }
     let expected_terms_name = format!("{}.md", record.terms.version);
     if terms_path.file_name().and_then(|name| name.to_str()) != Some(expected_terms_name.as_str()) {
@@ -260,6 +423,74 @@ fn validate_permission(
         return Err("permission terms hash does not match the immutable external input".into());
     }
     Ok(())
+}
+
+fn validate_official_policy(
+    policy: &OfficialPolicyRecord,
+    terms_path: &Path,
+    asset_type: &str,
+) -> Result<(), String> {
+    if policy.status != "active" {
+        return Err("official policy lifecycle is not active".into());
+    }
+    if policy.review_state != "approved" || !policy.distribution_eligible {
+        return Err("official policy is not approved for distribution".into());
+    }
+    if !valid_public_id(&policy.policy_id) || policy.reviewed_at.trim().is_empty() {
+        return Err("official policy identity and review date are required".into());
+    }
+    if policy.source.display_name.trim().is_empty()
+        || !valid_https_url(&policy.source.reference_url)
+    {
+        return Err("official source provenance is incomplete".into());
+    }
+    if !valid_terms_version(&policy.terms.version, OFFICIAL_TERMS_PREFIX) {
+        return Err("unsupported official policy terms identifier".into());
+    }
+    if !valid_date_prefix(&policy.reviewed_at) {
+        return Err("official policy review date must begin with YYYY-MM-DD".into());
+    }
+    let expected_terms_name = format!("{}.md", policy.terms.version);
+    if terms_path.file_name().and_then(|name| name.to_str()) != Some(expected_terms_name.as_str()) {
+        return Err(format!(
+            "official policy terms file must be named {expected_terms_name}"
+        ));
+    }
+    if !policy.terms.desktop_app || !policy.terms.web_viewer {
+        return Err("official policy must cover desktop app and web viewer".into());
+    }
+    if policy.terms.max_resolution != "160x160" {
+        return Err("official policy max resolution must be exactly 160x160".into());
+    }
+    if !policy
+        .terms
+        .format_conversion
+        .iter()
+        .any(|value| value == "webp")
+    {
+        return Err("official policy does not allow WebP conversion".into());
+    }
+    let scope = format!("{asset_type}-icons");
+    if !policy.terms.scope.iter().any(|value| value == &scope) {
+        return Err(format!("official policy scope does not include {scope}"));
+    }
+    let terms = fs::read(terms_path).map_err(|error| error.to_string())?;
+    let actual = format!("{:x}", Sha256::digest(&terms));
+    if actual != policy.terms.sha256 {
+        return Err(
+            "official policy terms hash does not match the immutable external input".into(),
+        );
+    }
+    Ok(())
+}
+
+fn asset_folder(asset_type: &str) -> Result<&'static str, String> {
+    match asset_type {
+        "creature" => Ok("creatures"),
+        "item" => Ok("items"),
+        "map" => Ok("maps"),
+        _ => Err("asset type must be creature, item, or map".into()),
+    }
 }
 
 fn normalize_webp(source: &Path) -> Result<Vec<u8>, String> {
@@ -298,6 +529,52 @@ fn valid_slug(value: &str) -> bool {
         })
 }
 
+fn valid_public_id(value: &str) -> bool {
+    !value.is_empty()
+        && value.chars().all(|ch| {
+            ch.is_ascii_uppercase() || ch.is_ascii_digit() || matches!(ch, '.' | '_' | '-')
+        })
+        && value
+            .chars()
+            .next()
+            .is_some_and(|ch| ch.is_ascii_uppercase() || ch.is_ascii_digit())
+}
+
+fn default_approval_basis() -> String {
+    "author-approved".into()
+}
+
+fn valid_terms_version(value: &str, prefix: &str) -> bool {
+    let Some(version) = value.strip_prefix(prefix) else {
+        return false;
+    };
+    let mut parts = version.split('.');
+    matches!(
+        (parts.next(), parts.next(), parts.next()),
+        (Some(major), Some(minor), None)
+            if !major.is_empty()
+                && !minor.is_empty()
+                && major.chars().all(|ch| ch.is_ascii_digit())
+                && minor.chars().all(|ch| ch.is_ascii_digit())
+    )
+}
+
+fn valid_date_prefix(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    bytes.len() >= 10
+        && bytes[0..4].iter().all(u8::is_ascii_digit)
+        && bytes[4] == b'-'
+        && bytes[5..7].iter().all(u8::is_ascii_digit)
+        && bytes[7] == b'-'
+        && bytes[8..10].iter().all(u8::is_ascii_digit)
+}
+
+fn valid_https_url(value: &str) -> bool {
+    url::Url::parse(value)
+        .ok()
+        .is_some_and(|parsed| parsed.scheme() == "https" && parsed.host_str().is_some())
+}
+
 fn pretty<T: Serialize>(value: &T) -> Result<Vec<u8>, String> {
     let mut bytes = serde_json::to_vec_pretty(value).map_err(|error| error.to_string())?;
     bytes.push(b'\n');
@@ -331,7 +608,8 @@ mod tests {
 
     fn record(hash: String) -> PermissionRecord {
         PermissionRecord {
-            permission_id: "permission-test".into(),
+            permission_id: "PERMISSION-TEST".into(),
+            approval_basis: "author-approved".into(),
             mod_info: ModInfo {
                 id: 123,
                 name: "Test Mod".into(),
@@ -353,6 +631,29 @@ mod tests {
             requested_at: "2026-01-01".into(),
             approved_at: "2026-01-02".into(),
             authority_confirmed: true,
+            status: "active".into(),
+        }
+    }
+
+    fn official_policy(hash: String) -> OfficialPolicyRecord {
+        OfficialPolicyRecord {
+            policy_id: "OFFICIAL-POLICY-TEST".into(),
+            source: OfficialSource {
+                display_name: "Official reference".into(),
+                reference_url: "https://example.invalid/reference".into(),
+            },
+            terms: Terms {
+                version: "DDS-OFFICIAL-REFERENCE-POLICY-v1.0".into(),
+                sha256: hash,
+                scope: vec!["map-icons".into()],
+                desktop_app: true,
+                web_viewer: true,
+                max_resolution: "160x160".into(),
+                format_conversion: vec!["webp".into()],
+            },
+            reviewed_at: "2026-08-27".into(),
+            review_state: "approved".into(),
+            distribution_eligible: true,
             status: "active".into(),
         }
     }
@@ -391,6 +692,24 @@ mod tests {
         assert!(validate_permission(&candidate, &exact_name, "creature")
             .unwrap_err()
             .contains("hash"));
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn official_policy_is_default_denied_and_scope_checked() {
+        let dir = test_dir();
+        let terms = dir.join("DDS-OFFICIAL-REFERENCE-POLICY-v1.0.md");
+        fs::write(&terms, b"official external policy").unwrap();
+        let hash = format!("{:x}", Sha256::digest(b"official external policy"));
+        let mut candidate = official_policy(hash);
+        candidate.distribution_eligible = false;
+        assert!(validate_official_policy(&candidate, &terms, "map")
+            .unwrap_err()
+            .contains("not approved"));
+        candidate.distribution_eligible = true;
+        assert!(validate_official_policy(&candidate, &terms, "creature")
+            .unwrap_err()
+            .contains("scope"));
         fs::remove_dir_all(dir).unwrap();
     }
 

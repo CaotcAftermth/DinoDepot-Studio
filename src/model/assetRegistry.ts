@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const ASSET_REGISTRY_SCHEMA_VERSION = 1;
-export const ASSET_SERVICE_ORIGIN = "https://assets.dinodepot.app";
+export const ASSET_SERVICE_ORIGIN = "https://assets.dinodepot-studio.app";
 
 export const RightsStatusSchema = z.enum([
   "not-reviewed",

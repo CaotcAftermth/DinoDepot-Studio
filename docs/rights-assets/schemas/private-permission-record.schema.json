@@ -1,12 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://assets.dinodepot.app/metadata/schema/private-permission-record-v1.json",
+  "$id": "https://assets.dinodepot-studio.app/metadata/schema/private-permission-record-v1.json",
   "title": "DDS private icon permission record v1",
   "type": "object",
   "additionalProperties": false,
-  "required": ["permissionId", "mod", "grantor", "terms", "requestedAt", "approvedAt", "authorityConfirmed", "status"],
+  "required": ["permissionId", "approvalBasis", "mod", "grantor", "terms", "requestedAt", "approvedAt", "authorityConfirmed", "status"],
   "properties": {
-    "permissionId": { "type": "string" },
+    "permissionId": { "type": "string", "pattern": "^[A-Z0-9][A-Z0-9._-]*$" },
+    "approvalBasis": { "enum": ["author-approved", "license-approved"] },
     "mod": {
       "type": "object",
       "additionalProperties": false,

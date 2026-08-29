@@ -1,5 +1,6 @@
 {
   "permissionId": "REDACTED-EXAMPLE-NOT-EVIDENCE",
+  "approvalBasis": "author-approved",
   "mod": {
     "id": 0,
     "name": "Redacted example",

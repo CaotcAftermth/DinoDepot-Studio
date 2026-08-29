@@ -1,5 +1,6 @@
 [package]
 name = "dino-depot-studio"
+default-run = "dino-depot-studio"
 version = "0.8.0"
 description = "DinoDepot Studio"
 authors = ["GG Fizz"]

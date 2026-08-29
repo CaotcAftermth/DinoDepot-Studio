@@ -1,0 +1,20 @@
+{
+  "policyId": "REDACTED-OFFICIAL-EXAMPLE-NOT-EVIDENCE",
+  "source": {
+    "displayName": "REDACTED",
+    "referenceUrl": "https://example.invalid/official-reference"
+  },
+  "terms": {
+    "version": "DDS-OFFICIAL-REFERENCE-POLICY-v1.0",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "scope": ["creature-icons"],
+    "desktopApp": true,
+    "webViewer": true,
+    "maxResolution": "160x160",
+    "formatConversion": ["webp"]
+  },
+  "reviewedAt": "2026-08-27",
+  "reviewState": "approved",
+  "distributionEligible": true,
+  "status": "active"
+}

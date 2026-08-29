@@ -25,7 +25,7 @@ GitHub Support must dereference the sixteen affected pull requests, run server g
 
 The `dinodepot-assets` R2 bucket was created without changing `dinodepot-feedback-attachments`. Public credential-free GET/HEAD CORS was applied. Only the disabled registry metadata was uploaded, with `registry/index.json` last and `Cache-Control: public, max-age=300`; no artwork objects were uploaded.
 
-The authenticated Cloudflare account contains only the `gg-pandatools.com` zone, not `dinodepot.app`. Consequently `assets.dinodepot.app` could not be attached, no production CDN URL exists, and there was no matching Cloudflare cache hostname to purge. Domain attachment, cache rules, and purge remain pending until `dinodepot.app` is active in the same account.
+The authenticated Cloudflare account contains only the `gg-pandatools.com` zone, not `dinodepot-studio.app`. Consequently `assets.dinodepot-studio.app` could not be attached, no production CDN URL exists, and there was no matching Cloudflare cache hostname to purge. Domain attachment, cache rules, and purge remain pending until `dinodepot-studio.app` is active in the same account.
 
 ## Residual exposure
 

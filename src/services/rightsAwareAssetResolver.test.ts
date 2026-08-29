@@ -88,8 +88,8 @@ describe("rights-aware asset resolver", () => {
     const mod = await new RightsAwareAssetResolver(registry(modManifest())).resolveIcon({
       iconKey: "mod:123:creature:rex", expectedType: "creature",
     });
-    expect(official.url).toBe("https://assets.dinodepot.app/official/creatures/rex.webp");
-    expect(mod.url).toBe("https://assets.dinodepot.app/mods/123/creatures/rex.webp");
+    expect(official.url).toBe("https://assets.dinodepot-studio.app/official/creatures/rex.webp");
+    expect(mod.url).toBe("https://assets.dinodepot-studio.app/mods/123/creatures/rex.webp");
   });
 
   it.each(["not-reviewed", "requested", "declined", "revoked", "ownership-unclear"] as RightsStatus[])(
